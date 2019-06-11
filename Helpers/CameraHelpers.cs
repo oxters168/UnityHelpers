@@ -9,7 +9,8 @@ public static class CameraHelpers
     /// <param name="camera">The camera to apply the calculation to</param>
     /// <param name="worldWidth">The requested world width</param>
     /// <returns>Camera forward distance</returns>
-    public static float PerspectiveDistanceToWidth(this Camera camera, float worldWidth) {
+    public static float PerspectiveDistanceToWidth(this Camera camera, float worldWidth)
+    {
         Vector2 dimensions = PerspectiveFrustumAtNear(camera);
         return (worldWidth / dimensions.x) * camera.nearClipPlane;
     }
@@ -20,7 +21,8 @@ public static class CameraHelpers
     /// <param name="camera">The camera to apply the calculation to</param>
     /// <param name="worldHeight">The requested world height</param>
     /// <returns>Camera forward distance</returns>
-    public static float PerspectiveDistanceToHeight(this Camera camera, float worldHeight) {
+    public static float PerspectiveDistanceToHeight(this Camera camera, float worldHeight)
+    {
         Vector2 dimensions = PerspectiveFrustumAtNear(camera);
         return (worldHeight / dimensions.y) * camera.nearClipPlane;
     }
@@ -32,7 +34,8 @@ public static class CameraHelpers
     /// <param name="frustumDistanceDistance">Distance of the plane from the camera</param>
     /// <param name="aspect">The camera's aspect ratio</param>
     /// <returns>Perspective plane dimensions</returns>
-    public static Vector2 PerspectiveFrustum(float fieldOfView, float frustumDistance, float aspect) {
+    public static Vector2 PerspectiveFrustum(float fieldOfView, float frustumDistance, float aspect)
+    {
         float frustumHeight = 2.0f * frustumDistance * Mathf.Tan(fieldOfView * 0.5f * Mathf.Deg2Rad);
         float frustumWidth = frustumHeight * aspect;
         return new Vector2(frustumWidth, frustumHeight);
@@ -43,7 +46,8 @@ public static class CameraHelpers
     /// </summary>
     /// <param name="camera">The camera to calculate the dimensions for</param>
     /// <returns>Perspective plane dimensions</returns>
-    public static Vector2 PerspectiveFrustumAtNear(this Camera camera) {
+    public static Vector2 PerspectiveFrustumAtNear(this Camera camera)
+    {
         Vector2 frustumDimensions = PerspectiveFrustum(camera.fieldOfView, camera.nearClipPlane, camera.aspect);
 
         Vector3 nearClipCenter = camera.transform.position + camera.nearClipPlane * camera.transform.forward;
@@ -54,7 +58,15 @@ public static class CameraHelpers
 
         return frustumDimensions;
     }
-    public static Rect Aspectify(Vector2 pointA, Vector2 pointB, float aspect) {
+    /// <summary>
+    /// Creates a rect with the given aspect ratio that contains both points
+    /// </summary>
+    /// <param name="pointA">First point</param>
+    /// <param name="pointB">Second point</param>
+    /// <param name="aspect">Required aspect ratio</param>
+    /// <returns>A rect with the proper aspect ratio</returns>
+    public static Rect Aspectify(Vector2 pointA, Vector2 pointB, float aspect)
+    {
         Vector2 min = new Vector2(Mathf.Min(pointA.x, pointB.x), Mathf.Min(pointA.y, pointB.y));
         Vector2 max = new Vector2(Mathf.Max(pointA.x, pointB.x), Mathf.Max(pointA.y, pointB.y));
 
@@ -62,17 +74,18 @@ public static class CameraHelpers
         Vector2 maxedSize = new Vector2(Mathf.Max(toAspectify.height * aspect, toAspectify.width), Mathf.Max(toAspectify.width / aspect, toAspectify.height));
         return toAspectify.ResizeFromCenter(maxedSize);
     }
-
+    /// <summary>
+    /// Creates a rect that contains all points given while all points have the requested padding
+    /// </summary>
+    /// <param name="padding">Amount to cushion by</param>
+    /// <param name="currentPoints">Points to include</param>
+    /// <returns>A rect that contains all padded points</returns>
     public static Rect PaddedMinMax(float padding, params Vector3[] currentPoints)
     {
         Rect paddedRect = new Rect();
         if (currentPoints != null)
-        {
-            paddedRect = currentPoints.SelectMany(p => new[] {
-                                      p.xz() + Vector2.one * padding
-                                    , p.xz() - Vector2.one * padding
-                                }).Select(p => new Rect(p.x,p.y,0,0)).Aggregate(RectHelpers.Grow);
-        }
+            paddedRect = currentPoints.Select(point => new Rect(point.x, point.z, 0, 0).ResizeFromCenter(padding, padding)).Aggregate(RectHelpers.Grow);
+
         return paddedRect;
     }
 
