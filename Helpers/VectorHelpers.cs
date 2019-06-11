@@ -29,5 +29,14 @@ public static class VectorHelpers
     {
         return new Vector2(vector.y, vector.z);
     }
-
+    /// <summary>
+    /// Flattens the given vector to a plane
+    /// </summary>
+    /// <param name="vector">Original vector</param>
+    /// <param name="planeNormal">Normal of plane</param>
+    /// <returns>Flattened vector</returns>
+    public static Vector3 Planar(this Vector3 vector, Vector3 planeNormal)
+    {
+        return Quaternion.AngleAxis(90 - Vector3.Angle(vector, Vector3.up), Vector3.Cross(planeNormal, vector)) * vector;
+    }
 }
