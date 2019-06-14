@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -57,7 +58,7 @@ public class ObjectPool<T> where T : Component
         }
     }
 
-    public T Get(bool setPosition = false, Vector3 position = new Vector3(), bool localPosition = false, bool setRotation = false, Quaternion rotation = new Quaternion(), bool localRotation = false, bool setScale = false, Vector3 scale = new Vector3())
+    public T Get(Action<T> action = null, bool setPosition = false, Vector3 position = new Vector3(), bool localPosition = false, bool setRotation = false, Quaternion rotation = new Quaternion(), bool localRotation = false, bool setScale = false, Vector3 scale = new Vector3())
     {
         int availableIndex = objectIndex;
         bool fromUnused = true;
@@ -79,7 +80,9 @@ public class ObjectPool<T> where T : Component
             availableObjects.Remove(availableIndex);
         unavailableObjects.Add(availableIndex);
 
-        T availableObject = (T)objectPool[availableIndex];
+        T availableObject = objectPool[availableIndex];
+
+        action?.Invoke(availableObject);
 
         Transform tempTransform = availableObject.transform;
         if (setPosition)
