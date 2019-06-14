@@ -12,8 +12,6 @@ public class CompoundCollision : MonoBehaviour
     {
         if (col.rigidbody)
         {
-            //Debug.Log(col.gameObject.name + " entered whose mass is " + col.rigidbody.mass);
-
             if (!hits.ContainsKey(col.gameObject))
                 hits[col.gameObject] = 0;
             hits[col.gameObject]++;
@@ -24,10 +22,9 @@ public class CompoundCollision : MonoBehaviour
         if (col.rigidbody)
         {
             hits[col.gameObject]--;
-            //Debug.Log(col.gameObject.name + " exited with mass of " + col.rigidbody.mass);
+            Debug.Assert(hits[col.gameObject] >= 0);
             if (hits[col.gameObject] <= 0)
             {
-                //Debug.Log("Removed");
                 onCollisionExit?.Invoke(col);
                 hits.Remove(col.gameObject);
             }
