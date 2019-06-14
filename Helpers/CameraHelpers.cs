@@ -83,8 +83,10 @@ public static class CameraHelpers
     public static Rect PaddedMinMax(float padding, params Vector3[] currentPoints)
     {
         Rect paddedRect = new Rect();
-        if (currentPoints != null)
+        if (currentPoints != null && currentPoints.Length > 1)
             paddedRect = currentPoints.Select(point => new Rect(point.x, point.z, 0, 0).ResizeFromCenter(padding, padding)).Aggregate(RectHelpers.Grow);
+        else if (currentPoints != null && currentPoints.Length > 0)
+            paddedRect = new Rect(currentPoints[0].x, currentPoints[0].z, 0, 0).ResizeFromCenter(padding, padding);
 
         return paddedRect;
     }
