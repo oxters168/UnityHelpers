@@ -41,18 +41,48 @@ public static class VectorHelpers
     {
         return Quaternion.AngleAxis(90 - Vector3.Angle(vector, Vector3.up), Vector3.Cross(planeNormal, vector)) * vector;
     }
-    public static Vector3 Average(params Vector3[] vectors)
-    {
-        return Average((IEnumerable<Vector3>)vectors);
-    }
-
+    /// <summary>
+    /// Vector3 add function
+    /// </summary>
+    /// <param name="v1">First vector</param>
+    /// <param name="v2">Second vector</param>
+    /// <returns>The sum of the two vectors</returns>
     public static Vector3 Add(this Vector3 v1, Vector3 v2)
     {
         return v1 + v2;
     }
-
+    /// <summary>
+    /// Gets the average of a list vector3s
+    /// </summary>
+    /// <param name="vectors">To be averaged</param>
+    /// <returns>The average vector</returns>
+    public static Vector3 Average(params Vector3[] vectors)
+    {
+        return Average((IEnumerable<Vector3>)vectors);
+    }
+    /// <summary>
+    /// Gets the average of a list vector3s
+    /// </summary>
+    /// <param name="vectors">To be averaged</param>
+    /// <returns>The average vector</returns>
     public static Vector3 Average(this IEnumerable<Vector3> vectors)
     {
         return vectors.Aggregate(Add) / vectors.Count();
+    }
+    /// <summary>
+    /// Turns all NaN values to 0
+    /// </summary>
+    /// <param name="vector3">The Vector3 in question</param>
+    /// <returns>The fixed Vector3</returns>
+    public static Vector3 FixNaN(this Vector3 vector3)
+    {
+        if (float.IsNaN(vector3.x))
+            vector3.x = 0;
+        if (float.IsNaN(vector3.y))
+            vector3.y = 0;
+        if (float.IsNaN(vector3.z))
+            vector3.z = 0;
+
+        return vector3;
     }
 }
