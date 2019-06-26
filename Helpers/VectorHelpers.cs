@@ -85,4 +85,68 @@ public static class VectorHelpers
 
         return vector3;
     }
+
+    /// <summary>
+    /// Clamps all values of the vector to min and max.
+    /// </summary>
+    /// <param name="vector2">The original Vector2</param>
+    /// <param name="min">The clamp mininmum</param>
+    /// <param name="max">The clamp maximum</param>
+    /// <returns>A clamped Vector2</returns>
+    public static Vector2 Clamp(this Vector2 vector2, float min, float max)
+    {
+        return new Vector2(Mathf.Clamp(vector2.x, min, max), Mathf.Clamp(vector2.y, min, max));
+    }
+    /// <summary>
+    /// Clamps all values of the vector to min and max.
+    /// </summary>
+    /// <param name="vector3">The original Vector3</param>
+    /// <param name="min">The clamp mininmum</param>
+    /// <param name="max">The clamp maximum</param>
+    /// <returns>A clamped Vector3</returns>
+    public static Vector3 Clamp(this Vector3 vector3, float min, float max)
+    {
+        return new Vector3(Mathf.Clamp(vector3.x, min, max), Mathf.Clamp(vector3.y, min, max), Mathf.Clamp(vector3.z, min, max));
+    }
+
+    /// <summary>
+    /// Turns a square input vector2 to circle input.
+    /// The range of x and y should be from -1 to 1.
+    /// Source: https://amorten.com/blog/2017/mapping-square-input-to-circle-in-unity/
+    /// </summary>
+    /// <param name="vector2">The original Vector2</param>
+    /// <returns>An adjusted Vector2</returns>
+    public static Vector2 ToCircle(this Vector2 vector2)
+    {
+        return new Vector2(vector2.x * Mathf.Sqrt(1 - vector2.y * vector2.y * 0.5f), vector2.y * Mathf.Sqrt(1 - vector2.x * vector2.x * 0.5f));
+    }
+    /// <summary>
+    /// Turns a circle input vector2 to square input.
+    /// The range of x and y should be from -1 to 1.
+    /// Source: https://forum.unity.com/threads/making-a-square-vector2-fit-a-circle-vector2.422352/
+    /// </summary>
+    /// <param name="vector2">The original Vector2</param>
+    /// <returns>An adjusted Vector2</returns>
+    public static Vector2 ToSquare(this Vector2 vector2)
+    {
+        const float COS_45 = 0.70710678f;
+
+        if (vector2.sqrMagnitude < float.Epsilon) // Or < EPSILON, Or < inner circle threshold. Your choice.
+            return Vector2.zero;
+
+        Vector2 normal = vector2.normalized;
+        float x, y;
+
+        if (normal.x != 0 && normal.y >= -COS_45 && normal.y <= COS_45)
+            x = normal.x >= 0 ? vector2.x / normal.x : -vector2.x / normal.x;
+        else
+            x = vector2.x / Mathf.Abs(normal.y);
+
+        if (normal.y != 0 && normal.x >= -COS_45 && normal.x <= COS_45)
+            y = normal.y >= 0 ? vector2.y / normal.y : -vector2.y / normal.y;
+        else
+            y = vector2.y / Mathf.Abs(normal.x);
+
+        return new Vector2(x, y);
+    }
 }
