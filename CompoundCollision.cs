@@ -1,32 +1,34 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class CompoundCollision : MonoBehaviour
+namespace UnityHelpers
 {
-    private Dictionary<GameObject, int> hits = new Dictionary<GameObject, int>();
-    public event CollisionHandler onCollisionExit;
-    public delegate void CollisionHandler(Collision col);
+    public class CompoundCollision : MonoBehaviour
+    {
+        private Dictionary<GameObject, int> hits = new Dictionary<GameObject, int>();
+        public event CollisionHandler onCollisionExit;
+        public delegate void CollisionHandler(Collision col);
 
-    private void OnCollisionEnter(Collision col)
-    {
-        if (col.rigidbody)
+        private void OnCollisionEnter(Collision col)
         {
-            if (!hits.ContainsKey(col.gameObject))
-                hits[col.gameObject] = 0;
-            hits[col.gameObject]++;
-        }
-    }
-    private void OnCollisionExit(Collision col)
-    {
-        if (col.rigidbody)
-        {
-            hits[col.gameObject]--;
-            Debug.Assert(hits[col.gameObject] >= 0);
-            if (hits[col.gameObject] <= 0)
+            if (col.rigidbody)
             {
-                onCollisionExit?.Invoke(col);
-                hits.Remove(col.gameObject);
+                if (!hits.ContainsKey(col.gameObject))
+                    hits[col.gameObject] = 0;
+                hits[col.gameObject]++;
+            }
+        }
+        private void OnCollisionExit(Collision col)
+        {
+            if (col.rigidbody)
+            {
+                hits[col.gameObject]--;
+                Debug.Assert(hits[col.gameObject] >= 0);
+                if (hits[col.gameObject] <= 0)
+                {
+                    onCollisionExit?.Invoke(col);
+                    hits.Remove(col.gameObject);
+                }
             }
         }
     }
