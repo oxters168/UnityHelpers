@@ -13,7 +13,7 @@ public static class CommonRoutines
     /// <param name="postAction">The action to be done after completion</param>
     /// <param name="timeout">If set will cause the loop to end if the condition has not been met in time</param>
     /// <returns>Coroutine enumerator</returns>
-    public static IEnumerator DoUntil(Action<float> action, Func<bool> pred, float timeBetween = 0, Action postAction = null, float timeout = 0)
+    public static IEnumerator DoUntil(Action<float> action, Func<bool> pred, float timeBetween = 0, Action postAction = null, float timeout = -1)
     {
         float startTime = Time.time;
 
