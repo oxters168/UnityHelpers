@@ -7,6 +7,16 @@ namespace UnityHelpers
     public static class CommonRoutines
     {
         /// <summary>
+        /// Just runs the given action
+        /// </summary>
+        /// <param name="action">The action to be run</param>
+        /// <returns>Coroutine enumerator</returns>
+        public static IEnumerator Run(Action action)
+        {
+            action();
+            yield return null;
+        }
+        /// <summary>
         /// Keeps on doing an action until a condition has been met.
         /// </summary>
         /// <param name="action">The action to be repeated</param>
