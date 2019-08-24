@@ -1,84 +1,72 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class SizableItem : MonoBehaviour, IScrollHandler
+namespace UnityHelpers
 {
-    private RectTransform _selfRectTransform;
-    public RectTransform SelfRectTransform { get { if (!_selfRectTransform) _selfRectTransform = GetComponent<RectTransform>(); return _selfRectTransform; } }
-
-    public float scrollMultiplier = 32;
-    public float touchMultiplier = 1;
-
-    private Vector2 orig1, orig2;
-    private Vector2 current1, current2;
-    public bool isPinching { get; private set; }
-    private bool isFirstTouchInside;
-    private bool isTouching;
-
-    private void Update()
+    [RequireComponent(typeof(TouchGesturesHandler))]
+    public class SizableItem : MonoBehaviour, IScrollHandler
     {
-        if (Input.touches.Length > 0 && !isPinching && !isTouching)
+        private RectTransform _selfRectTransform;
+        public RectTransform SelfRectTransform { get { if (!_selfRectTransform) _selfRectTransform = GetComponent<RectTransform>(); return _selfRectTransform; } }
+        private TouchGesturesHandler _touchGestures;
+        public TouchGesturesHandler TouchGestures { get { if (!_touchGestures) _touchGestures = GetComponent<TouchGesturesHandler>(); return _touchGestures; } }
+
+        public float scrollMultiplier = 32;
+        public float touchMultiplier = 1;
+        public float rotMultiplier = 1;
+
+        private Vector2 orig1, orig2;
+        private Vector2 current1, current2;
+        public bool isPinching { get; private set; }
+        private bool isFirstTouchInside;
+        private bool isTouching;
+
+        private void OnEnable()
         {
-            Vector2 touchPos = Input.touches[0].position;
-            Vector2 localTouch;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(SelfRectTransform, touchPos, null, out localTouch);
-            isFirstTouchInside = SelfRectTransform.rect.Contains(localTouch);
-            isTouching = true;
+            TouchGestures.onPinch += TouchGestures_onPinch;
         }
-        else if (Input.touches.Length > 1 && !isPinching && isFirstTouchInside)
+        private void OnDisable()
         {
-            Vector2 position1 = Input.touches[0].position;
-            Vector2 position2 = Input.touches[1].position;
-
-            Pinched(position1, position2);
+            TouchGestures.onPinch -= TouchGestures_onPinch;
         }
-        else if (Input.touches.Length > 1 && isPinching)
+
+        private void TouchGestures_onPinch(Vector2 pos1, Vector2 pos2, float zoomDelta, float rotationDelta)
         {
-            Vector2 position1 = Input.touches[0].position;
-            Vector2 position2 = Input.touches[1].position;
-            Pinching(position1, position2);
+            Zoom(touchMultiplier * zoomDelta);
+            SelfRectTransform.eulerAngles += Vector3.forward * rotationDelta * rotMultiplier;
         }
-        else if (Input.touches.Length < 2)
+
+        public void OnScroll(PointerEventData eventData)
         {
-            PinchEnded();
-            if (Input.touches.Length <= 0)
-            {
-                isFirstTouchInside = false;
-                isTouching = false;
-            }
+            Zoom(eventData.scrollDelta.y * scrollMultiplier);
         }
-    }
 
-    public void OnScroll(PointerEventData eventData)
-    {
-        Zoom(eventData.scrollDelta.y * scrollMultiplier);
-    }
+        private void Zoom(float amount)
+        {
+            SelfRectTransform.sizeDelta += Vector2.one * amount;
+        }
 
-    private void Zoom(float amount)
-    {
-        SelfRectTransform.sizeDelta += Vector2.one * amount;
-    }
+        private void Pinched(Vector2 pos1, Vector2 pos2)
+        {
+            isPinching = true;
+            orig1 = pos1;
+            orig2 = pos2;
+            current1 = pos1;
+            current2 = pos2;
+        }
+        private void Pinching(Vector2 pos1, Vector2 pos2)
+        {
+            float oldDistance = Vector2.Distance(current1, current2);
+            float newDistance = Vector2.Distance(pos1, pos2);
+            current1 = pos1;
+            current2 = pos2;
 
-    private void Pinched(Vector2 pos1, Vector2 pos2)
-    {
-        isPinching = true;
-        orig1 = pos1;
-        orig2 = pos2;
-        current1 = pos1;
-        current2 = pos2;
-    }
-    private void Pinching(Vector2 pos1, Vector2 pos2)
-    {
-        float oldDistance = Vector2.Distance(current1, current2);
-        float newDistance = Vector2.Distance(pos1, pos2);
-        current1 = pos1;
-        current2 = pos2;
-
-        float delta = newDistance - oldDistance;
-        Zoom(delta * touchMultiplier);
-    }
-    private void PinchEnded()
-    {
-        isPinching = false;
+            float delta = newDistance - oldDistance;
+            Zoom(delta * touchMultiplier);
+        }
+        private void PinchEnded()
+        {
+            isPinching = false;
+        }
     }
 }
