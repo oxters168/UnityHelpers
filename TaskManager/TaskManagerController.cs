@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace UnityHelpers
 {
@@ -11,7 +12,7 @@ namespace UnityHelpers
     {
         private static TaskManagerController taskManagerControllerInScene;
         private List<TaskWrapper> tasks = new List<TaskWrapper>();
-        private List<(string, Action)> asyncActions = new List<(string, Action)>();
+        private List<(string, Action<CancellationTokenSource>)> asyncActions = new List<(string, Action<CancellationTokenSource>)>();
         private List<(string, Func<Task>)> funkyTasks = new List<(string, Func<Task>)>();
         private List<Action> actions = new List<Action>();
 
@@ -26,7 +27,7 @@ namespace UnityHelpers
             {
                 int i = asyncActions.Count - 1;
                 string taskName = asyncActions[i].Item1;
-                Action action = asyncActions[i].Item2;
+                Action<CancellationTokenSource> action = asyncActions[i].Item2;
                 asyncActions.RemoveAt(i);
                 await TaskWrapper.CreateTask(action, taskName, (task) => { SteamController.LogToConsole("Running task " + taskName); tasks.Add(task); }, (task) => { SteamController.LogToConsole("Completed task " + taskName); tasks.Remove(task); });
             }
@@ -55,7 +56,7 @@ namespace UnityHelpers
 
             taskManagerControllerInScene.actions.Insert(0, action);
         }
-        public static void RunActionAsync(string name, Action action)
+        public static void RunActionAsync(string name, Action<CancellationTokenSource> action)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
@@ -82,13 +83,31 @@ namespace UnityHelpers
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
 
+            SteamController.LogToConsole("Cancelling task " + name);
+
             var tasks = taskManagerControllerInScene.tasks;
             TaskWrapper task = tasks.FirstOrDefault(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
             if (task == null)
-                throw new KeyNotFoundException("Could not find task with name " + name);
-
-            task.Cancel();
-            tasks.Remove(task);
+            {
+                var asyncActions = taskManagerControllerInScene.asyncActions;
+                int actionIndex = asyncActions.FindIndex(checkedTask => checkedTask.Item1.Equals(name, StringComparison.Ordinal));
+                if (actionIndex >= 0)
+                    asyncActions.RemoveAt(actionIndex);
+                else
+                {
+                    var funkyTasks = taskManagerControllerInScene.funkyTasks;
+                    actionIndex = funkyTasks.FindIndex(checkedTask => checkedTask.Item1.Equals(name, StringComparison.Ordinal));
+                    if (actionIndex >= 0)
+                        funkyTasks.RemoveAt(actionIndex);
+                    else
+                        throw new KeyNotFoundException("Could not find task with name " + name);
+                }
+            }
+            else
+            {
+                task.Cancel();
+                tasks.Remove(task);
+            }
         }
         public static bool HasTask(string name)
         {

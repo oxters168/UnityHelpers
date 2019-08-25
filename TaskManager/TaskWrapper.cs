@@ -26,12 +26,12 @@ namespace UnityHelpers
             if (cancellationTokenSource != null && !cancellationTokenSource.IsCancellationRequested)
                 cancellationTokenSource.Cancel();
         }
-        public static async Task CreateTask(Action action, string name, Action<TaskWrapper> onBegin = null, Action<TaskWrapper> onEnd = null)
+        public static async Task CreateTask(Action<CancellationTokenSource> action, string name, Action<TaskWrapper> onBegin = null, Action<TaskWrapper> onEnd = null)
         {
             using (var cancelTokenSource = new CancellationTokenSource())
             {
                 TaskWrapper tw = new TaskWrapper(name, cancelTokenSource);
-                await Task.Run(() => { onBegin?.Invoke(tw); action(); onEnd?.Invoke(tw); }, cancelTokenSource.Token);
+                await Task.Run(() => { onBegin?.Invoke(tw); action(cancelTokenSource); onEnd?.Invoke(tw); }, cancelTokenSource.Token);
                 //return tw;
             }
         }
