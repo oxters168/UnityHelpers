@@ -78,6 +78,20 @@ namespace UnityHelpers
 
             taskManagerControllerInScene.funkyTasks.Insert(0, (name, action));
         }
+        public static void RunActionAsync(Action<CancellationTokenSource> action)
+        {
+            if (action == null)
+                throw new ArgumentNullException("Action cannot be null");
+
+            taskManagerControllerInScene.asyncActions.Insert(0, ("", action));
+        }
+        public static void RunActionAsync(Func<Task> action)
+        {
+            if (action == null)
+                throw new ArgumentNullException("Action cannot be null");
+
+            taskManagerControllerInScene.funkyTasks.Insert(0, ("", action));
+        }
         public static void CancelTask(string name)
         {
             if (string.IsNullOrEmpty(name))

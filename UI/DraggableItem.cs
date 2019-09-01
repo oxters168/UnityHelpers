@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 namespace UnityHelpers
 {
     [RequireComponent(typeof(TouchGesturesHandler))]
-    public class DraggableItem : MonoBehaviour, IPointerClickHandler, IDragHandler, IPointerDownHandler, IEndDragHandler
+    public class DraggableItem : MonoBehaviour, IDragHandler, IEndDragHandler
     {
         private RectTransform _selfRectTransform;
         public RectTransform SelfRectTransform { get { if (!_selfRectTransform) _selfRectTransform = GetComponent<RectTransform>(); return _selfRectTransform; } }
@@ -16,11 +16,8 @@ namespace UnityHelpers
         public RectTransform container;
 
         public bool isDragging { get; private set; }
-        public event PointerHandler onDrag, onEndDrag, onClick, onDown;
+        public event PointerHandler onDrag, onEndDrag;
         public delegate void PointerHandler();
-
-        //private Vector2 origPosition;
-        //private Vector2 downPointerPosition;
 
         private bool isTouching;
 
@@ -30,13 +27,11 @@ namespace UnityHelpers
         }
         private void OnEnable()
         {
-            //TouchGestures.onDown += TouchGestures_onDown;
             TouchGestures.onDrag += TouchGestures_onDrag;
             TouchGestures.onEndDrag += TouchGestures_onEndDrag;
         }
         private void OnDisable()
         {
-            //TouchGestures.onDown -= TouchGestures_onDown;
             TouchGestures.onDrag -= TouchGestures_onDrag;
             TouchGestures.onEndDrag -= TouchGestures_onEndDrag;
         }
@@ -49,19 +44,9 @@ namespace UnityHelpers
         {
             Drag(delta);
         }
-        private void TouchGestures_onDown(Vector2 position, Vector2 delta)
-        {
-            //Down(position);
-        }
 
-        public void OnPointerDown(PointerEventData eventData)
-        {
-            //if (Input.touches.Length <= 0)
-            //    Down(eventData.position);
-        }
         public void OnDrag(PointerEventData eventData)
         {
-            //SelfRectTransform.localPosition = ClampToContainer(nextButtonX, nextButtonY);
             if (Input.touches.Length <= 0)
                 Drag(eventData.delta);
         }
@@ -70,22 +55,20 @@ namespace UnityHelpers
             if (Input.touches.Length <= 0)
                 EndDrag();
         }
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            onClick?.Invoke();
-        }
 
-        /*private void Down(Vector2 position)
-        {
-            origPosition = SelfRectTransform.localPosition;
-            downPointerPosition = position;
+        //public void OnPointerDown(PointerEventData eventData)
+        //{
+            //if (Input.touches.Length <= 0)
+            //    Down(eventData.position);
+        //}
+        //public void OnPointerClick(PointerEventData eventData)
+        //{
+            //onClick?.Invoke();
+        //}
 
-            onDown?.Invoke();
-        }*/
         private void Drag(Vector2 delta)
         {
             Vector2 nextPos = (Vector2)SelfRectTransform.localPosition + delta;
-            //float nextPosY = origPosition.y + (delta.y - downPointerPosition.y);
             SelfRectTransform.localPosition = ClampToContainer(nextPos.x, nextPos.y);
 
             isDragging = true;
