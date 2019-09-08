@@ -16,6 +16,8 @@ namespace UnityHelpers
         private List<(string, Func<Task>)> funkyTasks = new List<(string, Func<Task>)>();
         private List<Action> actions = new List<Action>();
 
+        public bool showDebugMessages;
+
         private void Awake()
         {
             if (!taskManagerControllerInScene)
@@ -29,7 +31,17 @@ namespace UnityHelpers
                 string taskName = asyncActions[i].Item1;
                 Action<CancellationTokenSource> action = asyncActions[i].Item2;
                 asyncActions.RemoveAt(i);
-                await TaskWrapper.CreateTask(action, taskName, (task) => { SteamController.LogToConsole("Running task " + taskName); tasks.Add(task); }, (task) => { SteamController.LogToConsole("Completed task " + taskName); tasks.Remove(task); });
+                await TaskWrapper.CreateTask(action, taskName, (task) =>
+                {
+                    if (showDebugMessages)
+                        Debug.Log("Running task " + taskName);
+                    tasks.Add(task);
+                }, (task) =>
+                {
+                    if (showDebugMessages)
+                        Debug.Log("Completed task " + taskName);
+                    tasks.Remove(task);
+                });
             }
             if (funkyTasks.Count > 0)
             {
@@ -37,7 +49,17 @@ namespace UnityHelpers
                 string taskName = funkyTasks[i].Item1;
                 Func<Task> action = funkyTasks[i].Item2;
                 funkyTasks.RemoveAt(i);
-                await TaskWrapper.CreateTask(action, taskName, (task) => { SteamController.LogToConsole("Running task " + taskName); tasks.Add(task); }, (task) => { SteamController.LogToConsole("Completed task " + taskName); tasks.Remove(task); });
+                await TaskWrapper.CreateTask(action, taskName, (task) =>
+                {
+                    if (showDebugMessages)
+                        Debug.Log("Running task " + taskName);
+                    tasks.Add(task);
+                }, (task) =>
+                {
+                    if (showDebugMessages)
+                        Debug.Log("Completed task " + taskName);
+                    tasks.Remove(task);
+                });
             }
             if (actions.Count > 0)
             {
@@ -97,7 +119,8 @@ namespace UnityHelpers
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
 
-            SteamController.LogToConsole("Cancelling task " + name);
+            if (taskManagerControllerInScene.showDebugMessages)
+                Debug.Log("Cancelling task " + name);
 
             var tasks = taskManagerControllerInScene.tasks;
             TaskWrapper task = tasks.FirstOrDefault(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
