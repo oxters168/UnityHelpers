@@ -40,7 +40,7 @@ namespace UnityHelpers
 
         private void TouchGestures_onPinch(Vector2 pos1, Vector2 pos2, float zoomDelta, float rotationDelta)
         {
-            Vector2 pointPivot = CalculatePivot((pos2 - pos1) / 2);
+            Vector2 pointPivot = CalculatePivot(pos1);
             Zoom(zoomDelta * touchMultiplier, pointPivot);
             SelfRectTransform.eulerAngles += Vector3.forward * rotationDelta * rotMultiplier;
         }
