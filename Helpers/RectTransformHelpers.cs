@@ -8,6 +8,16 @@ namespace UnityHelpers
         {
             return rectTransform.pivot - Vector2.one * 0.5f;
         }
+        public static Vector2 RemovePivotOffset(this Vector2 localPosition, RectTransform relativeTo)
+        {
+            return localPosition + relativeTo.pivot * relativeTo.sizeDelta;
+        }
+        public static void ShiftPivot(this RectTransform rectTransform, Vector2 newPivot)
+        {
+            Vector2 positionOffset = (newPivot - rectTransform.pivot) * rectTransform.sizeDelta;
+            rectTransform.localPosition += (Vector3)positionOffset;
+            rectTransform.pivot = newPivot;
+        }
         public static Vector2 GetRealLocalPosition(this RectTransform rectTransform)
         {
             Vector2 centeredPivot = rectTransform.CalculatePivotPercentFromCenter();

@@ -15,6 +15,10 @@ namespace UnityHelpers
         public float touchMultiplier = 1;
         public float rotMultiplier = 1;
 
+        public float zoomedAmount;
+        private Vector2 origSize;
+        private bool origSizeSet;
+
         private Vector2 orig1, orig2;
         private Vector2 current1, current2;
         public bool isPinching { get; private set; }
@@ -29,21 +33,72 @@ namespace UnityHelpers
         {
             TouchGestures.onPinch -= TouchGestures_onPinch;
         }
+        private void Update()
+        {
+            ApplyZoom();
+        }
 
         private void TouchGestures_onPinch(Vector2 pos1, Vector2 pos2, float zoomDelta, float rotationDelta)
         {
-            Zoom(touchMultiplier * zoomDelta);
+            Vector2 pointPivot = CalculatePivot((pos2 - pos1) / 2);
+            Zoom(zoomDelta * touchMultiplier, pointPivot);
             SelfRectTransform.eulerAngles += Vector3.forward * rotationDelta * rotMultiplier;
         }
 
         public void OnScroll(PointerEventData eventData)
         {
-            Zoom(eventData.scrollDelta.y * scrollMultiplier);
+            Vector2 pointPivot = CalculatePivot(eventData.position);
+            Zoom(eventData.scrollDelta.y * scrollMultiplier, pointPivot);
+        }
+        private Vector2 CalculatePivot(Vector2 position)
+        {
+            Vector2 localScrollPoint = position.GetPositionRelativeTo(SelfRectTransform).RemovePivotOffset(SelfRectTransform);
+            Vector2 pointPivot = new Vector2(localScrollPoint.x / SelfRectTransform.sizeDelta.x, localScrollPoint.y / SelfRectTransform.sizeDelta.y);
+            Debug.Log("Pivot point: " + pointPivot + " originalPos: " + position + " localPosition: " + localScrollPoint);
+            return pointPivot;
         }
 
-        private void Zoom(float amount)
+        public void SetSize(Vector2 size)
         {
-            SelfRectTransform.sizeDelta += Vector2.one * amount;
+            origSize = size;
+            SetZoomAmount(0);
+        }
+        public void SetZoomAmount(float amount)
+        {
+            zoomedAmount = 0;
+            ApplyZoom();
+        }
+        public void Zoom(float amount)
+        {
+            zoomedAmount += amount;
+            ApplyZoom();
+        }
+        public void Zoom(float amount, Vector2 pivot)
+        {
+            zoomedAmount += amount;
+            ApplyZoom(pivot);
+        }
+
+        private void CheckOrigSize()
+        {
+            if (!origSizeSet)
+            {
+                origSize = SelfRectTransform.sizeDelta;
+                origSizeSet = true;
+            }
+        }
+        private void ApplyZoom()
+        {
+            CheckOrigSize();
+            SelfRectTransform.sizeDelta = origSize + Vector2.one * zoomedAmount;
+        }
+        private void ApplyZoom(Vector2 pivot)
+        {
+            CheckOrigSize();
+            Vector2 prevPivot = SelfRectTransform.pivot;
+            SelfRectTransform.ShiftPivot(pivot);
+            SelfRectTransform.sizeDelta = origSize + Vector2.one * zoomedAmount;
+            SelfRectTransform.ShiftPivot(prevPivot);
         }
 
         private void Pinched(Vector2 pos1, Vector2 pos2)
