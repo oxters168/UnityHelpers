@@ -6,6 +6,8 @@ namespace UnityHelpers
     [RequireComponent(typeof(TouchGesturesHandler))]
     public class SizableItem : MonoBehaviour, IScrollHandler
     {
+        private Canvas canvas;
+
         private RectTransform _selfRectTransform;
         public RectTransform SelfRectTransform { get { if (!_selfRectTransform) _selfRectTransform = GetComponent<RectTransform>(); return _selfRectTransform; } }
         private TouchGesturesHandler _touchGestures;
@@ -52,9 +54,19 @@ namespace UnityHelpers
         }
         private Vector2 CalculatePivot(Vector2 position)
         {
-            Vector2 localScrollPoint = position.GetPositionRelativeTo(SelfRectTransform).RemovePivotOffset(SelfRectTransform);
-            Vector2 pointPivot = new Vector2(localScrollPoint.x / SelfRectTransform.sizeDelta.x, localScrollPoint.y / SelfRectTransform.sizeDelta.y);
-            Debug.Log("Pivot point: " + pointPivot + " originalPos: " + position + " localPosition: " + localScrollPoint);
+            Vector2 localScrollPoint;
+            #region Calculating local position in rect transform
+            if (canvas == null)
+                canvas = SelfRectTransform.GetComponentInParent<Canvas>();
+
+            if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                localScrollPoint = position.GetPositionRelativeTo(SelfRectTransform); //Works for Overlay mode
+            else
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(SelfRectTransform, position, canvas.worldCamera, out localScrollPoint); //Works for Camera mode
+            #endregion
+
+            localScrollPoint = localScrollPoint.RemovePivotOffset(SelfRectTransform);
+            Vector2 pointPivot = new Vector2(localScrollPoint.x / SelfRectTransform.rect.size.x, localScrollPoint.y / SelfRectTransform.rect.size.y);
             return pointPivot;
         }
 

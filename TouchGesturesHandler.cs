@@ -5,6 +5,8 @@ namespace UnityHelpers
 {
     public class TouchGesturesHandler : MonoBehaviour
     {
+        private Canvas canvas;
+
         private RectTransform _selfRectTransform;
         public RectTransform SelfRectTransform { get { if (!_selfRectTransform) _selfRectTransform = GetComponent<RectTransform>(); return _selfRectTransform; } }
 
@@ -138,9 +140,15 @@ namespace UnityHelpers
 
         private Vector2 GetTouchAsLocal(int touchIndex)
         {
+            if (canvas == null)
+                canvas = SelfRectTransform.GetComponentInParent<Canvas>();
+
             Vector2 touchPos = Input.touches[touchIndex].position;
             Vector2 localTouch;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(SelfRectTransform, touchPos, null, out localTouch);
+            if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                localTouch = touchPos.GetPositionRelativeTo(SelfRectTransform);
+            else
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(SelfRectTransform, touchPos, canvas.worldCamera, out localTouch);
             return localTouch;
         }
     }
