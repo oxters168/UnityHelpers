@@ -11,7 +11,8 @@ namespace UnityHelpers
     public class TaskManagerController : MonoBehaviour
     {
         private static TaskManagerController taskManagerControllerInScene;
-        private List<TaskWrapper> tasks = new List<TaskWrapper>();
+        //private List<TaskWrapper> tasks = new List<TaskWrapper>();
+        private TaskWrapper runningTask;
         private List<(string, Action<CancellationTokenSource>)> asyncActions = new List<(string, Action<CancellationTokenSource>)>();
         private List<(string, Func<Task>)> funkyTasks = new List<(string, Func<Task>)>();
         private List<Action> actions = new List<Action>();
@@ -25,7 +26,7 @@ namespace UnityHelpers
         }
         async void Update()
         {
-            if (asyncActions.Count > 0)
+            if (asyncActions.Count > 0 && runningTask == null)
             {
                 int i = asyncActions.Count - 1;
                 string taskName = asyncActions[i].Item1;
@@ -35,15 +36,17 @@ namespace UnityHelpers
                 {
                     if (showDebugMessages)
                         Debug.Log("Running task " + taskName);
-                    tasks.Add(task);
+                    //tasks.Add(task);
+                    runningTask = task;
                 }, (task) =>
                 {
                     if (showDebugMessages)
                         Debug.Log("Completed task " + taskName);
-                    tasks.Remove(task);
+                    //tasks.Remove(task);
+                    runningTask = null;
                 });
             }
-            if (funkyTasks.Count > 0)
+            if (funkyTasks.Count > 0 && runningTask == null)
             {
                 int i = funkyTasks.Count - 1;
                 string taskName = funkyTasks[i].Item1;
@@ -53,15 +56,17 @@ namespace UnityHelpers
                 {
                     if (showDebugMessages)
                         Debug.Log("Running task " + taskName);
-                    tasks.Add(task);
+                    //tasks.Add(task);
+                    runningTask = task;
                 }, (task) =>
                 {
                     if (showDebugMessages)
                         Debug.Log("Completed task " + taskName);
-                    tasks.Remove(task);
+                    //tasks.Remove(task);
+                    runningTask = null;
                 });
             }
-            if (actions.Count > 0)
+            if (actions.Count > 0 && runningTask == null)
             {
                 int i = actions.Count - 1;
                 Action action = actions[i];
@@ -122,9 +127,10 @@ namespace UnityHelpers
             if (taskManagerControllerInScene.showDebugMessages)
                 Debug.Log("Cancelling task " + name);
 
-            var tasks = taskManagerControllerInScene.tasks;
-            TaskWrapper task = tasks.FirstOrDefault(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
-            if (task == null)
+            //var tasks = taskManagerControllerInScene.tasks;
+            //TaskWrapper task = tasks.FirstOrDefault(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
+            TaskWrapper task = taskManagerControllerInScene.runningTask;
+            if (task == null || !task.name.Equals(name, StringComparison.Ordinal))
             {
                 var asyncActions = taskManagerControllerInScene.asyncActions;
                 int actionIndex = asyncActions.FindIndex(checkedTask => checkedTask.Item1.Equals(name, StringComparison.Ordinal));
@@ -143,7 +149,7 @@ namespace UnityHelpers
             else
             {
                 task.Cancel();
-                tasks.Remove(task);
+                //tasks.Remove(task);
             }
         }
         public static bool HasTask(string name)
@@ -154,7 +160,8 @@ namespace UnityHelpers
                 contains = true;
             else if (self.funkyTasks.Exists(item => item.Item1.Equals(name, StringComparison.Ordinal)))
                 contains = true;
-            else if (self.tasks.Exists(task => task.name.Equals(name, StringComparison.Ordinal)))
+            //else if (self.tasks.Exists(task => task.name.Equals(name, StringComparison.Ordinal)))
+            else if (self.runningTask != null && self.runningTask.name.Equals(name, StringComparison.Ordinal))
                 contains = true;
             return contains;
         }
