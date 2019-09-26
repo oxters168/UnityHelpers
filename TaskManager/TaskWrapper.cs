@@ -8,42 +8,65 @@ namespace UnityHelpers
     public class TaskWrapper
     {
         public string name { get; private set; }
-        //private Task task;
         private CancellationTokenSource cancellationTokenSource;
 
-        //public event TaskCompleteHandler onTaskCompleted;
-        //public delegate void TaskCompleteHandler(TaskWrapper caller);
+        private Action<CancellationTokenSource> cancellableAction;
+        private Func<Task> funkyTask;
 
-        private TaskWrapper(string _name, CancellationTokenSource _cancellationTokenSource)
+        /// <summary>
+        /// Only create if you are not using TaskManagerController, or else call TaskManagerController's RunActionAsync.
+        /// </summary>
+        /// <param name="_name">The name of the task</param>
+        /// <param name="_cancellableAction">The task itself</param>
+        public TaskWrapper(string _name, Action<CancellationTokenSource> _cancellableAction)
         {
             name = _name;
             //task = _task;
-            cancellationTokenSource = _cancellationTokenSource;
+            //cancellationTokenSource = _cancellationTokenSource;
+            cancellableAction = _cancellableAction;
+        }
+        /// <summary>
+        /// Only create if you are not using TaskManagerController, or else call TaskManagerController's RunActionAsync.
+        /// </summary>
+        /// <param name="_name">The name of the task</param>
+        /// <param name="_funkyTask">The task itself</param>
+        public TaskWrapper(string _name, Func<Task> _funkyTask)
+        {
+            name = _name;
+            funkyTask = _funkyTask;
         }
 
+        /// <summary>
+        /// Only call this if you are not using TaskManagerController, or else you can use TaskManagerController's CancelTask function
+        /// </summary>
         public void Cancel()
         {
             if (cancellationTokenSource != null && !cancellationTokenSource.IsCancellationRequested)
                 cancellationTokenSource.Cancel();
         }
-        public static async Task CreateTask(Action<CancellationTokenSource> action, string name, Action<TaskWrapper> onBegin = null, Action<TaskWrapper> onEnd = null)
+        /// <summary>
+        /// Only call this if you are not using TaskManagerController
+        /// </summary>
+        /// <param name="onBegin">Action to do when the task begins</param>
+        /// <param name="onEnd">Action to do when the task ends</param>
+        /// <returns></returns>
+        public async Task Start(Action<TaskWrapper> onBegin = null, Action<TaskWrapper> onEnd = null)
         {
-            using (var cancelTokenSource = new CancellationTokenSource())
+            if (cancellableAction != null)
             {
-                TaskWrapper tw = new TaskWrapper(name, cancelTokenSource);
-                await Task.Run(() => { onBegin?.Invoke(tw); action(cancelTokenSource); onEnd?.Invoke(tw); }, cancelTokenSource.Token);
-                //return tw;
+                using (cancellationTokenSource = new CancellationTokenSource())
+                {
+                    await Task.Run(() => { onBegin?.Invoke(this); cancellableAction(cancellationTokenSource); onEnd?.Invoke(this); }, cancellationTokenSource.Token);
+                }
             }
-        }
-        public static async Task CreateTask(Func<Task> task, string name, Action<TaskWrapper> onBegin = null, Action<TaskWrapper> onEnd = null)
-        {
-            using (var cancelTokenSource = new CancellationTokenSource())
+            else if (funkyTask != null)
             {
-                TaskWrapper tw = new TaskWrapper(name, cancelTokenSource);
-                onBegin?.Invoke(tw);
-                await Task.Run(task, cancelTokenSource.Token);
-                onEnd?.Invoke(tw);
-                //return tw;
+                using (cancellationTokenSource = new CancellationTokenSource())
+                {
+                    onBegin?.Invoke(this);
+                    await Task.Run(funkyTask, cancellationTokenSource.Token);
+                    onEnd?.Invoke(this);
+                }
             }
         }
     }

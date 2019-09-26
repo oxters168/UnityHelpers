@@ -10,11 +10,10 @@ namespace UnityHelpers
 {
     public class TaskManagerController : MonoBehaviour
     {
+        public int maxConcurrentTasks = 5;
         private static TaskManagerController taskManagerControllerInScene;
-        //private List<TaskWrapper> tasks = new List<TaskWrapper>();
-        private TaskWrapper runningTask;
-        private List<(string, Action<CancellationTokenSource>)> asyncActions = new List<(string, Action<CancellationTokenSource>)>();
-        private List<(string, Func<Task>)> funkyTasks = new List<(string, Func<Task>)>();
+        private List<TaskWrapper> tasks = new List<TaskWrapper>();
+        private List<TaskWrapper> runningTasks = new List<TaskWrapper>();
         private List<Action> actions = new List<Action>();
 
         public bool showDebugMessages;
@@ -26,47 +25,24 @@ namespace UnityHelpers
         }
         async void Update()
         {
-            if (asyncActions.Count > 0 && runningTask == null)
+            if (tasks.Count > 0 && runningTasks.Count < maxConcurrentTasks)
             {
-                int i = asyncActions.Count - 1;
-                string taskName = asyncActions[i].Item1;
-                Action<CancellationTokenSource> action = asyncActions[i].Item2;
-                asyncActions.RemoveAt(i);
-                await TaskWrapper.CreateTask(action, taskName, (task) =>
+                int i = tasks.Count - 1;
+                TaskWrapper currentTask = tasks[i];
+                tasks.RemoveAt(i);
+                await currentTask.Start((task) =>
                 {
                     if (showDebugMessages)
-                        Debug.Log("Running task " + taskName);
-                    //tasks.Add(task);
-                    runningTask = task;
+                        Debug.Log("Running task " + task.name);
+                    runningTasks.Add(task);
                 }, (task) =>
                 {
                     if (showDebugMessages)
-                        Debug.Log("Completed task " + taskName);
-                    //tasks.Remove(task);
-                    runningTask = null;
+                        Debug.Log("Completed task " + task.name);
+                    runningTasks.Remove(task);
                 });
             }
-            if (funkyTasks.Count > 0 && runningTask == null)
-            {
-                int i = funkyTasks.Count - 1;
-                string taskName = funkyTasks[i].Item1;
-                Func<Task> action = funkyTasks[i].Item2;
-                funkyTasks.RemoveAt(i);
-                await TaskWrapper.CreateTask(action, taskName, (task) =>
-                {
-                    if (showDebugMessages)
-                        Debug.Log("Running task " + taskName);
-                    //tasks.Add(task);
-                    runningTask = task;
-                }, (task) =>
-                {
-                    if (showDebugMessages)
-                        Debug.Log("Completed task " + taskName);
-                    //tasks.Remove(task);
-                    runningTask = null;
-                });
-            }
-            if (actions.Count > 0 && runningTask == null)
+            if (actions.Count > 0)
             {
                 int i = actions.Count - 1;
                 Action action = actions[i];
@@ -83,7 +59,7 @@ namespace UnityHelpers
 
             taskManagerControllerInScene.actions.Insert(0, action);
         }
-        public static void RunActionAsync(string name, Action<CancellationTokenSource> action)
+        public static TaskWrapper RunActionAsync(string name, Action<CancellationTokenSource> action)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
@@ -92,9 +68,11 @@ namespace UnityHelpers
             if (HasTask(name))
                 throw new InvalidOperationException("A task already exists with the name " + name);
 
-            taskManagerControllerInScene.asyncActions.Insert(0, (name, action));
+            TaskWrapper tw = new TaskWrapper(name, action);
+            taskManagerControllerInScene.tasks.Insert(0, tw);
+            return tw;
         }
-        public static void RunActionAsync(string name, Func<Task> action)
+        public static TaskWrapper RunActionAsync(string name, Func<Task> action)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
@@ -103,21 +81,27 @@ namespace UnityHelpers
             if (HasTask(name))
                 throw new InvalidOperationException("A task already exists with the name " + name);
 
-            taskManagerControllerInScene.funkyTasks.Insert(0, (name, action));
+            TaskWrapper tw = new TaskWrapper(name, action);
+            taskManagerControllerInScene.tasks.Insert(0, tw);
+            return tw;
         }
-        public static void RunActionAsync(Action<CancellationTokenSource> action)
+        public static TaskWrapper RunActionAsync(Action<CancellationTokenSource> action)
         {
             if (action == null)
                 throw new ArgumentNullException("Action cannot be null");
 
-            taskManagerControllerInScene.asyncActions.Insert(0, ("", action));
+            TaskWrapper tw = new TaskWrapper("", action);
+            taskManagerControllerInScene.tasks.Insert(0, tw);
+            return tw;
         }
-        public static void RunActionAsync(Func<Task> action)
+        public static TaskWrapper RunActionAsync(Func<Task> action)
         {
             if (action == null)
                 throw new ArgumentNullException("Action cannot be null");
 
-            taskManagerControllerInScene.funkyTasks.Insert(0, ("", action));
+            TaskWrapper tw = new TaskWrapper("", action);
+            taskManagerControllerInScene.tasks.Insert(0, tw);
+            return tw;
         }
         public static void CancelTask(string name)
         {
@@ -127,41 +111,48 @@ namespace UnityHelpers
             if (taskManagerControllerInScene.showDebugMessages)
                 Debug.Log("Cancelling task " + name);
 
-            //var tasks = taskManagerControllerInScene.tasks;
-            //TaskWrapper task = tasks.FirstOrDefault(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
-            TaskWrapper task = taskManagerControllerInScene.runningTask;
+            var runningTasks = taskManagerControllerInScene.runningTasks;
+            TaskWrapper task = runningTasks.FirstOrDefault(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
             if (task == null || !task.name.Equals(name, StringComparison.Ordinal))
             {
-                var asyncActions = taskManagerControllerInScene.asyncActions;
-                int actionIndex = asyncActions.FindIndex(checkedTask => checkedTask.Item1.Equals(name, StringComparison.Ordinal));
-                if (actionIndex >= 0)
-                    asyncActions.RemoveAt(actionIndex);
-                else
-                {
-                    var funkyTasks = taskManagerControllerInScene.funkyTasks;
-                    actionIndex = funkyTasks.FindIndex(checkedTask => checkedTask.Item1.Equals(name, StringComparison.Ordinal));
-                    if (actionIndex >= 0)
-                        funkyTasks.RemoveAt(actionIndex);
-                    else
-                        throw new KeyNotFoundException("Could not find task with name " + name);
-                }
+                var queuedTasks = taskManagerControllerInScene.tasks;
+                int taskIndex = queuedTasks.FindIndex(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
+                if (taskIndex >= 0)
+                    queuedTasks.RemoveAt(taskIndex);
             }
             else
             {
                 task.Cancel();
-                //tasks.Remove(task);
+                runningTasks.Remove(task);
             }
+        }
+        public static void CancelTask(TaskWrapper task)
+        {
+            if (task == null)
+                throw new ArgumentException("Task cannot be null");
+
+            if (taskManagerControllerInScene.showDebugMessages)
+                Debug.Log("Cancelling task " + task.name);
+
+            if (taskManagerControllerInScene.tasks.Contains(task))
+            {
+                taskManagerControllerInScene.tasks.Remove(task);
+            }
+            else if (taskManagerControllerInScene.runningTasks.Contains(task))
+            {
+                task.Cancel();
+                taskManagerControllerInScene.runningTasks.Remove(task);
+            }
+            else
+                Debug.LogError("Cannot cancel " + task.name + " since it is not queued or running");
         }
         public static bool HasTask(string name)
         {
             var self = taskManagerControllerInScene;
             bool contains = false;
-            if (self.asyncActions.Exists(item => item.Item1.Equals(name, StringComparison.Ordinal)))
+            if (self.tasks.Exists(item => item.name.Equals(name, StringComparison.Ordinal)))
                 contains = true;
-            else if (self.funkyTasks.Exists(item => item.Item1.Equals(name, StringComparison.Ordinal)))
-                contains = true;
-            //else if (self.tasks.Exists(task => task.name.Equals(name, StringComparison.Ordinal)))
-            else if (self.runningTask != null && self.runningTask.name.Equals(name, StringComparison.Ordinal))
+            else if (self.runningTasks.Exists(item => item.name.Equals(name, StringComparison.Ordinal)))
                 contains = true;
             return contains;
         }
