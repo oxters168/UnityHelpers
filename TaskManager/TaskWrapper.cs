@@ -11,7 +11,9 @@ namespace UnityHelpers
         private CancellationTokenSource cancellationTokenSource;
 
         private Action<CancellationTokenSource> cancellableAction;
-        private Func<Task> funkyTask;
+        private Func<CancellationTokenSource, Task> funkyTask;
+
+        public bool cancelled { get; private set; }
 
         /// <summary>
         /// Only create if you are not using TaskManagerController, or else call TaskManagerController's RunActionAsync.
@@ -30,7 +32,7 @@ namespace UnityHelpers
         /// </summary>
         /// <param name="_name">The name of the task</param>
         /// <param name="_funkyTask">The task itself</param>
-        public TaskWrapper(string _name, Func<Task> _funkyTask)
+        public TaskWrapper(string _name, Func<CancellationTokenSource, Task> _funkyTask)
         {
             name = _name;
             funkyTask = _funkyTask;
@@ -42,7 +44,11 @@ namespace UnityHelpers
         public void Cancel()
         {
             if (cancellationTokenSource != null && !cancellationTokenSource.IsCancellationRequested)
+            {
+                UnityEngine.Debug.Log("Sending cancel request through cancellation token source");
                 cancellationTokenSource.Cancel();
+                cancelled = true;
+            }
         }
         /// <summary>
         /// Only call this if you are not using TaskManagerController
@@ -64,7 +70,7 @@ namespace UnityHelpers
                 using (cancellationTokenSource = new CancellationTokenSource())
                 {
                     onBegin?.Invoke(this);
-                    await Task.Run(funkyTask, cancellationTokenSource.Token);
+                    await Task.Run(() => { return funkyTask(cancellationTokenSource); }, cancellationTokenSource.Token);
                     onEnd?.Invoke(this);
                 }
             }

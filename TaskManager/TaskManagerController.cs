@@ -72,7 +72,7 @@ namespace UnityHelpers
             taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
-        public static TaskWrapper RunActionAsync(string name, Func<Task> action)
+        public static TaskWrapper RunActionAsync(string name, Func<CancellationTokenSource, Task> action)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
@@ -94,7 +94,7 @@ namespace UnityHelpers
             taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
-        public static TaskWrapper RunActionAsync(Func<Task> action)
+        public static TaskWrapper RunActionAsync(Func<CancellationTokenSource, Task> action)
         {
             if (action == null)
                 throw new ArgumentNullException("Action cannot be null");
@@ -136,10 +136,15 @@ namespace UnityHelpers
 
             if (taskManagerControllerInScene.queuedTasks.Contains(task))
             {
+                if (taskManagerControllerInScene.showDebugMessages)
+                    Debug.Log("Removing " + task.name + " from queued tasks");
                 taskManagerControllerInScene.queuedTasks.Remove(task);
             }
             else if (taskManagerControllerInScene.runningTasks.Contains(task))
             {
+                if (taskManagerControllerInScene.showDebugMessages)
+                    Debug.Log(task.name + " is currently running, attempting to cancel then remove");
+
                 task.Cancel();
                 taskManagerControllerInScene.runningTasks.Remove(task);
             }
