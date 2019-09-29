@@ -12,7 +12,7 @@ namespace UnityHelpers
     {
         public int maxConcurrentTasks = 5;
         private static TaskManagerController taskManagerControllerInScene;
-        private List<TaskWrapper> tasks = new List<TaskWrapper>();
+        private List<TaskWrapper> queuedTasks = new List<TaskWrapper>();
         private List<TaskWrapper> runningTasks = new List<TaskWrapper>();
         private List<Action> actions = new List<Action>();
 
@@ -25,11 +25,11 @@ namespace UnityHelpers
         }
         async void Update()
         {
-            if (tasks.Count > 0 && runningTasks.Count < maxConcurrentTasks)
+            if (queuedTasks.Count > 0 && runningTasks.Count < maxConcurrentTasks)
             {
-                int i = tasks.Count - 1;
-                TaskWrapper currentTask = tasks[i];
-                tasks.RemoveAt(i);
+                int i = queuedTasks.Count - 1;
+                TaskWrapper currentTask = queuedTasks[i];
+                queuedTasks.RemoveAt(i);
                 await currentTask.Start((task) =>
                 {
                     if (showDebugMessages)
@@ -69,7 +69,7 @@ namespace UnityHelpers
                 throw new InvalidOperationException("A task already exists with the name " + name);
 
             TaskWrapper tw = new TaskWrapper(name, action);
-            taskManagerControllerInScene.tasks.Insert(0, tw);
+            taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
         public static TaskWrapper RunActionAsync(string name, Func<Task> action)
@@ -82,7 +82,7 @@ namespace UnityHelpers
                 throw new InvalidOperationException("A task already exists with the name " + name);
 
             TaskWrapper tw = new TaskWrapper(name, action);
-            taskManagerControllerInScene.tasks.Insert(0, tw);
+            taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
         public static TaskWrapper RunActionAsync(Action<CancellationTokenSource> action)
@@ -91,7 +91,7 @@ namespace UnityHelpers
                 throw new ArgumentNullException("Action cannot be null");
 
             TaskWrapper tw = new TaskWrapper("", action);
-            taskManagerControllerInScene.tasks.Insert(0, tw);
+            taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
         public static TaskWrapper RunActionAsync(Func<Task> action)
@@ -100,7 +100,7 @@ namespace UnityHelpers
                 throw new ArgumentNullException("Action cannot be null");
 
             TaskWrapper tw = new TaskWrapper("", action);
-            taskManagerControllerInScene.tasks.Insert(0, tw);
+            taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
         public static void CancelTask(string name)
@@ -115,7 +115,7 @@ namespace UnityHelpers
             TaskWrapper task = runningTasks.FirstOrDefault(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
             if (task == null || !task.name.Equals(name, StringComparison.Ordinal))
             {
-                var queuedTasks = taskManagerControllerInScene.tasks;
+                var queuedTasks = taskManagerControllerInScene.queuedTasks;
                 int taskIndex = queuedTasks.FindIndex(checkedTask => checkedTask.name.Equals(name, StringComparison.Ordinal));
                 if (taskIndex >= 0)
                     queuedTasks.RemoveAt(taskIndex);
@@ -134,9 +134,9 @@ namespace UnityHelpers
             if (taskManagerControllerInScene.showDebugMessages)
                 Debug.Log("Cancelling task " + task.name);
 
-            if (taskManagerControllerInScene.tasks.Contains(task))
+            if (taskManagerControllerInScene.queuedTasks.Contains(task))
             {
-                taskManagerControllerInScene.tasks.Remove(task);
+                taskManagerControllerInScene.queuedTasks.Remove(task);
             }
             else if (taskManagerControllerInScene.runningTasks.Contains(task))
             {
@@ -146,15 +146,47 @@ namespace UnityHelpers
             else
                 Debug.LogError("Cannot cancel " + task.name + " since it is not queued or running");
         }
-        public static bool HasTask(string name)
+        public static bool IsQueued(string taskName)
         {
-            var self = taskManagerControllerInScene;
-            bool contains = false;
-            if (self.tasks.Exists(item => item.name.Equals(name, StringComparison.Ordinal)))
-                contains = true;
-            else if (self.runningTasks.Exists(item => item.name.Equals(name, StringComparison.Ordinal)))
-                contains = true;
-            return contains;
+            if (string.IsNullOrEmpty(taskName))
+                throw new ArgumentNullException("Task name cannot be null or empty");
+
+            return taskManagerControllerInScene.queuedTasks.Exists(item => item.name.Equals(taskName, StringComparison.Ordinal));
+        }
+        public static bool IsQueued(TaskWrapper task)
+        {
+            if (task == null)
+                throw new ArgumentNullException("Task cannot be null");
+
+            return taskManagerControllerInScene.queuedTasks.Contains(task);
+        }
+        public static bool IsRunning(string taskName)
+        {
+            if (string.IsNullOrEmpty(taskName))
+                throw new ArgumentNullException("Task name cannot be null or empty");
+
+            return taskManagerControllerInScene.runningTasks.Exists(item => item.name.Equals(taskName, StringComparison.Ordinal));
+        }
+        public static bool IsRunning(TaskWrapper task)
+        {
+            if (task == null)
+                throw new ArgumentNullException("Task cannot be null");
+
+            return taskManagerControllerInScene.runningTasks.Contains(task);
+        }
+        public static bool HasTask(string taskName)
+        {
+            if (string.IsNullOrEmpty(taskName))
+                throw new ArgumentNullException("Task name cannot be null or empty");
+
+            return IsQueued(taskName) || IsRunning(taskName);
+        }
+        public static bool HasTask(TaskWrapper task)
+        {
+            if (task == null)
+                throw new ArgumentNullException("Task cannot be null");
+
+            return IsQueued(task) || IsRunning(task);
         }
     }
 }
