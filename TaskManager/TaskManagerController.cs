@@ -59,7 +59,7 @@ namespace UnityHelpers
 
             taskManagerControllerInScene.actions.Insert(0, action);
         }
-        public static TaskWrapper RunActionAsync(string name, Action<CancellationTokenSource> action)
+        public static TaskWrapper RunActionAsync(string name, Action<CancellationToken> action)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
@@ -72,7 +72,7 @@ namespace UnityHelpers
             taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
-        public static TaskWrapper RunActionAsync(string name, Func<CancellationTokenSource, Task> action)
+        public static TaskWrapper RunActionAsync(string name, Func<CancellationToken, Task> action)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
@@ -85,7 +85,7 @@ namespace UnityHelpers
             taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
-        public static TaskWrapper RunActionAsync(Action<CancellationTokenSource> action)
+        public static TaskWrapper RunActionAsync(Action<CancellationToken> action)
         {
             if (action == null)
                 throw new ArgumentNullException("Action cannot be null");
@@ -94,7 +94,7 @@ namespace UnityHelpers
             taskManagerControllerInScene.queuedTasks.Insert(0, tw);
             return tw;
         }
-        public static TaskWrapper RunActionAsync(Func<CancellationTokenSource, Task> action)
+        public static TaskWrapper RunActionAsync(Func<CancellationToken, Task> action)
         {
             if (action == null)
                 throw new ArgumentNullException("Action cannot be null");

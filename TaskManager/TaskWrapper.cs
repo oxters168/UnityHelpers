@@ -10,8 +10,8 @@ namespace UnityHelpers
         public string name { get; private set; }
         private CancellationTokenSource cancellationTokenSource;
 
-        private Action<CancellationTokenSource> cancellableAction;
-        private Func<CancellationTokenSource, Task> funkyTask;
+        private Action<CancellationToken> cancellableAction;
+        private Func<CancellationToken, Task> funkyTask;
 
         public bool cancelled { get; private set; }
 
@@ -20,7 +20,7 @@ namespace UnityHelpers
         /// </summary>
         /// <param name="_name">The name of the task</param>
         /// <param name="_cancellableAction">The task itself</param>
-        public TaskWrapper(string _name, Action<CancellationTokenSource> _cancellableAction)
+        public TaskWrapper(string _name, Action<CancellationToken> _cancellableAction)
         {
             name = _name;
             //task = _task;
@@ -32,7 +32,7 @@ namespace UnityHelpers
         /// </summary>
         /// <param name="_name">The name of the task</param>
         /// <param name="_funkyTask">The task itself</param>
-        public TaskWrapper(string _name, Func<CancellationTokenSource, Task> _funkyTask)
+        public TaskWrapper(string _name, Func<CancellationToken, Task> _funkyTask)
         {
             name = _name;
             funkyTask = _funkyTask;
@@ -62,7 +62,7 @@ namespace UnityHelpers
             {
                 using (cancellationTokenSource = new CancellationTokenSource())
                 {
-                    await Task.Run(() => { onBegin?.Invoke(this); cancellableAction(cancellationTokenSource); onEnd?.Invoke(this); }, cancellationTokenSource.Token);
+                    await Task.Run(() => { onBegin?.Invoke(this); cancellableAction(cancellationTokenSource.Token); onEnd?.Invoke(this); }, cancellationTokenSource.Token);
                 }
             }
             else if (funkyTask != null)
@@ -70,7 +70,7 @@ namespace UnityHelpers
                 using (cancellationTokenSource = new CancellationTokenSource())
                 {
                     onBegin?.Invoke(this);
-                    await Task.Run(() => { return funkyTask(cancellationTokenSource); }, cancellationTokenSource.Token);
+                    await Task.Run(() => { return funkyTask(cancellationTokenSource.Token); }, cancellationTokenSource.Token);
                     onEnd?.Invoke(this);
                 }
             }
