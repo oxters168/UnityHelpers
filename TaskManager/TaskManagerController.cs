@@ -20,11 +20,6 @@ namespace UnityHelpers
         private static List<TaskWrapper> runningTasks = new List<TaskWrapper>();
         private static List<Action> actions = new List<Action>();
 
-        //private void Awake()
-        //{
-        //    if (!taskManagerControllerInScene)
-        //        taskManagerControllerInScene = this;
-        //}
         async void Update()
         {
             if (queuedTasks.Count > 0 && runningTasks.Count < maxConcurrentTasks)
@@ -62,6 +57,7 @@ namespace UnityHelpers
                 taskManagerControllerInScene = new GameObject("Task Manager").AddComponent<TaskManagerController>();
             }
         }
+
         public static void RunAction(Action action)
         {
             if (action == null)
@@ -70,54 +66,73 @@ namespace UnityHelpers
             actions.Insert(0, action);
             CheckManagerExists();
         }
-        public static TaskWrapper RunActionAsync(string name, Action<CancellationToken> action)
+
+        public static TaskWrapper CreateTask(string name, Action<CancellationToken> action)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Name cannot be empty or null");
             if (action == null)
                 throw new ArgumentNullException("Action cannot be null");
-            if (HasTask(name))
-                throw new InvalidOperationException("A task already exists with the name " + name);
 
-            TaskWrapper tw = new TaskWrapper(name, action);
-            queuedTasks.Insert(0, tw);
-            CheckManagerExists();
+            return new TaskWrapper(name, action);
+        }
+        public static TaskWrapper CreateTask(string name, Func<CancellationToken, Task> action)
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException("Name cannot be empty or null");
+            if (action == null)
+                throw new ArgumentNullException("Action cannot be null");
+
+            return new TaskWrapper(name, action);
+        }
+        public static TaskWrapper CreateTask(Action<CancellationToken> action)
+        {
+            if (action == null)
+                throw new ArgumentNullException("Action cannot be null");
+
+            return new TaskWrapper("", action);
+        }
+        public static TaskWrapper CreateTask(Func<CancellationToken, Task> action)
+        {
+            if (action == null)
+                throw new ArgumentNullException("Action cannot be null");
+
+            return new TaskWrapper("", action);
+        }
+
+        public static TaskWrapper RunActionAsync(string name, Action<CancellationToken> action)
+        {
+            TaskWrapper tw = CreateTask(name, action);
+            QueueTask(tw);
             return tw;
         }
         public static TaskWrapper RunActionAsync(string name, Func<CancellationToken, Task> action)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentException("Name cannot be empty or null");
-            if (action == null)
-                throw new ArgumentNullException("Action cannot be null");
-            if (HasTask(name))
-                throw new InvalidOperationException("A task already exists with the name " + name);
-
-            TaskWrapper tw = new TaskWrapper(name, action);
-            queuedTasks.Insert(0, tw);
-            CheckManagerExists();
+            TaskWrapper tw = CreateTask(name, action);
+            QueueTask(tw);
             return tw;
         }
         public static TaskWrapper RunActionAsync(Action<CancellationToken> action)
         {
-            if (action == null)
-                throw new ArgumentNullException("Action cannot be null");
-
-            TaskWrapper tw = new TaskWrapper("", action);
-            queuedTasks.Insert(0, tw);
-            CheckManagerExists();
+            TaskWrapper tw = CreateTask(action);
+            QueueTask(tw);
             return tw;
         }
         public static TaskWrapper RunActionAsync(Func<CancellationToken, Task> action)
         {
-            if (action == null)
-                throw new ArgumentNullException("Action cannot be null");
-
-            TaskWrapper tw = new TaskWrapper("", action);
-            queuedTasks.Insert(0, tw);
-            CheckManagerExists();
+            TaskWrapper tw = CreateTask(action);
+            QueueTask(tw);
             return tw;
         }
+        public static void QueueTask(TaskWrapper task)
+        {
+            if (HasTask(task.name))
+                throw new InvalidOperationException("A queued or running task already exists with the name " + task.name);
+
+            queuedTasks.Insert(0, task);
+            CheckManagerExists();
+        }
+
         public static void CancelTask(string name)
         {
             if (string.IsNullOrEmpty(name))

@@ -58,6 +58,8 @@ namespace UnityHelpers
         /// <returns></returns>
         public async Task Start(Action<TaskWrapper> onBegin = null, Action<TaskWrapper> onEnd = null)
         {
+            cancelled = false;
+
             if (cancellableAction != null)
             {
                 using (cancellationTokenSource = new CancellationTokenSource())
