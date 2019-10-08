@@ -5,8 +5,17 @@ namespace UnityHelpers
 {
     public static class MeshHelpers
     {
-        public static readonly int MAX_VERTICES = 65534;
+        public const int MAX_VERTICES = 65534;
 
+        /// <summary>
+        /// Appends the vertices, triangle, normals, uv, uv2, uv3, uv4 of the other mesh to the current mesh.
+        /// </summary>
+        /// <param name="current">The mesh to append to</param>
+        /// <param name="other">The mesh that will be appended</param>
+        /// <param name="position">Position of TRS matrix</param>
+        /// <param name="rotation">Rotation of TRS matrix</param>
+        /// <param name="scale">Scale of TRS matrix</param>
+        /// <returns>False if the mesh being appended to cannot fit what is being appended</returns>
         public static bool Append(this Mesh current, Mesh other, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             if (other != null && current.vertices.Length + other.vertices.Length < MAX_VERTICES)
@@ -35,7 +44,14 @@ namespace UnityHelpers
             }
             return false;
         }
-
+        /// <summary>
+        /// Manipulates all vertices of an array using a TRS matrix
+        /// </summary>
+        /// <param name="original">The vertices to be manipulated</param>
+        /// <param name="position">The position of the TRS</param>
+        /// <param name="rotation">The rotation of the TRS</param>
+        /// <param name="scale">The scale of the TRS</param>
+        /// <returns>The manipulated vertices</returns>
         public static Vector3[] ManipulateVertices(this Vector3[] original, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             if (!rotation.IsValid())
@@ -51,6 +67,59 @@ namespace UnityHelpers
                 i++;
             }
             return manipulated;
+        }
+        /// <summary>
+        /// Checks if a point is on the surface of the object's mesh. This method goes through all the triangles of the mesh.
+        /// </summary>
+        /// <param name="currentObject">The object to be checked. Must have a MeshFilter component attached.</param>
+        /// <param name="point">The point to be checked.</param>
+        /// <returns>True if the point is on the surface of the mesh.</returns>
+        public static bool IsPointOnSurfaceOf(this Transform currentObject, Vector3 point)
+        {
+            bool onSurface = false;
+            MeshFilter meshFilter = currentObject.GetComponent<MeshFilter>();
+            if (meshFilter != null)
+            {
+                Mesh mesh = meshFilter.sharedMesh;
+                for (int i = 0; i < mesh.triangles.Length; i += 3)
+                {
+                    Vector3 triangleA = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 0]]);
+                    Vector3 triangleB = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 1]]);
+                    Vector3 triangleC = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 2]]);
+
+                    if (PointInTriangle(triangleA, triangleB, triangleC, point))
+                    {
+                        onSurface = true;
+                    }
+                }
+            }
+            return onSurface;
+        }
+        /// <summary>
+        /// Checks if a point is in a triangle.
+        /// </summary>
+        /// <param name="triangleA">First triangle vertex.</param>
+        /// <param name="triangleB">Second triangle vertex.</param>
+        /// <param name="triangleC">Third triangle vertex.</param>
+        /// <param name="point">The point to be checked.</param>
+        /// <returns>True if the point is in the triangle, false otherwise.</returns>
+        public static bool PointInTriangle(Vector3 triangleA, Vector3 triangleB, Vector3 triangleC, Vector3 point)
+        {
+            if (SameSide(point, triangleA, triangleB, triangleC) && SameSide(point, triangleB, triangleA, triangleC) && SameSide(point, triangleC, triangleA, triangleB))
+            {
+                Vector3 vc1 = Vector3.Cross(triangleA - triangleB, triangleA - triangleC);
+                if (Mathf.Abs(Vector3.Dot((triangleA - point).normalized, vc1.normalized)) <= .01f)
+                    return true;
+            }
+
+            return false;
+        }
+        private static bool SameSide(Vector3 p1, Vector3 p2, Vector3 A, Vector3 B)
+        {
+            Vector3 cp1 = Vector3.Cross(B - A, p1 - A);
+            Vector3 cp2 = Vector3.Cross(B - A, p2 - A);
+            if (Vector3.Dot(cp1, cp2) >= 0) return true;
+            return false;
         }
     }
 }
