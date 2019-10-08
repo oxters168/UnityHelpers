@@ -126,7 +126,9 @@ namespace UnityHelpers
         }
         public static void QueueTask(TaskWrapper task)
         {
-            if (HasTask(task.name))
+            if (HasTask(task))
+                throw new InvalidOperationException("The given task is already queued or running");
+            else if (!string.IsNullOrEmpty(task.name) && HasTask(task.name))
                 throw new InvalidOperationException("A queued or running task already exists with the name " + task.name);
 
             queuedTasks.Insert(0, task);
