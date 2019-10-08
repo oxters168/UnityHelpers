@@ -70,6 +70,37 @@ namespace UnityHelpers
         }
         /// <summary>
         /// Checks if a point is on the surface of the object's mesh. This method goes through all the triangles of the mesh.
+        /// This variant is faster, but it is less accurate. Works better with meshes that have triangles with consistently small areas around the size of the given range.
+        /// </summary>
+        /// <param name="currentObject">The object to be checked. Must have a MeshFilter component attached.</param>
+        /// <param name="point">The point to be checked.</param>
+        /// <param name="range">The distance from the point to check. (Clamped between 0.1 and MaxValue)</param>
+        /// <returns>True if the point is on the surface of the mesh up to a certain range.</returns>
+        public static bool IsPointOnSurfaceOf(this Transform currentObject, Vector3 point, float range)
+        {
+            bool onSurface = false;
+            MeshFilter meshFilter = currentObject.GetComponent<MeshFilter>();
+            if (meshFilter != null)
+            {
+                Bounds pointBounds = new Bounds(point, Vector3.one * Mathf.Clamp(range, 0.1f, float.MaxValue));
+
+                Mesh mesh = meshFilter.sharedMesh;
+                for (int i = 0; i < mesh.triangles.Length; i += 3)
+                {
+                    Vector3 vertexA = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 0]]);
+                    Vector3 vertexB = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 1]]);
+                    Vector3 vertexC = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 2]]);
+
+                    if (pointBounds.Contains(vertexA) || pointBounds.Contains(vertexB) || pointBounds.Contains(vertexC) || pointBounds.Contains(CalculateTriangleCenter(vertexA, vertexB, vertexC)))
+                    {
+                        onSurface = true;
+                    }
+                }
+            }
+            return onSurface;
+        }
+        /// <summary>
+        /// Checks if a point is on the surface of the object's mesh. This method goes through all the triangles of the mesh.
         /// </summary>
         /// <param name="currentObject">The object to be checked. Must have a MeshFilter component attached.</param>
         /// <param name="point">The point to be checked.</param>
@@ -94,6 +125,20 @@ namespace UnityHelpers
                 }
             }
             return onSurface;
+        }
+        public static Vector3 CalculateTriangleCenter(Vector3 vertexA, Vector3 vertexB, Vector3 vertexC)
+        {
+            return (vertexA + vertexB + vertexC) / 3f;
+        }
+        public static Vector3 CalculateTriangleNormal(Vector3 vertexA, Vector3 vertexB, Vector3 vertexC)
+        {
+            return Vector3.Cross(vertexB - vertexA, vertexC - vertexA).normalized;
+        }
+        public static float CalculateTriangleArea(Vector3 vertexA, Vector3 vertexB, Vector3 vertexC)
+        {
+            float distanceAB = Vector3.Distance(vertexA, vertexB);
+            float distanceAC = Vector3.Distance(vertexA, vertexC);
+            return (distanceAB * distanceAC * Mathf.Sin(Vector3.Angle(vertexB - vertexA, vertexC - vertexA) * Mathf.Deg2Rad)) / 2f;
         }
         /// <summary>
         /// Checks if a point is in a triangle.
