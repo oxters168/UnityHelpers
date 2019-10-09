@@ -13,11 +13,21 @@ public class OrbitCameraController : BaseCameraController
     public event ShiftHandler shiftRight, shiftLeft;
     public delegate void ShiftHandler();
 
+    private bool asserted;
+
     protected override void ApplyInput()
     {
-        Debug.Assert(target != null, "Orbit Camera: Target not set!");
+        if (!asserted)
+        {
+            Debug.Assert(target != null, "Orbit Camera: Target not set!");
+            asserted = true;
+        }
+
         if (target != null)
+        {
             transform.position = target.position + offset;
+            asserted = false;
+        }
         else
             transform.position = Vector3.zero;
 
