@@ -1,5 +1,7 @@
 ﻿using System.Linq;
 using UnityEngine;
+using MIConvexHull;
+using System.Collections.Generic;
 
 namespace UnityHelpers
 {
@@ -126,14 +128,35 @@ namespace UnityHelpers
             }
             return onSurface;
         }
+        /// <summary>
+        /// Gets the center of a triangle given it's three points.
+        /// </summary>
+        /// <param name="vertexA">First point of the triangle</param>
+        /// <param name="vertexB">Second point of the triangle</param>
+        /// <param name="vertexC">Third point of the triangle</param>
+        /// <returns>The center of the triangle</returns>
         public static Vector3 CalculateTriangleCenter(Vector3 vertexA, Vector3 vertexB, Vector3 vertexC)
         {
             return (vertexA + vertexB + vertexC) / 3f;
         }
+        /// <summary>
+        /// Calculates the normal of the triangle given it's three points.
+        /// </summary>
+        /// <param name="vertexA">First point of the triangle</param>
+        /// <param name="vertexB">Second point of the triangle</param>
+        /// <param name="vertexC">Third point of the triangle</param>
+        /// <returns>The direction perpendicular to the triangle's face</returns>
         public static Vector3 CalculateTriangleNormal(Vector3 vertexA, Vector3 vertexB, Vector3 vertexC)
         {
             return Vector3.Cross(vertexB - vertexA, vertexC - vertexA).normalized;
         }
+        /// <summary>
+        /// Calculates the area of the triangle given it's three points.
+        /// </summary>
+        /// <param name="vertexA">First point of the triangle</param>
+        /// <param name="vertexB">Second point of the triangle</param>
+        /// <param name="vertexC">Third point of the triangle</param>
+        /// <returns>The surface area of the face of the triangle</returns>
         public static float CalculateTriangleArea(Vector3 vertexA, Vector3 vertexB, Vector3 vertexC)
         {
             float distanceAB = Vector3.Distance(vertexA, vertexB);
@@ -165,6 +188,156 @@ namespace UnityHelpers
             Vector3 cp2 = Vector3.Cross(B - A, p2 - A);
             if (Vector3.Dot(cp1, cp2) >= 0) return true;
             return false;
+        }
+        /// <summary>
+        /// Creates a convex hull given the original vertices of a mesh.
+        /// </summary>
+        /// <param name="original">The original vertices of a mesh</param>
+        /// <param name="convexMesh">The output mesh data of the convex hull</param>
+        /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
+        /// <returns>The outcome of the process (successfull or unsuccessful)</returns>
+        public static ConvexHullCreationResultOutcome GenerateConvexHull(Vector3[] original, out MeshData convexMesh, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        {
+            convexMesh = new MeshData();
+
+            List<Vertex> vertices = original.Select(point => new Vertex(point)).ToList();
+            var creation = ConvexHull.Create(vertices, PlaneDistanceTolerance);
+            var result = creation.Result;
+
+            List<int> triangles = new List<int>();
+            List<Vertex> resultVertices = result.Points.ToList();
+            foreach (var face in result.Faces)
+            {
+                triangles.Add(resultVertices.IndexOf(face.Vertices[0]));
+                triangles.Add(resultVertices.IndexOf(face.Vertices[1]));
+                triangles.Add(resultVertices.IndexOf(face.Vertices[2]));
+            }
+
+            convexMesh.vertices = result.Points.Select(point => point.ToVec()).ToArray();
+            convexMesh.triangles = triangles.ToArray();
+            //convexMesh.RecalculateNormals();
+            //convexMesh.RecalculateBounds();
+
+            return creation.Outcome;
+        }
+
+        /// <summary>
+        /// The vertex proxy between MIConvexHull and Unity.
+        /// </summary>
+        private class Vertex : IVertex
+        {
+            public double[] Position { get; set; }
+            public Vertex(double x, double y, double z)
+            {
+                Position = new double[3] { x, y, z };
+            }
+            public Vertex(Vector3 ver)
+            {
+                Position = new double[3] { ver.x, ver.y, ver.z };
+            }
+            public Vector3 ToVec()
+            {
+                return new Vector3((float)Position[0], (float)Position[1], (float)Position[2]);
+            }
+        }
+
+        /// <summary>
+        /// The mesh data class is used to help with the creation of
+        /// meshes. The main reason for having a separate class is to
+        /// allow the manipulation of meshes on separate threads.
+        /// </summary>
+        public class MeshData
+        {
+            public static readonly int MAX_VERTICES = 65534;
+
+            private Mesh mesh;
+            public Vector3[] vertices = new Vector3[0];
+            public int[] triangles = new int[0];
+            public Vector3[] normals = new Vector3[0];
+            public Vector2[] uv = new Vector2[0];
+            public Vector2[] uv2 = new Vector2[0];
+            public Vector2[] uv3 = new Vector2[0];
+            public Vector2[] uv4 = new Vector2[0];
+
+            public void Dispose()
+            {
+                if (mesh != null)
+                    Object.Destroy(mesh);
+                mesh = null;
+
+                vertices = null;
+                triangles = null;
+                normals = null;
+                uv = null;
+                uv2 = null;
+                uv3 = null;
+                uv4 = null;
+            }
+
+            public bool Append(MeshData other, Vector3 position, Quaternion rotation, Vector3 scale)
+            {
+                if (other != null && vertices.Length + other.vertices.Length < MAX_VERTICES)
+                {
+                    Vector3[] manipulatedVertices = other.vertices.ManipulateVertices(position, rotation, scale);
+
+                    int[] correctedTriangles = new int[other.triangles.Length];
+                    for (int i = 0; i < correctedTriangles.Length; i++)
+                        correctedTriangles[i] = other.triangles[i] + vertices.Length;
+
+                    vertices = vertices.ToArray().Concat(manipulatedVertices).ToArray();
+                    triangles = triangles.ToArray().Concat(correctedTriangles).ToArray();
+                    normals = normals.ToArray().Concat(other.normals).ToArray();
+                    uv = uv.ToArray().Concat(other.uv).ToArray();
+                    uv2 = uv2.ToArray().Concat(other.uv2).ToArray();
+                    uv3 = uv3.ToArray().Concat(other.uv3).ToArray();
+                    uv4 = uv4.ToArray().Concat(other.uv4).ToArray();
+                    //vertices = DataParser.Merge(vertices, manipulatedVertices);
+                    //triangles = DataParser.Merge(triangles, correctedTriangles);
+                    //normals = DataParser.Merge(normals, other.normals);
+                    //uv = DataParser.Merge(uv, other.uv);
+                    //uv2 = DataParser.Merge(uv2, other.uv2);
+                    //uv3 = DataParser.Merge(uv3, other.uv3);
+                    //uv4 = DataParser.Merge(uv4, other.uv4);
+                    return true;
+                }
+                return false;
+            }
+
+            public Mesh GetMesh()
+            {
+                if (mesh == null)
+                {
+                    mesh = new Mesh();
+                    mesh.name = "Custom Mesh";
+                }
+
+                mesh.Clear();
+                mesh.vertices = vertices;
+                mesh.triangles = triangles;
+                if (uv.Length > 0)
+                    mesh.uv = uv;
+                if (uv2.Length > 0)
+                    mesh.uv2 = uv2;
+                if (uv3.Length > 0)
+                    mesh.uv3 = uv3;
+                if (uv4.Length > 0)
+                    mesh.uv4 = uv4;
+                if (normals.Length == vertices.Length)
+                    mesh.normals = normals;
+                else
+                    mesh.RecalculateNormals();
+
+                return mesh;
+            }
+            public System.Collections.IEnumerator DebugNormals()
+            {
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    Debug.DrawRay(vertices[i], normals[i], Color.blue, 10000);
+                    if (i % 100 == 0)
+                        yield return null;
+                }
+            }
         }
     }
 }
