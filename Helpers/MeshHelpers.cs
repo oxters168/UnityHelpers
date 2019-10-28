@@ -2,6 +2,8 @@
 using UnityEngine;
 using MIConvexHull;
 using System.Collections.Generic;
+using System.Linq;
+using g3;
 
 namespace UnityHelpers
 {
@@ -189,6 +191,42 @@ namespace UnityHelpers
             if (Vector3.Dot(cp1, cp2) >= 0) return true;
             return false;
         }
+
+        /// <summary>
+        /// Reduces the triangle count of the given mesh.
+        /// </summary>
+        /// <param name="vertices">The vertices of the mesh.</param>
+        /// <param name="triangles">The triangles of the mesh.</param>
+        /// <param name="normals">The normals of the mesh.</param>
+        /// <param name="trianglePercent">The percent of the original triangle count the final triangle count should be.</param>
+        /// <returns>The decimated mesh.</returns>
+        public static MeshData DecimateByTriangleCount(IEnumerable<Vector3> vertices, IEnumerable<int> triangles, IEnumerable<Vector3> normals, float trianglePercent = 0.5f)
+        {
+            var mesh = GenerateDynamicMesh(vertices, triangles, normals);
+            var reducer = new Reducer(mesh);
+            reducer.ReduceToTriangleCount(Mathf.RoundToInt(Mathf.Clamp01(trianglePercent) * (triangles.Count() / 3)));
+            return new MeshData(reducer.Mesh);
+        }
+        /// <summary>
+        /// Reduces the vertex count of the given mesh.
+        /// </summary>
+        /// <param name="vertices">The vertices of the mesh.</param>
+        /// <param name="triangles">The triangles of the mesh.</param>
+        /// <param name="normals">The normals of the mesh.</param>
+        /// <param name="vertexPercent">The percent of the original vertex count the final vertex count should be.</param>
+        /// <returns>The decimated mesh.</returns>
+        public static MeshData DecimateByVertexCount(IEnumerable<Vector3> vertices, IEnumerable<int> triangles, IEnumerable<Vector3> normals, float vertexPercent = 0.5f)
+        {
+            var mesh = GenerateDynamicMesh(vertices, triangles, normals);
+            var reducer = new Reducer(mesh);
+            reducer.ReduceToVertexCount(Mathf.RoundToInt(Mathf.Clamp01(vertexPercent) * vertices.Count()));
+            return new MeshData(reducer.Mesh);
+        }
+        private static DMesh3 GenerateDynamicMesh(IEnumerable<Vector3> vertices, IEnumerable<int> triangles, IEnumerable<Vector3> normals)
+        {
+            return DMesh3Builder.Build(vertices.Select(vertex => new Vector3f(vertex.x, vertex.y, vertex.z)), triangles, normals.Select(vector => new Vector3f(vector.x, vector.y, vector.z)));
+        }
+
         /// <summary>
         /// Creates a convex hull given the original vertices of a mesh.
         /// </summary>
@@ -254,11 +292,34 @@ namespace UnityHelpers
             public Vector3[] vertices = new Vector3[0];
             public int[] triangles = new int[0];
             public Vector3[] normals = new Vector3[0];
+            public Color[] colors = new Color[0];
             public Vector2[] uv = new Vector2[0];
             public Vector2[] uv2 = new Vector2[0];
             public Vector2[] uv3 = new Vector2[0];
             public Vector2[] uv4 = new Vector2[0];
 
+            public MeshData()
+            {
+
+            }
+            public MeshData(Mesh _mesh)
+            {
+                mesh = _mesh;
+                vertices = mesh.vertices;
+                triangles = mesh.triangles;
+                normals = mesh.normals;
+                colors = mesh.colors;
+                uv = mesh.uv;
+                uv2 = mesh.uv2;
+                uv3 = mesh.uv3;
+                uv4 = mesh.uv4;
+            }
+            public MeshData(DMesh3 _mesh)
+            {
+                _mesh = new DMesh3(_mesh, true);
+                vertices = _mesh.VertexIndices().Select(vID => { var vertex = _mesh.GetVertexf(vID); return new Vector3(vertex.x, vertex.y, vertex.z); }).ToArray();
+                triangles = _mesh.TriangleIndices().SelectMany(tID => _mesh.GetTriangle(tID).array).ToArray();
+            }
             public void Dispose()
             {
                 if (mesh != null)
@@ -314,6 +375,7 @@ namespace UnityHelpers
                 mesh.Clear();
                 mesh.vertices = vertices;
                 mesh.triangles = triangles;
+                mesh.colors = colors;
                 if (uv.Length > 0)
                     mesh.uv = uv;
                 if (uv2.Length > 0)
