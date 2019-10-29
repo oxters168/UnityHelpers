@@ -12,7 +12,7 @@ namespace UnityHelpers
         /// <param name="camera">The camera to apply the calculation to</param>
         /// <param name="worldWidth">The requested world width</param>
         /// <returns>Camera forward distance</returns>
-        public static float PerspectiveDistanceToWidth(this Camera camera, float worldWidth)
+        public static float PerspectiveDistanceFromWidth(this Camera camera, float worldWidth)
         {
             Vector2 dimensions = PerspectiveFrustumAtNear(camera);
             return (worldWidth / dimensions.x) * camera.nearClipPlane;
@@ -24,7 +24,7 @@ namespace UnityHelpers
         /// <param name="camera">The camera to apply the calculation to</param>
         /// <param name="worldHeight">The requested world height</param>
         /// <returns>Camera forward distance</returns>
-        public static float PerspectiveDistanceToHeight(this Camera camera, float worldHeight)
+        public static float PerspectiveDistanceFromHeight(this Camera camera, float worldHeight)
         {
             Vector2 dimensions = PerspectiveFrustumAtNear(camera);
             return (worldHeight / dimensions.y) * camera.nearClipPlane;
