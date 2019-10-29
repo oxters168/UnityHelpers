@@ -11,7 +11,7 @@ namespace UnityHelpers
     public class TaskManagerController : MonoBehaviour
     {
         public int maxConcurrentTasks = 5;
-        public bool showDebugMessages = true;
+        public bool showDebugMessages;
 
         private static bool taskManagerCreated;
         private static TaskManagerController taskManagerControllerInScene;
