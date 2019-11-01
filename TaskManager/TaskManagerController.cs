@@ -155,7 +155,6 @@ namespace UnityHelpers
             else
             {
                 task.Cancel();
-                runningTasks.Remove(task);
             }
         }
         public static void CancelTask(TaskWrapper task)
@@ -178,7 +177,6 @@ namespace UnityHelpers
                     Debug.Log(task.name + " is currently running, attempting to cancel then remove");
 
                 task.Cancel();
-                runningTasks.Remove(task);
             }
             else
                 Debug.LogError("Cannot cancel " + task.name + " since it is not queued or running");

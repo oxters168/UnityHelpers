@@ -6,6 +6,7 @@ namespace UnityHelpers
     {
         public Transform target;
         public Vector3 offset;
+        public Vector3 lookDirection;
 
         [Range(0.01f, 1)]
         public float shiftMinimum = 0.5f;
@@ -26,7 +27,8 @@ namespace UnityHelpers
             if (target != null)
             {
                 transform.position = target.position + offset;
-                transform.forward = target.forward;
+                //transform.forward = target.forward;
+                transform.rotation = Quaternion.Euler(lookDirection);
                 asserted = false;
             }
             else
