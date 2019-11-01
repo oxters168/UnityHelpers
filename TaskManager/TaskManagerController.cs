@@ -185,45 +185,45 @@ namespace UnityHelpers
         }
         public static bool IsQueued(string taskName)
         {
-            if (string.IsNullOrEmpty(taskName))
-                throw new ArgumentNullException("Task name cannot be null or empty");
+            //if (string.IsNullOrEmpty(taskName))
+            //    throw new ArgumentNullException("Task name cannot be null or empty");
 
-            return queuedTasks.Exists(item => item.name.Equals(taskName, StringComparison.Ordinal));
+            return !string.IsNullOrEmpty(taskName) && queuedTasks.Exists(item => item.name.Equals(taskName, StringComparison.Ordinal));
         }
         public static bool IsQueued(TaskWrapper task)
         {
-            if (task == null)
-                throw new ArgumentNullException("Task cannot be null");
+            //if (task == null)
+            //    throw new ArgumentNullException("Task cannot be null");
 
-            return queuedTasks.Contains(task);
+            return task != null && queuedTasks.Contains(task);
         }
         public static bool IsRunning(string taskName)
         {
-            if (string.IsNullOrEmpty(taskName))
-                throw new ArgumentNullException("Task name cannot be null or empty");
+            //if (string.IsNullOrEmpty(taskName))
+            //    throw new ArgumentNullException("Task name cannot be null or empty");
 
-            return runningTasks.Exists(item => item.name.Equals(taskName, StringComparison.Ordinal));
+            return !string.IsNullOrEmpty(taskName) && runningTasks.Exists(item => item.name.Equals(taskName, StringComparison.Ordinal));
         }
         public static bool IsRunning(TaskWrapper task)
         {
-            if (task == null)
-                throw new ArgumentNullException("Task cannot be null");
+            //if (task == null)
+            //    throw new ArgumentNullException("Task cannot be null");
 
-            return runningTasks.Contains(task);
+            return task != null && runningTasks.Contains(task);
         }
         public static bool HasTask(string taskName)
         {
-            if (string.IsNullOrEmpty(taskName))
-                throw new ArgumentNullException("Task name cannot be null or empty");
+            //if (string.IsNullOrEmpty(taskName))
+            //    throw new ArgumentNullException("Task name cannot be null or empty");
 
-            return IsQueued(taskName) || IsRunning(taskName);
+            return !string.IsNullOrEmpty(taskName) && (IsQueued(taskName) || IsRunning(taskName));
         }
         public static bool HasTask(TaskWrapper task)
         {
-            if (task == null)
-                throw new ArgumentNullException("Task cannot be null");
+            //if (task == null)
+            //    throw new ArgumentNullException("Task cannot be null");
 
-            return IsQueued(task) || IsRunning(task);
+            return task != null && (IsQueued(task) || IsRunning(task));
         }
     }
 }

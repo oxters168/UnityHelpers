@@ -9,7 +9,7 @@ namespace UnityHelpers
         public float lookVertical { get; protected set; }
         public float lookHorizontal { get; protected set; }
 
-        private void Update()
+        private void FixedUpdate()
         {
             ApplyInput();
         }
