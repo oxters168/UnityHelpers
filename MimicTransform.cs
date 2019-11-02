@@ -7,7 +7,7 @@ namespace UnityHelpers
         public Transform other;
         private bool errored;
 
-        void FixedUpdate()
+        void Update()
         {
             if (other != null)
             {
