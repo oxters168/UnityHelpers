@@ -44,7 +44,7 @@ namespace UnityHelpers
                 int i = actions.Count - 1;
                 Action action = actions[i];
                 actions.RemoveAt(i);
-                Debug.Assert(action != null);
+                Debug.Assert(action != null, "TaskManagerController: Given action is null");
                 action?.Invoke();
             }
         }
