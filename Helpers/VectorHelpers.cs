@@ -151,5 +151,26 @@ namespace UnityHelpers
 
             return new Vector2(x, y);
         }
+
+        /// <summary>
+        /// Sets the x, y, and z values' decimal places
+        /// </summary>
+        /// <param name="vector3">The original Vector3</param>
+        /// <param name="places">Number of decimal places to keep</param>
+        /// <returns>The vector with it's values' decimal places adjusted</returns>
+        public static Vector3 SetDecimalPlaces(this Vector3 vector3, uint places)
+        {
+            return new Vector3(MathHelpers.SetDecimalPlaces(vector3.x, places), MathHelpers.SetDecimalPlaces(vector3.y, places), MathHelpers.SetDecimalPlaces(vector3.z, places));
+        }
+        /// <summary>
+        /// Sets the x and y values' decimal places
+        /// </summary>
+        /// <param name="vector2">The original Vector2</param>
+        /// <param name="places">Number of decimal places to keep</param>
+        /// <returns>The vector with it's values' decimal places adjusted</returns>
+        public static Vector2 SetDecimalPlaces(this Vector2 vector2, uint places)
+        {
+            return new Vector2(MathHelpers.SetDecimalPlaces(vector2.x, places), MathHelpers.SetDecimalPlaces(vector2.y, places));
+        }
     }
 }

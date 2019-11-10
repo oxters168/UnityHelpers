@@ -35,5 +35,15 @@ namespace UnityHelpers
 
             return quaternion;
         }
+        /// <summary>
+        /// Sets the x, y, z, and w values' decimal places
+        /// </summary>
+        /// <param name="quaternion">The original quaternion rotation</param>
+        /// <param name="places">Number of decimal places to keep</param>
+        /// <returns>The quaternion with it's values' decimal places adjusted</returns>
+        public static Quaternion SetDecimalPlaces(this Quaternion quaternion, uint places)
+        {
+            return new Quaternion(MathHelpers.SetDecimalPlaces(quaternion.x, places), MathHelpers.SetDecimalPlaces(quaternion.y, places), MathHelpers.SetDecimalPlaces(quaternion.z, places), MathHelpers.SetDecimalPlaces(quaternion.w, places));
+        }
     }
 }
