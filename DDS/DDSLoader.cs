@@ -4,7 +4,6 @@
 using System;
 using UnityEngine;
 using System.IO;
-using UnitySourceEngine;
 
 namespace UnityHelpers
 {
