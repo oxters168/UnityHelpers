@@ -44,7 +44,7 @@ namespace UnityHelpers
             return Quaternion.AngleAxis(90 - Vector3.Angle(vector, Vector3.up), Vector3.Cross(planeNormal, vector)) * vector;
         }
         /// <summary>
-        /// Vector3 add function
+        /// Adds two vectors
         /// </summary>
         /// <param name="v1">First vector</param>
         /// <param name="v2">Second vector</param>
@@ -60,7 +60,7 @@ namespace UnityHelpers
         /// <returns>The average vector</returns>
         public static Vector3 Average(params Vector3[] vectors)
         {
-            return Average((IEnumerable<Vector3>)vectors);
+            return vectors.Average();
         }
         /// <summary>
         /// Gets the average of a list vector3s
@@ -86,6 +86,35 @@ namespace UnityHelpers
                 vector3.z = 0;
 
             return vector3;
+        }
+
+        /// <summary>
+        /// Adds two vectors
+        /// </summary>
+        /// <param name="v1">First vector</param>
+        /// <param name="v2">Second vector</param>
+        /// <returns>The sum of the two vectors</returns>
+        public static Vector2 Add(this Vector2 v1, Vector2 v2)
+        {
+            return v1 + v2;
+        }
+        /// <summary>
+        /// Gets the average of a list of vector2s
+        /// </summary>
+        /// <param name="vectors">To be averaged</param>
+        /// <returns>The average vector</returns>
+        public static Vector2 Average(params Vector2[] vectors)
+        {
+            return vectors.Average();
+        }
+        /// <summary>
+        /// Gets the average of a list of vector2s
+        /// </summary>
+        /// <param name="vectors">To be averaged</param>
+        /// <returns>The average vector</returns>
+        public static Vector2 Average(this IEnumerable<Vector2> vectors)
+        {
+            return vectors.Aggregate(Add) / vectors.Count();
         }
 
         /// <summary>
