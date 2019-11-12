@@ -65,5 +65,22 @@ namespace UnityHelpers
 
             action?.Invoke(predicateOutput || pred == null);
         }
+        /// <summary>
+        /// Does an action over a set period of time giving the percent complete as parameter.
+        /// </summary>
+        /// <param name="action">The action to be done</param>
+        /// <param name="time">The amount of time in seconds to do the action in</param>
+        /// <returns>Coroutine enumerator</returns>
+        public static IEnumerator TimedAction(Action<float> action, float time, Action onComplete = null)
+        {
+            time = Mathf.Clamp(time, 0, float.MaxValue);
+            float startTime = Time.time;
+            while (Time.time - startTime <= time)
+            {
+                action?.Invoke((Time.time - startTime) / time);
+                yield return null;
+            }
+            onComplete?.Invoke();
+        }
     }
 }
