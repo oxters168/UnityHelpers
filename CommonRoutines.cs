@@ -50,26 +50,20 @@ namespace UnityHelpers
         /// <param name="action">The action to do after done waiting</param>
         /// <param name="timeout">The time to wait until invoking action; if set to 0 or less, will not time out</param>
         /// <param name="pred">The condition that will cause the action to be invoked; if not set, will rely on timeout</param>
-        /// <param name="onFail">These actions will be invoked instead when a condition has been set but does not happen before time out</param>
         /// <returns>Coroutine enumerator</returns>
-        public static IEnumerator WaitToDoAction(Action action, float timeout = 5, Func<bool> pred = null, Action onFail = null)
+        public static IEnumerator WaitToDoAction(Action<bool> action, float timeout = 5, Func<bool> pred = null)
         {
             float startTime = Time.time;
 
             bool predicateOutput = pred != null ? pred() : false;
-            while ((timeout < 0 || Time.time - startTime <= timeout) && !predicateOutput)
+            while ((timeout > 0 && Time.time - startTime <= timeout) && (pred == null || !predicateOutput) || (timeout <= 0 && pred != null && !predicateOutput))
             {
                 yield return null;
                 if (pred != null)
                     predicateOutput = pred();
             }
 
-            if (predicateOutput || pred == null)
-            {
-                action?.Invoke();
-            }
-            else
-                onFail?.Invoke();
+            action?.Invoke(predicateOutput || pred == null);
         }
     }
 }
