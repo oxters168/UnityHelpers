@@ -9,15 +9,17 @@ namespace UnityHelpers
         /// Gets all the renderers in the transform and gets their total bounds.
         /// </summary>
         /// <param name="transform">The root transform of the object</param>
+        /// <param name="includeDisabled">If set to true includes renderers that are on disabled gameobjects</param>
         /// <param name="worldSpace">An option to return the bounds' center to be relative or absolute</param>
         /// <returns>A bounds that encapsulates the entire model</returns>
-        public static Bounds GetTotalBounds(this Transform transform, bool worldSpace = true)
+        public static Bounds GetTotalBounds(this Transform transform, bool includeDisabled = false, bool worldSpace = true)
         {
             Bounds totalBounds = new Bounds();
 
             List<Bounds> innerBounds = new List<Bounds>();
             foreach (Renderer renderer in transform.GetComponentsInChildren<Renderer>(true))
-                innerBounds.Add(renderer.bounds);
+                if (includeDisabled || renderer.gameObject.activeSelf)
+                    innerBounds.Add(renderer.bounds);
             totalBounds = Combine(innerBounds.ToArray());
             if (!worldSpace)
                 totalBounds.center = transform.InverseTransformPoint(totalBounds.center);
