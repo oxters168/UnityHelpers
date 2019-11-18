@@ -44,6 +44,19 @@ namespace UnityHelpers
             return Quaternion.AngleAxis(90 - Vector3.Angle(vector, Vector3.up), Vector3.Cross(planeNormal, vector)) * vector;
         }
         /// <summary>
+        /// Shifts a point to a surface
+        /// </summary>
+        /// <param name="point">The point to be shifted</param>
+        /// <param name="pointAlreadyOnSurface">A point already on the surface</param>
+        /// <param name="surfaceNormal">The surface's normal</param>
+        /// <returns>The original point shifted to the surface</returns>
+        public static Vector3 ProjectPointToSurface(this Vector3 point, Vector3 pointAlreadyOnSurface, Vector3 surfaceNormal)
+        {
+            Vector3 offset = Vector3.Project(point - pointAlreadyOnSurface, surfaceNormal);
+
+            return point - offset;
+        }
+        /// <summary>
         /// Adds two vectors
         /// </summary>
         /// <param name="v1">First vector</param>
