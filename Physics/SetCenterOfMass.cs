@@ -13,6 +13,9 @@ namespace UnityHelpers
         [DraggablePoint(true)]
         public Vector3 centerOfMass;
 
+        [Range(0, float.MaxValue)]
+        public float gizmoSize;
+
         private void Start()
         {
             body = GetComponent<Rigidbody>();
@@ -27,23 +30,23 @@ namespace UnityHelpers
         }
         void Update()
         {
-            if (!Application.isPlaying)
+            if (body != null)
             {
-                if (body != null)
+                Vector3 newOffset = centerOfMass - originalCenterOfMass;
+                if (newOffset != centerOfMassOffset)
                 {
-                    Vector3 newOffset = centerOfMass - originalCenterOfMass;
-                    if (newOffset != centerOfMassOffset)
-                    {
-                        centerOfMassOffset = newOffset;
-                        body.centerOfMass = originalCenterOfMass + centerOfMassOffset;
-                    }
+                    centerOfMassOffset = newOffset;
+                    body.centerOfMass = originalCenterOfMass + centerOfMassOffset;
                 }
             }
         }
         private void OnDrawGizmos()
         {
-            Gizmos.color = Color.green;
-            Gizmos.DrawSphere(body.worldCenterOfMass, 0.1f);
+            if (gizmoSize > 0)
+            {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawSphere(body.worldCenterOfMass, gizmoSize);
+            }
         }
     }
 }
