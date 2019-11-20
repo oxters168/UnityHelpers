@@ -75,6 +75,7 @@ namespace UnityHelpers
                 collisionState = colState,
                 sender = gameObject,
                 collidedWith = col.gameObject,
+                otherCollider = col.collider,
                 collision = col,
             };
         }
@@ -188,9 +189,6 @@ namespace UnityHelpers
             public CollisionState collisionState { get; internal set; }
             public GameObject sender { get; internal set; }
             public GameObject collidedWith { get; internal set; }
-            /// <summary>
-            /// If the collision is not trigger this value will be null
-            /// </summary>
             public Collider otherCollider { get; internal set; }
             /// <summary>
             /// If the collision is trigger this value will be null
