@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace UnityHelpers
 {
+    /// <summary>
+    /// I don't remember what exactly was the purpose of this script, but it looks like
+    /// it was meant for when hitting another rigidbody with multiple colliders.
+    /// </summary>
     public class CompoundCollision : MonoBehaviour
     {
         private Dictionary<GameObject, int> hits = new Dictionary<GameObject, int>();

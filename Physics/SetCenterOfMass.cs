@@ -42,7 +42,7 @@ namespace UnityHelpers
         }
         private void OnDrawGizmos()
         {
-            if (gizmoSize > 0)
+            if (body != null && gizmoSize > 0)
             {
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawSphere(body.worldCenterOfMass, gizmoSize);
