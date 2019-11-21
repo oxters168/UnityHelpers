@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace UnityHelpers
@@ -8,7 +9,7 @@ namespace UnityHelpers
     /// </summary>
     public class DebugPanel : MonoBehaviour
     {
-        private static Dictionary<string, (bool, object)> debugValues = new Dictionary<string, (bool, object)>();
+        private static Dictionary<string, (float, float, object)> debugValues = new Dictionary<string, (float, float, object)>();
         public TMPro.TextMeshProUGUI output;
         private System.Text.StringBuilder builtOutput = new System.Text.StringBuilder();
 
@@ -18,10 +19,8 @@ namespace UnityHelpers
             List<string> toBeRemoved = new List<string>();
             foreach (var debugValue in debugValues)
             {
-                builtOutput.AppendLine(debugValue.Key + ": " + debugValue.Value.Item2);
-                if (!debugValue.Value.Item1)
-                    debugValues[debugValue.Key] = (false, debugValue.Value.Item2);
-                else
+                builtOutput.AppendLine(debugValue.Key + ": " + debugValue.Value.Item3);
+                if (Time.time - debugValue.Value.Item2 > debugValue.Value.Item1)
                     toBeRemoved.Add(debugValue.Key);
             }
             foreach (var key in toBeRemoved)
@@ -32,7 +31,11 @@ namespace UnityHelpers
 
         public static void Log(string name, object value)
         {
-            debugValues[name] = (true, value);
+            Log(name, value, Time.fixedDeltaTime);
+        }
+        public static void Log(string name, object value, float showtime)
+        {
+            debugValues[name] = (showtime, Time.time, value);
         }
     }
 }

@@ -166,7 +166,7 @@ namespace UnityHelpers
             Collider[] childrenColliders = GetComponentsInChildren<Collider>(true);
             foreach (var collider in childrenColliders)
             {
-                if (collider.transform.parent == transform)
+                if (collider.transform.parent.GetComponentInParent<TreeCollider>().transform == transform)
                 {
                     var childTreeCollider = collider.gameObject.GetComponent<TreeCollider>();
                     if (childTreeCollider == null)

@@ -79,26 +79,39 @@ namespace UnityHelpers
         /// <param name="point">The point to be checked.</param>
         /// <param name="range">The distance from the point to check. (Clamped between 0.1 and MaxValue)</param>
         /// <returns>True if the point is on the surface of the mesh up to a certain range.</returns>
-        public static bool IsPointOnSurfaceOf(this Transform currentObject, Vector3 point, float range)
+        public static bool IsPointOnSurface(this Transform currentObject, Vector3 point, float range)
         {
             bool onSurface = false;
             MeshFilter meshFilter = currentObject.GetComponent<MeshFilter>();
             if (meshFilter != null)
             {
-                Bounds pointBounds = new Bounds(point, Vector3.one * Mathf.Clamp(range, 0.1f, float.MaxValue));
-
                 Mesh mesh = meshFilter.sharedMesh;
-                for (int i = 0; i < mesh.triangles.Length; i += 3)
-                {
-                    Vector3 vertexA = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 0]]);
-                    Vector3 vertexB = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 1]]);
-                    Vector3 vertexC = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 2]]);
+                onSurface = mesh.IsPointOnSurface(currentObject.InverseTransformPoint(point), range);
+            }
+            return onSurface;
+        }
+        /// <summary>
+        /// Checks if a point is on the surface of the mesh. This method goes through all the triangles of the mesh.
+        /// This variant is faster, but it is less accurate. Works better with meshes that have triangles with consistently small areas around the size of the given range.
+        /// </summary>
+        /// <param name="mesh">The mesh to be checked.</param>
+        /// <param name="point">The point to be checked.</param>
+        /// <param name="range">The distance from the point to check. (Clamped between 0.1 and MaxValue)</param>
+        /// <returns>True if the point is on the surface of the mesh up to a certain range.</returns>
+        public static bool IsPointOnSurface(this Mesh mesh, Vector3 point, float range)
+        {
+            bool onSurface = false;
 
-                    if (pointBounds.Contains(vertexA) || pointBounds.Contains(vertexB) || pointBounds.Contains(vertexC) || pointBounds.Contains(CalculateTriangleCenter(vertexA, vertexB, vertexC)))
-                    {
-                        onSurface = true;
-                    }
-                }
+            Bounds pointBounds = new Bounds(point, Vector3.one * Mathf.Clamp(range, 0.1f, float.MaxValue));
+
+            for (int i = 0; i < mesh.triangles.Length; i += 3)
+            {
+                Vector3 vertexA = mesh.vertices[mesh.triangles[i + 0]];
+                Vector3 vertexB = mesh.vertices[mesh.triangles[i + 1]];
+                Vector3 vertexC = mesh.vertices[mesh.triangles[i + 2]];
+
+                if (pointBounds.Contains(vertexA) || pointBounds.Contains(vertexB) || pointBounds.Contains(vertexC) || pointBounds.Contains(CalculateTriangleCenter(vertexA, vertexB, vertexC)))
+                    onSurface = true;
             }
             return onSurface;
         }
@@ -108,26 +121,70 @@ namespace UnityHelpers
         /// <param name="currentObject">The object to be checked. Must have a MeshFilter component attached.</param>
         /// <param name="point">The point to be checked.</param>
         /// <returns>True if the point is on the surface of the mesh.</returns>
-        public static bool IsPointOnSurfaceOf(this Transform currentObject, Vector3 point)
+        public static bool IsPointOnSurface(this Transform currentObject, Vector3 point)
         {
             bool onSurface = false;
             MeshFilter meshFilter = currentObject.GetComponent<MeshFilter>();
             if (meshFilter != null)
             {
                 Mesh mesh = meshFilter.sharedMesh;
-                for (int i = 0; i < mesh.triangles.Length; i += 3)
-                {
-                    Vector3 triangleA = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 0]]);
-                    Vector3 triangleB = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 1]]);
-                    Vector3 triangleC = currentObject.transform.TransformPoint(mesh.vertices[mesh.triangles[i + 2]]);
+                onSurface = mesh.IsPointOnSurface(currentObject.InverseTransformPoint(point));
+            }
+            return onSurface;
+        }
+        /// <summary>
+        /// Checks if a point is on the surface of the mesh. This method goes through all the triangles of the mesh.
+        /// </summary>
+        /// <param name="mesh">The mesh to be checked.</param>
+        /// <param name="point">The point to be checked.</param>
+        /// <returns>True if the point is on the surface of the mesh.</returns>
+        public static bool IsPointOnSurface(this Mesh mesh, Vector3 point)
+        {
+            bool onSurface = false;
+            for (int i = 0; i < mesh.triangles.Length; i += 3)
+            {
+                Vector3 triangleA = mesh.vertices[mesh.triangles[i + 0]];
+                Vector3 triangleB = mesh.vertices[mesh.triangles[i + 1]];
+                Vector3 triangleC = mesh.vertices[mesh.triangles[i + 2]];
 
-                    if (PointInTriangle(triangleA, triangleB, triangleC, point))
-                    {
-                        onSurface = true;
-                    }
+                if (PointInTriangle(triangleA, triangleB, triangleC, point))
+                {
+                    onSurface = true;
                 }
             }
             return onSurface;
+        }
+        /// <summary>
+        /// Checks if a point is inside of the object's mesh. This function is slow due to the need to build a spatial data structure using geometry3Sharp.
+        /// </summary>
+        /// <param name="currentObject">The object to be checked. Must have a MeshFilter component attached.</param>
+        /// <param name="point">The point in question.</param>
+        /// <returns>Whether the point is inside the mesh.</returns>
+        public static bool IsPointInside(this Transform currentObject, Vector3 point)
+        {
+            bool isInside = false;
+            MeshFilter meshFilter = currentObject.GetComponent<MeshFilter>();
+
+            if (meshFilter != null)
+            {
+                Mesh mesh = meshFilter.sharedMesh;
+                isInside = mesh.IsPointInside(currentObject.InverseTransformPoint(point));
+            }
+
+            return isInside;
+        }
+        /// <summary>
+        /// Checks if a point is inside of a mesh. This function is slow due to the need to build a spatial data structure using geometry3Sharp.
+        /// </summary>
+        /// <param name="mesh">The mesh to be checked.</param>
+        /// <param name="point">The point in question.</param>
+        /// <returns>Whether the point is inside the mesh.</returns>
+        public static bool IsPointInside(this Mesh mesh, Vector3 point)
+        {
+            var mesh3 = GenerateDynamicMesh(mesh.vertices, mesh.triangles, mesh.normals);
+            var spatial = new DMeshAABBTree3(mesh3);
+            spatial.Build();
+            return spatial.IsInside(new Vector3d(point.x, point.y, point.z));
         }
         /// <summary>
         /// Gets the center of a triangle given it's three points.
