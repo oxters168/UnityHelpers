@@ -5,6 +5,10 @@ using UnityEngine;
 
 namespace UnityHelpers
 {
+    /// <summary>
+    /// This class is used to make a pool of objects that can be reused rather than constantly destroying and instantiating
+    /// </summary>
+    /// <typeparam name="T">The main component type to work with</typeparam>
     public class ObjectPool<T> where T : Component
     {
         private Transform poolParent;
@@ -17,15 +21,25 @@ namespace UnityHelpers
         private List<int> availableObjects = new List<int>();
         private List<int> unavailableObjects = new List<int>();
 
-        public bool reuseObjectsInUse;
+        public bool reuseObjectsInUse, dynamicSize;
 
-        public ObjectPool(T objectPrefab, int poolSize = 5, bool reuseObjectsInUse = true, Transform poolParent = null, bool worldPositionStays = true)
+        /// <summary>
+        /// Object pool constructor
+        /// </summary>
+        /// <param name="objectPrefab">The prefab to instantiate from</param>
+        /// <param name="poolSize">The initial number of objects in the pool</param>
+        /// <param name="reuseObjectsInUse">If true will reuse objects already active starting from the oldest</param>
+        /// <param name="dynamicSize">If the pool is not reusing objects and runs out of disabled objects, should the pool increase its size automatically?</param>
+        /// <param name="poolParent">Will set the parent of the objects in the pool to this</param>
+        /// <param name="worldPositionStays">Sets world position stays when parenting pool objects</param>
+        public ObjectPool(T objectPrefab, int poolSize = 5, bool reuseObjectsInUse = true, bool dynamicSize = false, Transform poolParent = null, bool worldPositionStays = true)
         {
             SetParent(poolParent, worldPositionStays);
 
             this.objectPrefab = objectPrefab;
             AdjustPoolSize(poolSize);
 
+            this.dynamicSize = dynamicSize;
             this.reuseObjectsInUse = reuseObjectsInUse;
         }
 
@@ -60,11 +74,18 @@ namespace UnityHelpers
             }
         }
 
-        public G Get<G>(Action<G> action = null, bool setPosition = false, Vector3 position = new Vector3(), bool localPosition = false, bool setRotation = false, Quaternion rotation = new Quaternion(), bool localRotation = false, bool setScale = false, Vector3 scale = new Vector3())
+        public G Get<G>(Action<G> action = null) where G : Component
         {
-            return Get((poolObject) => { G componentOnObject = poolObject.GetComponent<G>(); action?.Invoke(componentOnObject); }, setPosition, position, localPosition, setRotation, rotation, localRotation, setScale, scale).GetComponent<G>();
+            G componentOnObject = null;
+            Get((poolObject) =>
+            {
+                componentOnObject = poolObject?.GetComponent<G>();
+                if (componentOnObject != null)
+                    action?.Invoke(componentOnObject);
+            });
+            return componentOnObject;
         }
-        public T Get(Action<T> action = null, bool setPosition = false, Vector3 position = new Vector3(), bool localPosition = false, bool setRotation = false, Quaternion rotation = new Quaternion(), bool localRotation = false, bool setScale = false, Vector3 scale = new Vector3())
+        public T Get(Action<T> action = null)
         {
             int availableIndex = objectIndex;
             bool fromUnused = true;
@@ -78,38 +99,24 @@ namespace UnityHelpers
                     availableIndex = unavailableObjects.First();
                     unavailableObjects.Remove(availableIndex);
                 }
-                else
+                else if (dynamicSize)
                     AdjustPoolSize(objectPool.Count + 5);
             }
 
-            if (fromUnused)
-                availableObjects.Remove(availableIndex);
-            unavailableObjects.Add(availableIndex);
+            T availableObject = null;
 
-            T availableObject = objectPool[availableIndex];
-
-            action?.Invoke(availableObject);
-
-            Transform tempTransform = availableObject.transform;
-            if (setPosition)
+            if (availableObjects.Count > 0 || !fromUnused)
             {
-                if (localPosition)
-                    tempTransform.localPosition = position;
-                else
-                    tempTransform.position = position;
+                if (fromUnused)
+                    availableObjects.Remove(availableIndex);
+                unavailableObjects.Add(availableIndex);
 
-            }
-            if (setRotation)
-            {
-                if (localRotation)
-                    tempTransform.localRotation = rotation;
-                else
-                    tempTransform.rotation = rotation;
-            }
-            if (setScale)
-                tempTransform.localScale = scale;
+                availableObject = objectPool[availableIndex];
 
-            availableObject.gameObject.SetActive(true);
+                action?.Invoke(availableObject);
+
+                availableObject.gameObject.SetActive(true);
+            }
 
             return availableObject;
         }

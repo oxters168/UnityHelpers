@@ -35,7 +35,8 @@ namespace UnityHelpers
                     spawned.position = GetRandomSpawnPoint();
                     spawned.localScale = Vector3.one * Random.Range(minScale, maxScale);
                 });
-                onSpawn?.Invoke(spawnedItem);
+                if (spawnedItem != null)
+                    onSpawn?.Invoke(spawnedItem);
                 SetNextSpawnTime();
             }
         }

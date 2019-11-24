@@ -17,7 +17,7 @@ namespace UnityHelpers
                 bool doesNotLearn = !storedPools.ContainsKey(pool.poolName);
                 Debug.Assert(doesNotLearn);
                 if (doesNotLearn)
-                    storedPools.Add(pool.poolName, new ObjectPool<Transform>(pool.poolPrefab, pool.poolSize, pool.reuseObjectsInUse, pool.poolParent, pool.worldPositionStays));
+                    storedPools.Add(pool.poolName, new ObjectPool<Transform>(pool.poolPrefab, pool.poolSize, pool.reuseObjectsInUse, pool.dynamicSize, pool.poolParent, pool.worldPositionStays));
             }
         }
 

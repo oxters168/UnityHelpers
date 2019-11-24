@@ -10,6 +10,7 @@ namespace UnityHelpers
         public Transform poolPrefab;
         public int poolSize = 5;
         public bool reuseObjectsInUse = true;
+        public bool dynamicSize = false;
         public Transform poolParent;
         public bool worldPositionStays = true;
     }
