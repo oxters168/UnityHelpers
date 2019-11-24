@@ -10,7 +10,7 @@ namespace UnityHelpers
         private Transform poolParent;
         private bool worldPositionStays = true;
 
-        private T objectPrefab;
+        internal T objectPrefab { get; private set; }
         private int objectIndex = 0;
         private Dictionary<int, T> objectPool = new Dictionary<int, T>();
 
