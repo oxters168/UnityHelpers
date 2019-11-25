@@ -26,8 +26,8 @@ namespace UnityHelpers
                 for (int i = 1; i < targets.Count; i++)
                     totalBounds = totalBounds.Combine(targets[i].GetTotalBounds());
 
-                Vector3 startPosition = targets[0].position;
-                Vector3 endPosition = targets[targets.Count - 1].position;
+                Vector3 startPosition = totalBounds.min.ProjectPointToSurface(totalBounds.center, targetNormal);
+                Vector3 endPosition = totalBounds.max.ProjectPointToSurface(totalBounds.center, targetNormal);
                 Vector3 connectingLine = (endPosition - startPosition).Planar(targetNormal);
                 Vector3 cameraDirection = Vector3.Cross(targetNormal, connectingLine.normalized);
                 float cameraDistance = attachedCamera.PerspectiveDistanceFromWidth((totalBounds.max - totalBounds.min).magnitude);
