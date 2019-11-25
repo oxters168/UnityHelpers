@@ -6,20 +6,30 @@ namespace UnityHelpers
     public static class BoundsHelpers
     {
         /// <summary>
-        /// Gets all the renderers in the transform and gets their total bounds.
+        /// Gets all the renderers or colliders in the transform and gets their total bounds.
         /// </summary>
         /// <param name="transform">The root transform of the object</param>
-        /// <param name="includeDisabled">If set to true includes renderers that are on disabled gameobjects</param>
         /// <param name="worldSpace">An option to return the bounds' center to be relative or absolute</param>
+        /// <param name="fromColliders">If set to true, will get the total bounds from colliders rather than renderers</param>
+        /// <param name="includeDisabled">If set to true includes renderers or colliders that are on disabled gameobjects</param>
         /// <returns>A bounds that encapsulates the entire model</returns>
-        public static Bounds GetTotalBounds(this Transform transform, bool includeDisabled = false, bool worldSpace = true)
+        public static Bounds GetTotalBounds(this Transform transform, bool worldSpace = true, bool fromColliders = false, bool includeDisabled = false)
         {
             Bounds totalBounds = new Bounds();
 
             List<Bounds> innerBounds = new List<Bounds>();
-            foreach (Renderer renderer in transform.GetComponentsInChildren<Renderer>(true))
-                if (includeDisabled || renderer.gameObject.activeSelf)
-                    innerBounds.Add(renderer.bounds);
+            if (fromColliders)
+            {
+                foreach (var collider in transform.GetComponentsInChildren<Collider>(true))
+                    if (includeDisabled || collider.gameObject.activeSelf)
+                        innerBounds.Add(collider.bounds);
+            }
+            else
+            {
+                foreach (var renderer in transform.GetComponentsInChildren<Renderer>(true))
+                    if (includeDisabled || renderer.gameObject.activeSelf)
+                        innerBounds.Add(renderer.bounds);
+            }
             totalBounds = Combine(innerBounds.ToArray());
             if (!worldSpace)
                 totalBounds.center = transform.InverseTransformPoint(totalBounds.center);
