@@ -24,7 +24,7 @@ namespace UnityHelpers
         public static ObjectPool<Transform> GetPool(string poolName)
         {
             bool hasKey = poolManagerInScene.storedPools.ContainsKey(poolName);
-            Debug.Assert(hasKey);
+            Debug.Assert(hasKey, "PoolManager: Could not find pool with the name '" + poolName + "'");
             return hasKey ? poolManagerInScene.storedPools[poolName] : null;
         }
     }
