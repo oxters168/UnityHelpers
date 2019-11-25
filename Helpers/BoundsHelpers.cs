@@ -30,7 +30,12 @@ namespace UnityHelpers
                     if (includeDisabled || renderer.gameObject.activeSelf)
                         innerBounds.Add(renderer.bounds);
             }
-            totalBounds = Combine(innerBounds.ToArray());
+
+            if (innerBounds.Count > 0)
+                totalBounds = Combine(innerBounds.ToArray());
+            else
+                totalBounds = new Bounds(transform.position, Vector3.zero);
+
             if (!worldSpace)
                 totalBounds.center = transform.InverseTransformPoint(totalBounds.center);
 
@@ -68,7 +73,20 @@ namespace UnityHelpers
                 for (int i = 1; i < bounds.Length; i++)
                     combined.Encapsulate(bounds[i]);
             }
+            else
+                Debug.LogError("BoundsHelpers: No bounds to combine");
+
             return combined;
+        }
+        /// <summary>
+        /// Combines two bounds together
+        /// </summary>
+        /// <param name="current">The first bounds</param>
+        /// <param name="other">The second bounds</param>
+        /// <returns>The combined bounds</returns>
+        public static Bounds Combine(this Bounds current, Bounds other)
+        {
+            return Combine(new Bounds[] { current, other });
         }
         /// <summary>
         /// Finds the objects the given point is in. Checks the children of the given object as well.
