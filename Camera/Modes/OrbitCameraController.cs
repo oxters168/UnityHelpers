@@ -7,8 +7,9 @@ namespace UnityHelpers
         public Transform target;
         public Vector3 offset;
         public float distance = 10;
+        public float minDistance = 0, maxDistance = 100;
 
-        public float moveSensitivity = 2, lookSensitivity = 1;
+        public float moveSensitivity = 1, lookSensitivity = 1;
         [Range(0.01f, 1)]
         public float shiftMinimum = 0.5f;
 
@@ -38,7 +39,7 @@ namespace UnityHelpers
             transform.rotation = horizontalDelta * (verticalDelta * transform.rotation);
 
             distance -= push * moveSensitivity;
-            distance = Mathf.Clamp(distance, 0, float.MaxValue);
+            distance = Mathf.Clamp(distance, minDistance, maxDistance);
             transform.position -= transform.forward * distance;
 
             if (strafe >= shiftMinimum)
