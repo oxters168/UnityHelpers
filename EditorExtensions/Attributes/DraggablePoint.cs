@@ -7,7 +7,7 @@ namespace UnityHelpers
     /// </summary>
     public class DraggablePoint : PropertyAttribute
     {
-        internal bool local;
+        public bool local;
         public DraggablePoint(bool isLocal)
         {
             local = isLocal;
