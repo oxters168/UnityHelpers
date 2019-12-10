@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -66,7 +67,7 @@ namespace UnityHelpers
         /// <param name="height">Expected height of the image</param>
         /// <param name="textureFormat">The format of the data given</param>
         /// <returns>Pixel color data</returns>
-        public static Color[] DecompressRawBytes(byte[] data, ushort width, ushort height, TextureFormat textureFormat)
+        public static Color[] DecompressRawBytes(Stream data, ushort width, ushort height, TextureFormat textureFormat)
         {
             Color[] colors = null;
             if (textureFormat == TextureFormat.BGR888)
@@ -80,7 +81,7 @@ namespace UnityHelpers
             else if (textureFormat == TextureFormat.DXT5)
                 colors = DecompressDXT5(data, width, height);
             else
-                Debug.LogError(": Texture format not supported " + textureFormat);
+                Debug.LogError("Texture2DHelpers: Texture format not supported " + textureFormat);
 
             return colors;
         }
@@ -91,36 +92,25 @@ namespace UnityHelpers
         /// <param name="width">Expected width of the image</param>
         /// <param name="height">Expected height of the image</param>
         /// <returns>Pixel color data</returns>
-        public static Color[] DecompressBGR888(byte[] data, ushort width, ushort height)
+        public static Color[] DecompressBGR888(Stream data, ushort width, ushort height)
         {
             Color[] texture2DColors = new Color[width * height];
 
-            int currentDataIndex = 0;
             bool exceededArray = false;
             for (int row = 0; row < height; row++)
             {
                 for (int col = 0; col < width; col++)
                 {
-                    if (currentDataIndex + 2 < data.Length)
-                    {
-                        byte blue = data[currentDataIndex];
-                        byte green = data[currentDataIndex + 1];
-                        byte red = data[currentDataIndex + 2];
-                        currentDataIndex += 3;
+                    byte blue = DataParser.ReadByte(data);
+                    byte green = DataParser.ReadByte(data);
+                    byte red = DataParser.ReadByte(data);
 
-                        int flattenedIndex = row * width + col;
-                        if (flattenedIndex < texture2DColors.Length)
-                            texture2DColors[flattenedIndex] = new Color(((float)red) / byte.MaxValue, ((float)green) / byte.MaxValue, ((float)blue) / byte.MaxValue);
-                        else
-                        {
-                            Debug.Log("BGR888: Exceeded expected texture size");
-                            exceededArray = true;
-                            break;
-                        }
-                    }
+                    int flattenedIndex = row * width + col;
+                    if (flattenedIndex < texture2DColors.Length)
+                        texture2DColors[flattenedIndex] = new Color(((float)red) / byte.MaxValue, ((float)green) / byte.MaxValue, ((float)blue) / byte.MaxValue);
                     else
                     {
-                        Debug.LogError("BGR888: Exceeded given raw data");
+                        Debug.LogError("BGR888: Exceeded expected texture size");
                         exceededArray = true;
                         break;
                     }
@@ -139,37 +129,26 @@ namespace UnityHelpers
         /// <param name="width">Expected width of the image</param>
         /// <param name="height">Expected height of the image</param>
         /// <returns>Pixel color data</returns>
-        public static Color[] DecompressBGRA8888(byte[] data, ushort width, ushort height)
+        public static Color[] DecompressBGRA8888(Stream data, ushort width, ushort height)
         {
             Color[] texture2DColors = new Color[width * height];
 
-            int currentDataIndex = 0;
             bool exceededArray = false;
             for (int row = 0; row < height; row++)
             {
                 for (int col = 0; col < width; col++)
                 {
-                    if (currentDataIndex + 3 < data.Length)
-                    {
-                        byte blue = data[currentDataIndex];
-                        byte green = data[currentDataIndex + 1];
-                        byte red = data[currentDataIndex + 2];
-                        byte alpha = data[currentDataIndex + 3];
-                        currentDataIndex += 4;
+                    byte blue = DataParser.ReadByte(data);
+                    byte green = DataParser.ReadByte(data);
+                    byte red = DataParser.ReadByte(data);
+                    byte alpha = DataParser.ReadByte(data);
 
-                        int flattenedIndex = row * width + col;
-                        if (flattenedIndex < texture2DColors.Length)
-                            texture2DColors[flattenedIndex] = new Color(((float)red) / byte.MaxValue, ((float)green) / byte.MaxValue, ((float)blue) / byte.MaxValue, ((float)alpha) / byte.MaxValue);
-                        else
-                        {
-                            Debug.Log("BGRA8888: Exceeded expected texture size");
-                            exceededArray = true;
-                            break;
-                        }
-                    }
+                    int flattenedIndex = row * width + col;
+                    if (flattenedIndex < texture2DColors.Length)
+                        texture2DColors[flattenedIndex] = new Color(((float)red) / byte.MaxValue, ((float)green) / byte.MaxValue, ((float)blue) / byte.MaxValue, ((float)alpha) / byte.MaxValue);
                     else
                     {
-                        Debug.LogError("BGRA8888: Exceeded given raw data");
+                        Debug.LogError("BGRA8888: Exceeded expected texture size");
                         exceededArray = true;
                         break;
                     }
@@ -188,12 +167,10 @@ namespace UnityHelpers
         /// <param name="width">Expected width of the image</param>
         /// <param name="height">Expected height of the image</param>
         /// <returns>Pixel color data</returns>
-        public static Color[] DecompressDXT1(byte[] data, ushort width, ushort height)
+        public static Color[] DecompressDXT1(Stream data, ushort width, ushort height)
         {
             Color[] texture2DColors = new Color[width * height];
 
-            int currentDataIndex = 0;
-            bool exceededArray = false;
             for (int row = 0; row < height; row += 4)
             {
                 for (int col = 0; col < width; col += 4)
@@ -202,19 +179,9 @@ namespace UnityHelpers
                     ushort color1Data = 0;
                     uint bitmask = 0;
 
-                    if (currentDataIndex + 7 < data.Length)
-                    {
-                        color0Data = BitConverter.ToUInt16(data, currentDataIndex);
-                        color1Data = BitConverter.ToUInt16(data, currentDataIndex + 2);
-                        bitmask = BitConverter.ToUInt32(data, currentDataIndex + 4);
-                    }
-                    else
-                    {
-                        Debug.LogError("DXT1: Exceeded given raw data");
-                        exceededArray = true;
-                        break;
-                    }
-                    currentDataIndex += 8;
+                    color0Data = DataParser.ReadUShort(data);
+                    color1Data = DataParser.ReadUShort(data);
+                    bitmask = DataParser.ReadUInt(data);
 
                     int[] colors0 = new int[] { ((color0Data >> 11) & 0x1F) << 3, ((color0Data >> 5) & 0x3F) << 2, (color0Data & 0x1F) << 3 };
                     int[] colors1 = new int[] { ((color1Data >> 11) & 0x1F) << 3, ((color1Data >> 5) & 0x3F) << 2, (color1Data & 0x1F) << 3 };
@@ -244,8 +211,6 @@ namespace UnityHelpers
                         }
                     }
                 }
-                if (exceededArray)
-                    break;
             }
 
             return texture2DColors.ToArray();
@@ -257,12 +222,10 @@ namespace UnityHelpers
         /// <param name="width">Expected width of the image</param>
         /// <param name="height">Expected height of the image</param>
         /// <returns>Pixel color data</returns>
-        public static Color[] DecompressDXT3(byte[] data, ushort width, ushort height)
+        public static Color[] DecompressDXT3(Stream data, ushort width, ushort height)
         {
             Color[] texture2DColors = new Color[width * height];
 
-            int currentDataIndex = 0;
-            bool exceededArray = false;
             for (int row = 0; row < height; row += 4)
             {
                 for (int col = 0; col < width; col += 4)
@@ -271,20 +234,10 @@ namespace UnityHelpers
                     ushort color1Data = 0;
                     uint bitmask = 0;
 
-                    currentDataIndex += 8;
-                    if (currentDataIndex + 7 < data.Length)
-                    {
-                        color0Data = BitConverter.ToUInt16(data, currentDataIndex);
-                        color1Data = BitConverter.ToUInt16(data, currentDataIndex + 2);
-                        bitmask = BitConverter.ToUInt32(data, currentDataIndex + 4);
-                    }
-                    else
-                    {
-                        Debug.LogError("DXT3: Exceeded given raw data");
-                        exceededArray = true;
-                        break;
-                    }
-                    currentDataIndex += 8;
+                    //data.Seek(8, SeekOrigin.Current); //not sure if this is correct or not, had it before, but I think I never got to test a DXT3 image. I commented it out because it looks wrong
+                    color0Data = DataParser.ReadUShort(data);
+                    color1Data = DataParser.ReadUShort(data);
+                    bitmask = DataParser.ReadUInt(data);
 
                     int[] colors0 = new int[] { ((color0Data >> 11) & 0x1F) << 3, ((color0Data >> 5) & 0x3F) << 2, (color0Data & 0x1F) << 3 };
                     int[] colors1 = new int[] { ((color1Data >> 11) & 0x1F) << 3, ((color1Data >> 5) & 0x3F) << 2, (color1Data & 0x1F) << 3 };
@@ -314,7 +267,6 @@ namespace UnityHelpers
                         }
                     }
                 }
-                if (exceededArray) break;
             }
 
             return texture2DColors.ToArray();
@@ -326,12 +278,10 @@ namespace UnityHelpers
         /// <param name="width">Expected width of the image</param>
         /// <param name="height">Expected height of the image</param>
         /// <returns>Pixel color data</returns>
-        public static Color[] DecompressDXT5(byte[] data, ushort width, ushort height)
+        public static Color[] DecompressDXT5(Stream data, ushort width, ushort height)
         {
             Color[] texture2DColors = new Color[width * height];
 
-            int currentDataIndex = 0;
-            bool exceededArray = false;
             for (int row = 0; row < height; row += 4)
             {
                 for (int col = 0; col < width; col += 4)
@@ -341,19 +291,11 @@ namespace UnityHelpers
                     byte alpha1Data = 0;
                     uint alphamask = 0;
 
-                    if (currentDataIndex + 7 < data.Length)
-                    {
-                        alpha0Data = data[currentDataIndex];
-                        alpha1Data = data[currentDataIndex + 1];
-                        alphamask = BitConverter.ToUInt32(new byte[] { data[currentDataIndex + 2], data[currentDataIndex + 3], data[currentDataIndex + 4], data[currentDataIndex + 5], data[currentDataIndex + 6], data[currentDataIndex + 7] }, 0);
-                    }
-                    else
-                    {
-                        Debug.LogError("DXT5: Exceeded given raw data");
-                        exceededArray = true;
-                        break;
-                    }
-                    currentDataIndex += 8;
+                    alpha0Data = DataParser.ReadByte(data);
+                    alpha1Data = DataParser.ReadByte(data);
+                    byte[] amdata = new byte[6];
+                    data.Read(amdata, 0, amdata.Length);
+                    alphamask = BitConverter.ToUInt32(amdata, 0);
 
                     float[] alphaPalette = new float[]
                     {
@@ -383,19 +325,9 @@ namespace UnityHelpers
                     ushort color1Data = 0;
                     uint bitmask = 0;
 
-                    if (currentDataIndex + 7 < data.Length)
-                    {
-                        color0Data = BitConverter.ToUInt16(data, currentDataIndex);
-                        color1Data = BitConverter.ToUInt16(data, currentDataIndex + 2);
-                        bitmask = BitConverter.ToUInt32(data, currentDataIndex + 4);
-                    }
-                    else
-                    {
-                        Debug.LogError("DXT5: Exceeded given raw data");
-                        exceededArray = true;
-                        break;
-                    }
-                    currentDataIndex += 8;
+                    color0Data = DataParser.ReadUShort(data);
+                    color1Data = DataParser.ReadUShort(data);
+                    bitmask = DataParser.ReadUInt(data);
 
                     int[] colors0 = new int[] { ((color0Data >> 11) & 0x1F) << 3, ((color0Data >> 5) & 0x3F) << 2, (color0Data & 0x1F) << 3 };
                     int[] colors1 = new int[] { ((color1Data >> 11) & 0x1F) << 3, ((color1Data >> 5) & 0x3F) << 2, (color1Data & 0x1F) << 3 };
@@ -427,8 +359,6 @@ namespace UnityHelpers
                     }
                     #endregion
                 }
-                if (exceededArray)
-                    break;
             }
 
             return texture2DColors.ToArray();

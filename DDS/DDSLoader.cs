@@ -17,96 +17,100 @@ namespace UnityHelpers
         public const int DDS_DXT5 = 894720068; //From "DXT5"
         public const int DDS_DX10 = 808540228; //From "DX10"
 
-        public static Texture2D LoadDDSTexture(byte[] ddsBytes)
+        public static Texture2D LoadDDSFile(Stream data)
         {
             Texture2D texture = null;
 
-            byte[] dxtBytes = null;
+            Color[] imageColors = null;
             DDS_HEADER header = new DDS_HEADER();
             DDS_HEADER_10 header_10 = new DDS_HEADER_10();
 
-            bool isCompressed = false;
-            using (MemoryStream ms = new MemoryStream(ddsBytes))
+            int magic = DataParser.ReadInt(data);
+
+            if (magic == DDS_)
             {
-                int magic = DataParser.ReadInt(ms);
+                header.dwSize = DataParser.ReadInt(data); //0 + 4 = 4
+                header.dwFlags = (DWFlags)DataParser.ReadInt(data); //4 + 4 = 8
+                header.dwHeight = DataParser.ReadInt(data); //8 + 4 = 12
+                header.dwWidth = DataParser.ReadInt(data); //12 + 4 = 16
+                header.dwPitchOrLinearSize = DataParser.ReadInt(data); //16 + 4 = 20
+                header.dwDepth = DataParser.ReadInt(data); //20 + 4 = 24
+                header.dwMipMapCount = DataParser.ReadInt(data); //24 + 4 = 28
+                header.dwReserved1 = new int[11]; //28 + 44 = 72
+                for (int i = 0; i < header.dwReserved1.Length; i++)
+                    header.dwReserved1[i] = DataParser.ReadInt(data);
 
-                if (magic == DDS_)
+                header.ddspf.dwSize = DataParser.ReadInt(data); //72 + 4 = 76
+                header.ddspf.dwFlags = (PIXELFORMAT_DWFlags)DataParser.ReadInt(data); //76 + 4 = 80
+                header.ddspf.dwFourCC = DataParser.ReadInt(data); //80 + 4 = 84
+                header.ddspf.dwRGBBitCount = DataParser.ReadInt(data); //84 + 4 = 88
+                header.ddspf.dwRBitMask = DataParser.ReadInt(data); //88 + 4 = 92
+                header.ddspf.dwGBitMask = DataParser.ReadInt(data); //92 + 4 = 96
+                header.ddspf.dwBBitMask = DataParser.ReadInt(data); //96 + 4 = 100
+                header.ddspf.dwABitMask = DataParser.ReadInt(data); //100 + 4 = 104
+
+                header.dwCaps = DataParser.ReadInt(data); //104 + 4 = 108
+                header.dwCaps2 = DataParser.ReadInt(data); //108 + 4 = 112
+                header.dwCaps3 = DataParser.ReadInt(data); //112 + 4 = 116
+                header.dwCaps4 = DataParser.ReadInt(data); //116 + 4 = 120
+                header.dwReserved2 = DataParser.ReadInt(data); //120 + 4 = 124
+
+                bool isCompressed = (header.ddspf.dwFlags & PIXELFORMAT_DWFlags.DDPF_FOURCC) != 0;
+                if (isCompressed && header.ddspf.dwFourCC == DDS_DX10)
                 {
-                    header.dwSize = DataParser.ReadInt(ms); //0 + 4 = 4
-                    header.dwFlags = (DWFlags)DataParser.ReadInt(ms); //4 + 4 = 8
-                    header.dwHeight = DataParser.ReadInt(ms); //8 + 4 = 12
-                    header.dwWidth = DataParser.ReadInt(ms); //12 + 4 = 16
-                    header.dwPitchOrLinearSize = DataParser.ReadInt(ms); //16 + 4 = 20
-                    header.dwDepth = DataParser.ReadInt(ms); //20 + 4 = 24
-                    header.dwMipMapCount = DataParser.ReadInt(ms); //24 + 4 = 28
-                    header.dwReserved1 = new int[11]; //28 + 44 = 72
-                    for (int i = 0; i < header.dwReserved1.Length; i++)
-                        header.dwReserved1[i] = DataParser.ReadInt(ms);
-
-                    header.ddspf.dwSize = DataParser.ReadInt(ms); //72 + 4 = 76
-                    header.ddspf.dwFlags = (PIXELFORMAT_DWFlags)DataParser.ReadInt(ms); //76 + 4 = 80
-                    header.ddspf.dwFourCC = DataParser.ReadInt(ms); //80 + 4 = 84
-                    header.ddspf.dwRGBBitCount = DataParser.ReadInt(ms); //84 + 4 = 88
-                    header.ddspf.dwRBitMask = DataParser.ReadInt(ms); //88 + 4 = 92
-                    header.ddspf.dwGBitMask = DataParser.ReadInt(ms); //92 + 4 = 96
-                    header.ddspf.dwBBitMask = DataParser.ReadInt(ms); //96 + 4 = 100
-                    header.ddspf.dwABitMask = DataParser.ReadInt(ms); //100 + 4 = 104
-
-                    header.dwCaps = DataParser.ReadInt(ms); //104 + 4 = 108
-                    header.dwCaps2 = DataParser.ReadInt(ms); //108 + 4 = 112
-                    header.dwCaps3 = DataParser.ReadInt(ms); //112 + 4 = 116
-                    header.dwCaps4 = DataParser.ReadInt(ms); //116 + 4 = 120
-                    header.dwReserved2 = DataParser.ReadInt(ms); //120 + 4 = 124
-
-                    isCompressed = (header.ddspf.dwFlags & PIXELFORMAT_DWFlags.DDPF_FOURCC) != 0;
-                    if (isCompressed && header.ddspf.dwFourCC == DDS_DX10)
-                    {
-                        Debug.Log(nameof(DDSLoader) + ": Reading extra header");
-                        header_10.dxgiFormat = (DXGI_FORMAT)DataParser.ReadInt(ms);
-                        header_10.resourceDimension = (D3D10_RESOURCE_DIMENSION)DataParser.ReadInt(ms);
-                        header_10.miscFlag = DataParser.ReadUInt(ms);
-                        header_10.arraySize = DataParser.ReadUInt(ms);
-                        header_10.miscFlags2 = DataParser.ReadUInt(ms);
-                    }
-
-                    long dataLength = ms.Length - ms.Position - 1;
-                    dxtBytes = new byte[dataLength];
-                    ms.Read(dxtBytes, 0, dxtBytes.Length);
+                    Debug.Log(nameof(DDSLoader) + ": Reading extra header");
+                    header_10.dxgiFormat = (DXGI_FORMAT)DataParser.ReadInt(data);
+                    header_10.resourceDimension = (D3D10_RESOURCE_DIMENSION)DataParser.ReadInt(data);
+                    header_10.miscFlag = DataParser.ReadUInt(data);
+                    header_10.arraySize = DataParser.ReadUInt(data);
+                    header_10.miscFlags2 = DataParser.ReadUInt(data);
                 }
-                else
-                    Debug.LogError(nameof(DDSLoader) + ": Invalid DDS magic, expected " + DDS_ + " got " + magic);
+
+                imageColors = Texture2DHelpers.DecompressRawBytes(data, (ushort)header.dwWidth, (ushort)header.dwHeight, GetDDSFormat(header));
+                Texture2DHelpers.FlipVertical(imageColors, (ushort)header.dwWidth, (ushort)header.dwHeight);
             }
+            else
+                Debug.LogError(nameof(DDSLoader) + ": Invalid DDS magic, expected " + DDS_ + " got " + magic);
 
-            if (dxtBytes != null)
+            if (imageColors != null)
             {
-                Texture2DHelpers.TextureFormat format;
-
-                if (isCompressed)
-                {
-                    if (header.ddspf.dwFourCC == DDS_DXT5)
-                        format = Texture2DHelpers.TextureFormat.DXT5;
-                    else if (header.ddspf.dwFourCC == DDS_DXT3)
-                        format = Texture2DHelpers.TextureFormat.DXT3;
-                    else
-                        format = Texture2DHelpers.TextureFormat.DXT1;
-                }
-                else if ((header.ddspf.dwFlags & PIXELFORMAT_DWFlags.DDPF_ALPHA) != 0 || (header.ddspf.dwFlags & PIXELFORMAT_DWFlags.DDPF_ALPHAPIXELS) != 0)
-                    format = Texture2DHelpers.TextureFormat.BGRA8888;
-                else
-                    format = Texture2DHelpers.TextureFormat.BGR888;
-
-                int width = header.dwWidth;
-                int height = header.dwHeight;
-                Color[] imageColors = Texture2DHelpers.DecompressRawBytes(dxtBytes, (ushort)width, (ushort)height, format);
-                Texture2DHelpers.FlipVertical(imageColors, (ushort)width, (ushort)height);
-
-                texture = new Texture2D(width, height);
+                texture = new Texture2D(header.dwWidth, header.dwHeight);
                 if (imageColors != null)
                     texture.SetPixels(imageColors);
                 texture.Apply();
             }
 
             return texture;
+        }
+        public static Texture2D LoadDDSFile(byte[] ddsBytes)
+        {
+            using (MemoryStream ms = new MemoryStream(ddsBytes))
+            {
+                return LoadDDSFile(ms);
+            }
+        }
+
+        public static Texture2DHelpers.TextureFormat GetDDSFormat(DDS_HEADER header)
+        {
+            Texture2DHelpers.TextureFormat format;
+
+            bool isCompressed = (header.ddspf.dwFlags & PIXELFORMAT_DWFlags.DDPF_FOURCC) != 0;
+
+            if (isCompressed)
+            {
+                if (header.ddspf.dwFourCC == DDS_DXT5)
+                    format = Texture2DHelpers.TextureFormat.DXT5;
+                else if (header.ddspf.dwFourCC == DDS_DXT3)
+                    format = Texture2DHelpers.TextureFormat.DXT3;
+                else
+                    format = Texture2DHelpers.TextureFormat.DXT1;
+            }
+            else if ((header.ddspf.dwFlags & PIXELFORMAT_DWFlags.DDPF_ALPHA) != 0 || (header.ddspf.dwFlags & PIXELFORMAT_DWFlags.DDPF_ALPHAPIXELS) != 0)
+                format = Texture2DHelpers.TextureFormat.BGRA8888;
+            else
+                format = Texture2DHelpers.TextureFormat.BGR888;
+
+            return format;
         }
 
         public struct DDS_HEADER
