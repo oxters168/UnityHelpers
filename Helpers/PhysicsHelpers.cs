@@ -5,6 +5,36 @@ namespace UnityHelpers
     public static class PhysicsHelpers
     {
         /// <summary>
+        /// <para>Source: https://digitalopus.ca/site/pd-controllers/ </para>
+        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation.</para>
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody that the torque will be applied to</param>
+        /// <param name="desiredRotation">The rotation that you'd like the rigidbody to have</param>
+        /// <param name="frequency">Frequency is the speed of convergence. If damping is 1, frequency is the 1/time taken to reach ~95% of the target value. i.e. a frequency of 6 will bring you very close to your target within 1/6 seconds.</param>
+        /// <param name="damping"><para>damping = 1, the system is critically damped</para><para>damping is greater than 1 the system is over damped(sluggish)</para><para>damping is less than 1 the system is under damped(it will oscillate a little)</para></param>
+        /// <returns>The torque value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateRequiredTorque(this Rigidbody rigidbody, Quaternion desiredRotation, float frequency = 6, float damping = 1)
+        {
+            float kp = (6f * frequency) * (6f * frequency) * 0.25f;
+            float kd = 4.5f * frequency * damping;
+            float dt = Time.fixedDeltaTime;
+            float g = 1 / (1 + kd * dt + kp * dt * dt);
+            float ksg = kp * g;
+            float kdg = (kd + kp * dt) * g;
+            Vector3 x;
+            float xMag;
+            Quaternion q = desiredRotation * Quaternion.Inverse(rigidbody.transform.rotation);
+            q.ToAngleAxis(out xMag, out x);
+            x.Normalize();
+            x *= Mathf.Deg2Rad;
+            Vector3 pidv = kp * x * xMag - kd * rigidbody.angularVelocity;
+            Quaternion rotInertia2World = rigidbody.inertiaTensorRotation * rigidbody.transform.rotation;
+            pidv = Quaternion.Inverse(rotInertia2World) * pidv;
+            pidv.Scale(rigidbody.inertiaTensor);
+            pidv = rotInertia2World * pidv;
+            return pidv;
+        }
+        /// <summary>
         /// Checks if the rigidbody is grounded.
         /// </summary>
         /// <param name="physicsBody">The rigidbody to be checked</param>
