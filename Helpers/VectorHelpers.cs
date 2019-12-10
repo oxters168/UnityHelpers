@@ -57,6 +57,26 @@ namespace UnityHelpers
             return point - offset;
         }
         /// <summary>
+        /// Multiplies two Vector3s value for value (x*x, y*y, z*z)
+        /// </summary>
+        /// <param name="first">The first vector3</param>
+        /// <param name="second">The second vector3</param>
+        /// <returns>The product of the two vector3s</returns>
+        public static Vector3 Multiply(this Vector3 first, Vector3 second)
+        {
+            return new Vector3(first.x * second.x, first.y * second.y, first.z * second.z);
+        }
+        /// <summary>
+        /// Multiplies two Vector2s value for value (x*x, y*y)
+        /// </summary>
+        /// <param name="first">The first vector2</param>
+        /// <param name="second">The second vector2</param>
+        /// <returns>The product of the two vector2s</returns>
+        public static Vector2 Multiply(this Vector2 first, Vector2 second)
+        {
+            return new Vector2(first.x * second.x, first.y * second.y);
+        }
+        /// <summary>
         /// Adds two vectors
         /// </summary>
         /// <param name="v1">First vector</param>

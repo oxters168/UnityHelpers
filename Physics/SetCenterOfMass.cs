@@ -15,10 +15,14 @@ namespace UnityHelpers
         [Range(0, float.MaxValue)]
         public float gizmoSize;
 
-        [Range(0, 1)]
+        [Space(10)]
+
+        [Range(0, 1), Tooltip("The percent the COM will effect the torque of the object (this is not perfect, it can be very inaccurate)")]
         public float directionCorrectionPercent;
+        [Tooltip("In case if your object has renderers that aren't 'physical', you can mask them out with this")]
+        public LayerMask boundsMask = ~0;
         public float directionCorrectionFrequency = 1;
-        public float directionCorrectionDamping = 0.1f;
+        public float directionCorrectionDamping = 0.333f;
 
         private void Start()
         {
@@ -46,35 +50,38 @@ namespace UnityHelpers
         }
         void FixedUpdate()
         {
-            if (directionCorrectionPercent > 0 && centerOfMass.sqrMagnitude > 0 && body.velocity.sqrMagnitude > 0)
+            if (body != null && directionCorrectionPercent > 0 && body.velocity.sqrMagnitude > 0)
             {
-                Vector3 comDirection = transform.TransformDirection(centerOfMass.normalized);
-                Quaternion comDeltaRotation = Quaternion.FromToRotation(comDirection, transform.forward);
-                body.AddTorque(directionCorrectionPercent * body.CalculateRequiredTorque(comDeltaRotation * Quaternion.LookRotation(body.velocity.normalized, Vector3.up), directionCorrectionFrequency, directionCorrectionDamping));
-            }
-            /*float comSqrMag = centerOfMass.sqrMagnitude;
-            if (directionCorrectionPercent > 0 && comSqrMag > 0)
-            {
-                Vector3 velocityDirection = previousVelocity.normalized;
-                Vector3 comDirection = transform.TransformDirection(centerOfMass.normalized);
-                float dotAngle = Vector3.Dot(velocityDirection, comDirection);
-                float percentCorrect = -(dotAngle - 3) / 4f * multiplier; //[2 - 4] => [0.5 - 1]
-                Vector3 torqueDirection = Vector3.Cross(comDirection, velocityDirection).normalized;
-                Debug.DrawRay(transform.position, torqueDirection, Color.red);
-                body.AddTorque(torqueDirection * directionCorrectionPercent * comSqrMag * percentCorrect);
-            }*/
+                Bounds objectBounds = transform.GetTotalBounds(boundsMask, true, true);
+                Vector3 comCenterOffset = body.worldCenterOfMass - objectBounds.center;
 
-            //if (body)
-            //    previousVelocity = body.velocity;
+                float comSqrMag = comCenterOffset.sqrMagnitude;
+
+                if (comSqrMag > 0)
+                {
+                    Vector3 comDirection = comCenterOffset.normalized;
+                    Quaternion comDeltaRotation = Quaternion.FromToRotation(comDirection, transform.forward);
+
+                    float maxExtentInDirection = objectBounds.extents.Multiply(comDirection).sqrMagnitude;
+                    float comPercent = comSqrMag / maxExtentInDirection;
+                    //Debug.DrawRay(objectBounds.center, comDirection * Mathf.Sqrt(maxExtentInDirection), Color.red);
+
+                    body.AddTorque(directionCorrectionPercent * comPercent * body.CalculateRequiredTorque(comDeltaRotation * Quaternion.LookRotation(body.velocity.normalized, Vector3.up), directionCorrectionFrequency, directionCorrectionDamping));
+                }
+            }
         }
 
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             if (body != null && gizmoSize > 0)
             {
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawSphere(body.worldCenterOfMass, gizmoSize);
             }
+
+            Gizmos.color = Color.green;
+            Bounds objectBounds = transform.GetTotalBounds(boundsMask, true, true);
+            Gizmos.DrawWireCube(objectBounds.center, objectBounds.size);
         }
     }
 }
