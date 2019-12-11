@@ -23,6 +23,7 @@ namespace UnityHelpers
         public LayerMask boundsMask = ~0;
         public float directionCorrectionFrequency = 1;
         public float directionCorrectionDamping = 0.333f;
+        private bool skippedFirstFrame; //This seems to be necessary for arrows just shot out of a bow
 
         private void Start()
         {
@@ -50,25 +51,33 @@ namespace UnityHelpers
         }
         void FixedUpdate()
         {
-            if (body != null && directionCorrectionPercent > 0 && body.velocity.sqrMagnitude > 0)
+            if (body != null && directionCorrectionPercent > 0 && skippedFirstFrame)
             {
-                Bounds objectBounds = transform.GetTotalBounds(boundsMask, true, true);
-                Vector3 comCenterOffset = body.worldCenterOfMass - objectBounds.center;
-
-                float comSqrMag = comCenterOffset.sqrMagnitude;
-
-                if (comSqrMag > 0)
+                float velocitySqrMag = body.velocity.sqrMagnitude;
+                if (velocitySqrMag > 0.1f)
                 {
-                    Vector3 comDirection = comCenterOffset.normalized;
-                    Quaternion comDeltaRotation = Quaternion.FromToRotation(comDirection, transform.forward);
+                    Bounds objectBounds = transform.GetTotalBounds(boundsMask, true, true);
+                    Vector3 comCenterOffset = body.worldCenterOfMass - objectBounds.center;
 
-                    float maxExtentInDirection = objectBounds.extents.Multiply(comDirection).sqrMagnitude;
-                    float comPercent = comSqrMag / maxExtentInDirection;
-                    //Debug.DrawRay(objectBounds.center, comDirection * Mathf.Sqrt(maxExtentInDirection), Color.red);
+                    float comSqrMag = comCenterOffset.sqrMagnitude;
+                    if (comSqrMag > 0.1f)
+                    {
+                        Vector3 comDirection = comCenterOffset.normalized;
+                        Quaternion comDeltaRotation = Quaternion.FromToRotation(comDirection, transform.forward);
 
-                    body.AddTorque(directionCorrectionPercent * comPercent * body.CalculateRequiredTorque(comDeltaRotation * Quaternion.LookRotation(body.velocity.normalized, Vector3.up), directionCorrectionFrequency, directionCorrectionDamping));
+                        float maxExtentInDirection = objectBounds.extents.Multiply(comDirection).sqrMagnitude;
+                        float comPercent = comSqrMag / maxExtentInDirection;
+                        //Debug.DrawRay(objectBounds.center, comDirection * Mathf.Sqrt(maxExtentInDirection), Color.red);
+
+                        Quaternion desiredRotation = Quaternion.LookRotation(body.velocity.normalized, Vector3.up) * comDeltaRotation;
+                        Debug.DrawRay(transform.position, desiredRotation * Vector3.forward, Color.red);
+                        body.AddTorque(directionCorrectionPercent * comPercent * body.CalculateRequiredTorque(desiredRotation, directionCorrectionFrequency, directionCorrectionDamping));
+                    }
                 }
             }
+
+            if (!skippedFirstFrame)
+                skippedFirstFrame = true;
         }
 
         private void OnDrawGizmosSelected()
