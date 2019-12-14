@@ -4,8 +4,10 @@ using UnityEngine.UI;
 namespace UnityHelpers
 {
     [ExecuteAlways]
-    public class SliderPercentToText : MonoBehaviour
+    public class SliderValueToText : MonoBehaviour
     {
+        public bool percent;
+
         public TMPro.TextMeshProUGUI label;
         public string prefix;
         public string postfix;
@@ -25,8 +27,10 @@ namespace UnityHelpers
         {
             if (label != null)
             {
-                int percentValue = Mathf.RoundToInt(value * 100);
-                label.text = prefix + percentValue + postfix;
+                float shownValue = value;
+                if (percent)
+                    shownValue = Mathf.RoundToInt(shownValue * 100);
+                label.text = prefix + shownValue + postfix;
             }
         }
     }
