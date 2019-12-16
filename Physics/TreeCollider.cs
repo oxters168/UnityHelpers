@@ -21,7 +21,7 @@ namespace UnityHelpers
         public UnifiedCollisionEvent onCollisionStay = new UnifiedCollisionEvent();
         public UnifiedCollisionEvent onCollisionExit = new UnifiedCollisionEvent();
 
-        private void Start()
+        private void Update()
         {
             InitChildren();
         }
@@ -166,7 +166,7 @@ namespace UnityHelpers
             Collider[] childrenColliders = GetComponentsInChildren<Collider>(true);
             foreach (var collider in childrenColliders)
             {
-                if (collider.transform.parent.GetComponentInParent<TreeCollider>().transform == transform)
+                if (collider.transform.parent?.GetComponentInParent<TreeCollider>().transform == transform)
                 {
                     var childTreeCollider = collider.gameObject.GetComponent<TreeCollider>();
                     if (childTreeCollider == null)
