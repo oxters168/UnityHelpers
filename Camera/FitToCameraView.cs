@@ -8,10 +8,8 @@ namespace UnityHelpers
     [ExecuteAlways]
     public class FitToCameraView : MonoBehaviour
     {
-        private float prevRenderTexture = float.MinValue;
         [Range(0, 10000)]
-        public float renderTextureDistance;
-        private float prevFOV = float.MinValue, prevAspect = float.MinValue;
+        public float objectDistance;
         public Camera renderCamera;
         public bool square;
         public bool keepInFrame;
@@ -26,13 +24,7 @@ namespace UnityHelpers
             if (renderCamera != null)
             {
                 cameraErrored = false;
-                if (prevRenderTexture != renderTextureDistance || prevFOV != renderCamera.fieldOfView || prevAspect != renderCamera.aspect)
-                {
-                    ResetRenderTexturePosition();
-                    prevRenderTexture = renderTextureDistance;
-                    prevFOV = renderCamera.fieldOfView;
-                    prevAspect = renderCamera.aspect;
-                }
+                ResetRenderTexturePosition();
             }
             else
             {
@@ -43,7 +35,7 @@ namespace UnityHelpers
 
         private void ResetRenderTexturePosition()
         {
-            Vector2 size = CameraHelpers.PerspectiveFrustum(renderCamera.fieldOfView, renderTextureDistance, renderCamera.aspect);
+            Vector2 size = CameraHelpers.PerspectiveFrustum(renderCamera.fieldOfView, objectDistance, renderCamera.aspect);
 
             float sizeX = size.x, sizeY = size.y;
             if (square)
@@ -62,8 +54,13 @@ namespace UnityHelpers
             }
 
             transform.localScale = new Vector3(sizeX, sizeY, transform.localScale.z);
-            transform.localPosition = Vector3.forward * renderTextureDistance;
+            transform.localPosition = Vector3.forward * objectDistance;
             transform.localRotation = Quaternion.identity;
+        }
+
+        public void SetDistance(float value)
+        {
+            objectDistance = Mathf.Clamp(value, 0, 10000);
         }
     }
 }
