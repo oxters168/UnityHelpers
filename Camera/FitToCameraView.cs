@@ -14,6 +14,7 @@ namespace UnityHelpers
         private float prevFOV = float.MinValue, prevAspect = float.MinValue;
         public Camera renderCamera;
         public bool square;
+        public bool keepInFrame;
 
         private bool cameraErrored;
 
@@ -47,7 +48,7 @@ namespace UnityHelpers
             float sizeX = size.x, sizeY = size.y;
             if (square)
             {
-                if (renderCamera.aspect >= 1)
+                if ((keepInFrame && renderCamera.aspect < 1) || (!keepInFrame && renderCamera.aspect >= 1))
                     sizeY = size.x;
                 else
                     sizeX = size.y;
