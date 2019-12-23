@@ -16,6 +16,14 @@ namespace UnityHelpers
         private TMP_InputField tmpInputField;
         private int caretPosition, selectionAnchorPosition, selectionFocusPosition;
 
+        private KeyController[] keyboardKeys;
+
+        void Start()
+        {
+            keyboardKeys = GetComponentsInChildren<KeyController>();
+            foreach (var key in keyboardKeys)
+                key.onKeyClicked += Append;
+        }
         void Update()
         {
             RefreshInputFields();
@@ -45,7 +53,7 @@ namespace UnityHelpers
             var eventSystemSelection = EventSystem.current.currentSelectedGameObject;
             if (eventSystemSelection != currentlySelected)
             {
-                var button = eventSystemSelection?.GetComponent<Button>(); //Should change this to be keyboard key component when created
+                var button = eventSystemSelection?.GetComponent<KeyController>(); //Should change this to be keyboard key component when created
 
                 if (button == null)
                 {
@@ -89,13 +97,13 @@ namespace UnityHelpers
             builtOutput.Append(value);
         }
 
-        public void AppendA()
+        public void Append(string value)
         {
             int index = Mathf.Min(caretPosition, selectionAnchorPosition);
             int selectionAmount = Mathf.Abs(caretPosition - selectionAnchorPosition);
             //Debug.Log("Removing from " + index + " for " + selectionAmount);
             builtOutput.Remove(index, selectionAmount);
-            builtOutput.Insert(index, "A");
+            builtOutput.Insert(index, value);
             EventSystem.current.SetSelectedGameObject(currentlySelected);
 
             StartCoroutine(ReturnCaretPosition(index + 1));
