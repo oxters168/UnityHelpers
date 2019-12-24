@@ -6,22 +6,44 @@ namespace UnityHelpers
     {
         private Rigidbody body;
 
+        public bool showTrajectory;
+        public float trajectoryTimestep = 0.2f;
+        public float trajectoryTime = 1f;
+        [Space(10)]
         public bool setVelocity;
         [DraggablePoint(true)]
         public Vector3 velocity;
 
-        void Start()
-        {
-            body = GetComponent<Rigidbody>();
-        }
-
         void FixedUpdate()
         {
-            if (body != null)
+            if (GetBody() != null)
             {
                 if (setVelocity)
-                    body.velocity = velocity;
+                    GetBody().velocity = velocity;
             }
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (GetBody() != null && showTrajectory)
+            {
+                Gizmos.color = Color.red;
+                Vector3 currentPosition = GetBody().position;
+                Vector3 nextPosition = currentPosition;
+                for (int i = 1; i <= trajectoryTime / trajectoryTimestep; i++)
+                {
+                    nextPosition = GetBody().PredictPosition(trajectoryTimestep * i);
+                    Gizmos.DrawLine(currentPosition, nextPosition);
+                    currentPosition = nextPosition;
+                }
+            }
+        }
+
+        private Rigidbody GetBody()
+        {
+            if (body == null)
+                body = GetComponent<Rigidbody>();
+            return body;
         }
     }
 }

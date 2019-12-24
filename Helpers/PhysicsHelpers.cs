@@ -138,5 +138,42 @@ namespace UnityHelpers
             Debug.DrawRay(checkPosition, groundDirection * groundDistance, grounded ? Color.green : Color.red);
             return grounded;
         }
+        /// <summary>
+        /// Predicts where the rigidbody will be in the next physics timestep
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody whose position is to be predicted</param>
+        /// <returns>The predicted position of the rigidbody</returns>
+        public static Vector3 PredictPosition(this Rigidbody rigidbody)
+        {
+            return PredictPosition(rigidbody, Time.fixedDeltaTime);
+        }
+        /// <summary>
+        /// Predicts where the rigidbody will be after some time
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody whose position is to be predicted</param>
+        /// <param name="time">How far in the future to predict</param>
+        /// <returns>The predicted position of the rigidbody</returns>
+        public static Vector3 PredictPosition(this Rigidbody rigidbody, float time)
+        {
+            return PredictPosition(rigidbody.position, rigidbody.velocity, rigidbody.drag, time, rigidbody.useGravity);
+        }
+        /// <summary>
+        /// Predicts where an object will be after some time
+        /// </summary>
+        /// <param name="position">The current position of the object</param>
+        /// <param name="velocity">The current velocity of the object</param>
+        /// <param name="drag">The drag on the object</param>
+        /// <param name="time">How far in the future to predict</param>
+        /// <param name="useGravity">Should gravity be taken into consideration</param>
+        /// <returns>The predicted position of the object</returns>
+        public static Vector3 PredictPosition(Vector3 position, Vector3 velocity, float drag, float time, bool useGravity = true)
+        {
+            float appliedDrag = Mathf.Clamp01(1f - drag * time);
+            Vector3 gravityEffect = Vector3.zero;
+            if (useGravity)
+                gravityEffect = Physics.gravity * time * 0.5f;
+            Vector3 nextVelocity = (velocity + gravityEffect) * appliedDrag;
+            return position + nextVelocity * time;
+        }
     }
 }
