@@ -1,4 +1,6 @@
-﻿namespace UnityHelpers
+﻿using UnityEngine;
+
+namespace UnityHelpers
 {
     public static class MathHelpers
     {
@@ -22,6 +24,19 @@
                 value = (int)value;
 
             return value;
+        }
+
+        /// <summary>
+        /// Gets the number line direction between a and b (a - b). -1 for "left", 1 for "right", and 0 for equal.
+        /// </summary>
+        /// <param name="a">First value</param>
+        /// <param name="b">Second value</param>
+        /// <returns>Direction on number line</returns>
+        public static int GetDirection(float a, float b)
+        {
+            float aRounded = SetDecimalPlaces(a, 5);
+            float bRounded = SetDecimalPlaces(b, 5);
+            return Mathf.Abs(aRounded - bRounded) > Mathf.Epsilon ? Mathf.RoundToInt(Mathf.Sign(aRounded - bRounded)) : 0;
         }
     }
 }
