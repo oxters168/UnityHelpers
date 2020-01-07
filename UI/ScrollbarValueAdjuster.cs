@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-//using UnityEngine.EventSystems;
 using System.Collections.Generic;
 
 namespace UnityHelpers
@@ -9,6 +8,7 @@ namespace UnityHelpers
     {
         private Scrollbar scrollbar;
         private bool scrollbarErrored;
+        public uint decimalPrecision = 3;
 
         [Tooltip("Scrollbar scrolls to nearest bookmark")]
         public bool magneticBookmarks;
@@ -36,15 +36,7 @@ namespace UnityHelpers
                 scrollbarErrored = false;
                 if (magneticBookmarks)
                 {
-                    List<float> allBookmarks = new List<float>(manualSplits);
-                    if (equalSplits > 1)
-                        for (int i = 0; i < equalSplits; i++)
-                            allBookmarks.Add((float)i / (equalSplits - 1));
-
-                    float magneticValue = allBookmarks.Count > 0 ? allBookmarks[0] : scrollbar.value;
-                    foreach (float currentBookmark in allBookmarks)
-                        if (Mathf.Abs(currentBookmark - scrollbar.value) < Mathf.Abs(magneticValue - scrollbar.value))
-                            magneticValue = currentBookmark;
+                    var magneticValue = GetMagneticValue();
 
                     int magneticScrollDirection = MathHelpers.GetDirection(magneticValue, scrollbar.value);
                     int currentScrollDirection = MathHelpers.GetDirection(scrollbar.value, prevScrollbarValue);
@@ -62,6 +54,72 @@ namespace UnityHelpers
                 Debug.LogError("ScrollbarValueAdjuster(" + transform.name + "): Could not find scrollbar component, this script should be attached to the same object that has the scrollbar component");
                 scrollbarErrored = true;
             }
+        }
+
+        public int GetBookmarksCount()
+        {
+            return GetAllBookmarks().Count;
+        }
+        private List<float> GetAllBookmarks()
+        {
+            List<float> allBookmarks = new List<float>(manualSplits);
+            for (int i = 0; i < allBookmarks.Count; i++)
+                allBookmarks[i] = MathHelpers.SetDecimalPlaces(allBookmarks[i], decimalPrecision);
+
+            if (equalSplits > 1)
+                for (int i = 0; i < equalSplits; i++)
+                {
+                    float currentBookmark = MathHelpers.SetDecimalPlaces((float)i / (equalSplits - 1), decimalPrecision);
+                    if (!allBookmarks.Contains(currentBookmark))
+                        allBookmarks.Add(currentBookmark);
+                }
+
+            allBookmarks.Sort();
+
+            return allBookmarks;
+        }
+        private float GetMagneticValue()
+        {
+            var allBookmarks = GetAllBookmarks();
+
+            float magneticValue = allBookmarks.Count > 0 ? allBookmarks[0] : scrollbar.value;
+            foreach (float currentBookmark in allBookmarks)
+                if (Mathf.Abs(currentBookmark - scrollbar.value) < Mathf.Abs(magneticValue - scrollbar.value))
+                    magneticValue = currentBookmark;
+            return magneticValue;
+        }
+        public void GotoNextBookmark()
+        {
+            var bookmarks = GetAllBookmarks();
+            int index = GetBookmarkIndex(scrollbar.value, bookmarks);
+            if (index + 1 < bookmarks.Count)
+                index++;
+            scrollbar.value = bookmarks[index];
+        }
+        public void GotoPreviousBookmark()
+        {
+            var bookmarks = GetAllBookmarks();
+            int index = GetBookmarkIndex(scrollbar.value, bookmarks);
+            if (index - 1 >= 0)
+                index--;
+            scrollbar.value = bookmarks[index];
+        }
+        public static int GetBookmarkIndex(float value, List<float> bookmarks)
+        {
+            //var bookmarks = GetAllBookmarks();
+            int currentIndex = -1;
+            float smallestDistance = float.MaxValue;
+            for (int i = 0; i < bookmarks.Count; i++)
+            {
+                float currentDistance = Mathf.Abs(value - bookmarks[i]);
+                if (currentDistance < smallestDistance)
+                {
+                    currentIndex = i;
+                    smallestDistance = currentDistance;
+                }
+            }
+
+            return currentIndex;
         }
     }
 }
