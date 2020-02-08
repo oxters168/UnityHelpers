@@ -13,6 +13,7 @@ namespace UnityHelpers
     {
         private Transform poolParent;
         private bool worldPositionStays = true;
+        public int activeCount { get { return unavailableObjects.Count; } }
 
         internal T objectPrefab { get; private set; }
         private int objectIndex = 0;

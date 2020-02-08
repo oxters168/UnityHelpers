@@ -15,6 +15,7 @@ namespace UnityHelpers
         public float spawnMinRate = 2, spawnMaxRate = 5;
         private float prevSpawnTime, currentSpawnTime;
         public float minScale = 1, maxScale = 1;
+        public uint maxConcurrentlySpawned = 5;
 
         //Until I figure out a way to make this better, this will have to do
         //For future me, this will help: https://answers.unity.com/questions/666127/how-do-i-generate-a-drop-down-list-of-functions-on.html
@@ -27,7 +28,7 @@ namespace UnityHelpers
         }
         private void Update()
         {
-            if (spawn && Time.time - prevSpawnTime >= currentSpawnTime)
+            if (spawn && Time.time - prevSpawnTime >= currentSpawnTime && pool.activeCount < maxConcurrentlySpawned)
             {
                 var spawnedItem = pool.Get(spawned =>
                 {
@@ -36,11 +37,15 @@ namespace UnityHelpers
                     spawned.localScale = Vector3.one * Random.Range(minScale, maxScale);
                 });
                 if (spawnedItem != null)
-                    onSpawn?.Invoke(spawnedItem);
+                    onSpawn?.Invoke(spawnedItem, poolName);
                 SetNextSpawnTime();
             }
         }
 
+        public void ReturnAll()
+        {
+            pool?.ReturnAll();
+        }
         private Vector3 GetRandomSpawnPoint()
         {
             Vector3 startCorner = transform.position - transform.forward * spawnArea.size.z / 2 - transform.right * spawnArea.size.x / 2 - transform.up * spawnArea.size.y / 2;
@@ -66,6 +71,6 @@ namespace UnityHelpers
         }
 
         [System.Serializable]
-        public class SpawnEvent : UnityEngine.Events.UnityEvent<Transform> { }
+        public class SpawnEvent : UnityEngine.Events.UnityEvent<Transform, string> { }
     }
 }
