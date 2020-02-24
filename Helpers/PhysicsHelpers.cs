@@ -6,7 +6,7 @@ namespace UnityHelpers
     {
         /// <summary>
         /// <para>Source: https://digitalopus.ca/site/pd-controllers/ </para>
-        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation.</para>
+        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation. Works with Acceleration ForceMode.</para>
         /// </summary>
         /// <param name="rigidbody">The rigidbody that the torque will be applied to</param>
         /// <param name="desiredRotation">The rotation that you'd like the rigidbody to have</param>
@@ -33,6 +33,25 @@ namespace UnityHelpers
             pidv.Scale(rigidbody.inertiaTensor);
             pidv = rotInertia2World * pidv;
             return pidv;
+        }
+        /// <summary>
+        /// Calculates the velocity vector required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the VelocityChange ForceMode.
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody that the velocity will be applied to.</param>
+        /// <param name="desiredPosition">The position that you'd like the rigidbody to have.</param>
+        /// <param name="strength">The strength of the resulting velocity.</param>
+        /// <param name="maxSpeed">The max speed the result velocity can have.</param>
+        /// <returns>The velocity value to  be applied to the rigidbody.</returns>
+        public static Vector3 CalculateRequiredVelocity(this Rigidbody rigidbody, Vector3 desiredPosition, float strength = 10, float maxSpeed = float.MaxValue)
+        {
+            Vector3 direction = desiredPosition - rigidbody.position;
+            direction *= strength;
+            if (direction.sqrMagnitude > maxSpeed * maxSpeed)
+                direction = direction.normalized * maxSpeed;
+
+            Vector3 deltaVelocity = direction - rigidbody.velocity;
+
+            return deltaVelocity;
         }
         /// <summary>
         /// Checks if the rigidbody is grounded.
