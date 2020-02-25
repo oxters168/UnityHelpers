@@ -7,6 +7,26 @@ namespace UnityHelpers
     public static class QuaternionHelpers
     {
         /// <summary>
+        /// Transform rotation from local space to world space.
+        /// </summary>
+        /// <param name="transform">The anchor.</param>
+        /// <param name="localRotation">The rotation in the anchor's local space.</param>
+        /// <returns>The rotation in world space.</returns>
+        public static Quaternion TransformRotation(this Transform transform, Quaternion localRotation)
+        {
+            return transform.rotation * localRotation;
+        }
+        /// <summary>
+        /// Transform rotation from world space to local space.
+        /// </summary>
+        /// <param name="transform">The anchor.</param>
+        /// <param name="worldRotation">The rotation in world space.</param>
+        /// <returns>The rotation in the anchor's local space.</returns>
+        public static Quaternion InverseTransformRotation(this Transform transform, Quaternion worldRotation)
+        {
+            return Quaternion.Inverse(transform.rotation) * worldRotation;
+        }
+        /// <summary>
         /// Determines whether the quaternion is safe for interpolation or use with transform.rotation.
         /// </summary>
         /// <returns><c>false</c> if using the quaternion in Quaternion.Lerp() will result in an error (eg. NaN values or zero-length quaternion).</returns>

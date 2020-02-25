@@ -5,7 +5,9 @@ namespace UnityHelpers
     [RequireComponent(typeof(Rigidbody))]
     public class PhysicsTransform : MonoBehaviour
     {
-        public bool strive = true;
+        public bool striveForPosition = true;
+        public bool striveForOrientation = true;
+        public bool counteractGravity = true; //Suzan told me about PID controllers and how they work, so maybe in the future I can add the I to positional strivingness to counteract gravity/friction automatically.
         
         [Space(10)]
         public Vector3 position;
@@ -27,14 +29,14 @@ namespace UnityHelpers
 
         void FixedUpdate()
         {
-            if (strive)
-            {
+            if (striveForPosition)
                 affectedBody.AddForce(affectedBody.CalculateRequiredVelocity(position, strength, maxSpeed), ForceMode.VelocityChange);
+
+            if (striveForOrientation)
                 affectedBody.AddTorque(affectedBody.CalculateRequiredTorque(rotation, frequency, damping));
 
-                if (affectedBody.useGravity && !affectedBody.isKinematic)
-                    affectedBody.AddForce(-Physics.gravity * affectedBody.mass);
-            }
+            if (counteractGravity && affectedBody.useGravity && !affectedBody.isKinematic)
+                affectedBody.AddForce(-Physics.gravity * affectedBody.mass);
         }
     }
 }
