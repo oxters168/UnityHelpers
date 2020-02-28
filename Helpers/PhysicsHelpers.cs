@@ -39,12 +39,13 @@ namespace UnityHelpers
         /// </summary>
         /// <param name="rigidbody">The rigidbody that the velocity will be applied to.</param>
         /// <param name="desiredPosition">The position that you'd like the rigidbody to have.</param>
+        /// <param name="timestep">The delta time between frames.</param>
         /// <param name="strength">The strength of the resulting velocity.</param>
         /// <param name="maxSpeed">The max speed the result velocity can have.</param>
         /// <returns>The velocity value to  be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredVelocity(this Rigidbody rigidbody, Vector3 desiredPosition, float strength = 10, float maxSpeed = float.MaxValue)
+        public static Vector3 CalculateRequiredVelocity(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.2f, float strength = 1, float maxSpeed = float.MaxValue)
         {
-            Vector3 direction = desiredPosition - rigidbody.position;
+            Vector3 direction = (desiredPosition - rigidbody.position) / timestep;
             direction *= strength;
             if (direction.sqrMagnitude > maxSpeed * maxSpeed)
                 direction = direction.normalized * maxSpeed;
@@ -52,6 +53,25 @@ namespace UnityHelpers
             Vector3 deltaVelocity = direction - rigidbody.velocity;
 
             return deltaVelocity;
+        }
+        /// <summary>
+        /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the Force ForceMode.
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody that the force will be applied to.</param>
+        /// <param name="desiredPosition">The position that you'd like the rigidbody to have.</param>
+        /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="strength">The strength of the resulting force.</param>
+        /// <param name="maxForce">The max force the result can have.</param>
+        /// <returns>The force value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateRequiredForce(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.2f, float strength = 1, float maxForce = float.MaxValue)
+        {
+            Vector3 direction = (desiredPosition - rigidbody.position) / (timestep * timestep);
+            direction *= strength * rigidbody.mass;
+            if (direction.sqrMagnitude > maxForce * maxForce)
+                direction = direction.normalized * maxForce;
+
+            Vector3 deltaForce = direction - (rigidbody.velocity / timestep * rigidbody.mass);
+            return deltaForce;
         }
         /// <summary>
         /// Checks if the rigidbody is grounded.
