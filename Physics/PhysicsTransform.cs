@@ -68,7 +68,7 @@ namespace UnityHelpers
         {
             if (striveForPosition)
             {
-                Vector3 pushVelocity = affectedBody.CalculateRequiredVelocity(position, Time.fixedDeltaTime, strength, maxSpeed);
+                Vector3 pushVelocity = affectedBody.CalculateRequiredVelocityForPosition(position, Time.fixedDeltaTime, strength, maxSpeed);
                 float percentage = 1;
                 //Vector3 actualPreviousForceVector = affectedBody.mass * (affectedBody.velocity / Time.fixedDeltaTime);
                 //float previousPushForceSqr = previousPushForceVector.sqrMagnitude;
