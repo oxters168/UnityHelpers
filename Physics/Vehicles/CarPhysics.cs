@@ -54,11 +54,39 @@ namespace UnityHelpers
                 if (differenceInSpeed > speedRatio * vehicleStats.maxReverseSpeed)                      //value when it's too
                     strivedSpeed = currentSpeed;                                                        //far from actual speed
 
-                strivedSpeed = Mathf.Clamp(strivedSpeed + deltaSpeed, -vehicleStats.maxReverseSpeed, vehicleStats.maxForwardSpeed);
+                SetStrivedSpeed(strivedSpeed + deltaSpeed);
 
                 Vector3 nonForwardVelocity = vehicleRigidbody.velocity - currentSpeed * transform.forward;
                 vehicleRigidbody.AddForce(vehicleRigidbody.CalculateRequiredForceForSpeed(strivedSpeed * transform.forward + (currentSpeed > 0.01f ? nonForwardVelocity : Vector3.zero)), ForceMode.Force);
             }
+        }
+
+        private void SetStrivedSpeed(float value)
+        {
+            strivedSpeed = Mathf.Clamp(value, -vehicleStats.maxReverseSpeed, vehicleStats.maxForwardSpeed);
+        }
+
+        public void Match(CarPhysics other)
+        {
+            if (other != null)
+            {
+                gas = other.gas;
+                brake = other.brake;
+                steer = other.steer;
+
+                Teleport(other.transform.position, other.transform.rotation, other.currentSpeed);
+                vehicleRigidbody.angularVelocity = other.vehicleRigidbody.angularVelocity;
+            }
+        }
+        public void Teleport(Vector3 position, Quaternion rotation, float speed = 0)
+        {
+            SetStrivedSpeed(speed);
+            currentSpeed = strivedSpeed;
+
+            transform.position = position;
+            transform.rotation = rotation;
+            vehicleRigidbody.velocity = transform.forward * currentSpeed;
+            vehicleRigidbody.angularVelocity = Vector3.zero;
         }
     }
 }
