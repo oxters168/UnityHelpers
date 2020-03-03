@@ -8,6 +8,7 @@ namespace UnityHelpers
     public class CarPhysics : MonoBehaviour
     {
         public Rigidbody vehicleRigidbody;
+        private Bounds vehicleBounds;
 
         public Transform wheelFL, wheelFR;
         public Transform wheelRL, wheelRR;
@@ -19,6 +20,7 @@ namespace UnityHelpers
 
         public float currentSpeed { get; private set; }
         private float strivedSpeed;
+        private float prevCurrentSpeed, prevStrivedSpeed;
 
         [Space(10), Range(-1, 1)]
         public float gas;
@@ -27,13 +29,19 @@ namespace UnityHelpers
         [Range(-1, 1)]
         public float steer;
 
+        //private Vector3 prevVelocity;
+
+        private void Start()
+        {
+            vehicleBounds = transform.GetTotalBounds(false);
+        }
         void FixedUpdate()
         {
             Quaternion wheelRotation = Quaternion.Euler(0, vehicleStats.maxWheelAngle * steer, 0);
             wheelFL.localRotation = wheelRotation;
             wheelFR.localRotation = wheelRotation;
 
-            float forwardPercent = -(Vector3.Angle(transform.forward, vehicleRigidbody.velocity.normalized) / 90 - 1);
+            float forwardPercent = vehicleRigidbody.velocity.PercentDirection(transform.forward);
             currentSpeed = vehicleRigidbody.velocity.magnitude * forwardPercent;
 
             if (wheelRL.IsGrounded(-wheelRL.up, wheelGroundDistance) || wheelRR.IsGrounded(-wheelRR.up, wheelGroundDistance))
@@ -49,16 +57,19 @@ namespace UnityHelpers
                     totalAcceleration = vehicleStats.deceleration * (currentSpeed >= 0 ? -1 : 1);
                 float deltaSpeed = totalAcceleration * Time.fixedDeltaTime;
 
-                float differenceInSpeed = Mathf.Abs(Mathf.Abs(strivedSpeed) - Mathf.Abs(currentSpeed)); //This is used to
-                float speedRatio = Mathf.Abs(currentSpeed) / Mathf.Abs(strivedSpeed);                   //reset the strivedSpeed
-                if (differenceInSpeed > speedRatio * vehicleStats.maxReverseSpeed)                      //value when it's too
-                    strivedSpeed = currentSpeed;                                                        //far from actual speed
-
                 SetStrivedSpeed(strivedSpeed + deltaSpeed);
 
-                Vector3 nonForwardVelocity = vehicleRigidbody.velocity - currentSpeed * transform.forward;
-                vehicleRigidbody.AddForce(vehicleRigidbody.CalculateRequiredForceForSpeed(strivedSpeed * transform.forward + (currentSpeed > 0.01f ? nonForwardVelocity : Vector3.zero)), ForceMode.Force);
+                float nextCurrentSpeed = currentSpeed + deltaSpeed;
+                //If strived speed is changing differently from current speed then set strived speed to current speed
+                if (Mathf.Sign(strivedSpeed - prevStrivedSpeed) != Mathf.Sign(nextCurrentSpeed - prevCurrentSpeed))
+                    SetStrivedSpeed(nextCurrentSpeed);
+
+                vehicleRigidbody.AddForce(PhysicsHelpers.CalculateRequiredForceForSpeed(vehicleRigidbody.mass, currentSpeed * transform.forward, strivedSpeed * transform.forward), ForceMode.Force);
             }
+
+            prevCurrentSpeed = currentSpeed;
+            prevStrivedSpeed = strivedSpeed;
+            //prevVelocity = vehicleRigidbody.velocity;
         }
 
         private void SetStrivedSpeed(float value)
@@ -87,6 +98,22 @@ namespace UnityHelpers
             transform.rotation = rotation;
             vehicleRigidbody.velocity = transform.forward * currentSpeed;
             vehicleRigidbody.angularVelocity = Vector3.zero;
+        }
+
+        /// <summary>
+        /// Gets a point in the bounds of the car. This assumes the car's pivot is low down near the ground.
+        /// </summary>
+        /// <param name="percentX">A value between -1 and 1 where 0 would mean at the center of the bounds.</param>
+        /// <param name="percentY">A value between -1 and 1 where 0 would mean at the center of the bounds.</param>
+        /// <param name="percentZ">A value between -1 and 1 where 0 would mean at the center of the bounds.</param>
+        /// <returns>A point within the bounds.</returns>
+        public Vector3 GetPointOnBoundsBorder(float percentX, float percentY, float percentZ)
+        {
+            percentX = Mathf.Clamp(percentX, -1, 1);
+            percentY = Mathf.Clamp(percentY, -1, 1);
+            percentZ = Mathf.Clamp(percentZ, -1, 1);
+            Vector3 borderPercentOffset = transform.right * vehicleBounds.extents.x * percentX + transform.up * vehicleBounds.extents.y * percentY + transform.forward * vehicleBounds.extents.z * percentZ;
+            return transform.position + borderPercentOffset + transform.up * vehicleBounds.extents.y;
         }
     }
 }

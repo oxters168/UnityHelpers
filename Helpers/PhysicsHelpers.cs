@@ -93,6 +93,27 @@ namespace UnityHelpers
             return deltaForce;
         }
         /// <summary>
+        /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired speed. Works with the Force ForceMode.
+        /// </summary>
+        /// <param name="mass">The mass of the rigidbody.</param>
+        /// <param name="velocity">The velocity of the rigidbody.</param>
+        /// <param name="desiredVelocity">The velocity that you'd like the rigidbody to have.</param>
+        /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="strength">The strength of the resulting force.</param>
+        /// <param name="maxForce">The max force the result can have.</param>
+        /// <returns>The force value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateRequiredForceForSpeed(float mass, Vector3 velocity, Vector3 desiredVelocity, float timestep = 0.2f, float strength = 1, float maxForce = float.MaxValue)
+        {
+            Vector3 nakedForce = desiredVelocity / timestep;
+            nakedForce *= strength * mass;
+            if (nakedForce.sqrMagnitude > maxForce * maxForce)
+                nakedForce = nakedForce.normalized * maxForce;
+
+            Vector3 deltaForce = nakedForce - (velocity / timestep * mass);
+            return deltaForce;
+        }
+
+        /// <summary>
         /// Checks if the rigidbody is grounded.
         /// </summary>
         /// <param name="physicsBody">The rigidbody to be checked</param>
