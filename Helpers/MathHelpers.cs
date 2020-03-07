@@ -5,6 +5,16 @@ namespace UnityHelpers
     public static class MathHelpers
     {
         /// <summary>
+        /// Returns an odd number given an index (0 => 1, 1 => 3, 2 => 5...)
+        /// </summary>
+        /// <param name="index">The index of the odd number</param>
+        /// <returns>An odd number</returns>
+        public static int GetOddNumber(int index)
+        {
+            return index != 0 ? Mathf.RoundToInt((index - Mathf.Sign(index)) * 2 + Mathf.Sign(index)) : 0;
+        }
+
+        /// <summary>
         /// Sets the decimal places of the value.
         /// </summary>
         /// <param name="value">The original value</param>

@@ -17,5 +17,23 @@ namespace UnityHelpers
         public float maxReverseSpeed = 28.6f;
         [Tooltip("The maximum the tires can rotate in degrees in the local y axis")]
         public float maxWheelAngle = 33.33f;
+
+        [Space(10), Tooltip("The amount of rays (odd index i.e. 1 = 1, 2 = 3, 3 = 5...")]
+        public uint forwardRays;
+        [Tooltip("The amount of rays (odd index i.e. 1 = 1, 2 = 3, 3 = 5...")]
+        public uint leftRays;
+        [Tooltip("The amount of rays (odd index i.e. 1 = 1, 2 = 3, 3 = 5...")]
+        public uint rightRays;
+        [Tooltip("The amount of rays (odd index i.e. 1 = 1, 2 = 3, 3 = 5...")]
+        public uint rearRays;
+
+        [Space(10), Tooltip("In meters")]
+        public float forwardDistanceObstacleCheck = 10;
+        [Tooltip("In meters")]
+        public float leftDistanceObstacleCheck = 1;
+        [Tooltip("In meters")]
+        public float rightDistanceObstacleCheck = 1;
+        [Tooltip("In meters")]
+        public float rearDistanceObstacleCheck = 10;
     }
 }
