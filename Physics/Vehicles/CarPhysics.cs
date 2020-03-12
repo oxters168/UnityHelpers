@@ -220,8 +220,8 @@ namespace UnityHelpers
             SetStrivedSpeed(speed);
             currentSpeed = strivedSpeed;
 
-            vehicleRigidbody.position = position;
-            vehicleRigidbody.rotation = rotation;
+            vehicleRigidbody.transform.position = position;
+            vehicleRigidbody.transform.rotation = rotation;
             vehicleRigidbody.velocity = vehicleRigidbody.transform.forward * currentSpeed;
             vehicleRigidbody.angularVelocity = Vector3.zero;
         }
