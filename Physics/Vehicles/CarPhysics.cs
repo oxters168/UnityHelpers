@@ -11,15 +11,16 @@ namespace UnityHelpers
         public Rigidbody vehicleRigidbody;
         private Bounds vehicleBounds;
 
-        public Transform wheelFL, wheelFR;
-        public Transform wheelRL, wheelRR;
+        public AbstractWheel wheelFL, wheelFR;
+        public AbstractWheel wheelRL, wheelRR;
         [Tooltip("This value sets how far from the center of the rear wheels to check for the ground. If the ground is not being touched, the car won't accelerate.")]
         public float wheelGroundDistance = 1;
 
         [Space(10)]
         public CarStats vehicleStats;
 
-        public float currentSpeed { get; private set; }
+        public float currentForwardSpeed { get; private set; }
+        public float currentTotalSpeed { get; private set; }
         private float strivedSpeed;
         private float prevCurrentSpeed, prevStrivedSpeed;
 
@@ -46,36 +47,43 @@ namespace UnityHelpers
         void FixedUpdate()
         {
             Quaternion wheelRotation = Quaternion.Euler(0, vehicleStats.maxWheelAngle * steer, 0);
-            wheelFL.localRotation = wheelRotation;
-            wheelFR.localRotation = wheelRotation;
+            wheelFL.transform.localRotation = wheelRotation;
+            wheelFR.transform.localRotation = wheelRotation;
 
             float forwardPercent = vehicleRigidbody.velocity.PercentDirection(vehicleRigidbody.transform.forward);
-            currentSpeed = vehicleRigidbody.velocity.magnitude * forwardPercent;
+            currentTotalSpeed = vehicleRigidbody.velocity.magnitude;
+            currentForwardSpeed = currentTotalSpeed * forwardPercent;
 
-            if (wheelRL.IsGrounded(-wheelRL.up, wheelGroundDistance) || wheelRR.IsGrounded(-wheelRR.up, wheelGroundDistance))
+            wheelFL.SetGrip(vehicleStats.grip);
+            wheelFR.SetGrip(vehicleStats.grip);
+            wheelRL.SetGrip(vehicleStats.grip);
+            wheelRR.SetGrip(vehicleStats.grip);
+
+            //if (wheelRL.IsGrounded(-wheelRL.up, wheelGroundDistance) || wheelRR.IsGrounded(-wheelRR.up, wheelGroundDistance))
+            if (wheelRL.IsGrounded() || wheelRR.IsGrounded())
             {
                 gas = Mathf.Clamp(gas, -1, 1);
                 brake = Mathf.Clamp(brake, 0, 1);
                 steer = Mathf.Clamp(steer, -1, 1);
 
-                float gasAmount = gas * (vehicleStats.acceleration + (gas > 0 && currentSpeed < 0 || gas < 0 && currentSpeed > 0 ? vehicleStats.brakeleration : 0));
-                float brakeAmount = brake * vehicleStats.brakeleration * (currentSpeed >= 0 ? -1 : 1);
+                float gasAmount = gas * (vehicleStats.acceleration + (gas > 0 && currentForwardSpeed < 0 || gas < 0 && currentForwardSpeed > 0 ? vehicleStats.brakeleration : 0));
+                float brakeAmount = brake * vehicleStats.brakeleration * (currentForwardSpeed >= 0 ? -1 : 1);
                 float totalAcceleration = gasAmount + brakeAmount;
                 if (totalAcceleration > -float.Epsilon && totalAcceleration < float.Epsilon && !(strivedSpeed > -float.Epsilon && strivedSpeed < float.Epsilon))
-                    totalAcceleration = vehicleStats.deceleration * (currentSpeed >= 0 ? -1 : 1);
+                    totalAcceleration = vehicleStats.deceleration * (currentForwardSpeed >= 0 ? -1 : 1);
                 float deltaSpeed = totalAcceleration * Time.fixedDeltaTime;
 
                 SetStrivedSpeed(strivedSpeed + deltaSpeed);
 
-                float nextCurrentSpeed = currentSpeed + deltaSpeed;
+                float nextCurrentSpeed = currentForwardSpeed + deltaSpeed;
                 //If strived speed is changing differently from current speed then set strived speed to current speed
                 if (Mathf.Sign(strivedSpeed - prevStrivedSpeed) != Mathf.Sign(nextCurrentSpeed - prevCurrentSpeed))
                     SetStrivedSpeed(nextCurrentSpeed);
 
-                vehicleRigidbody.AddForce(PhysicsHelpers.CalculateRequiredForceForSpeed(vehicleRigidbody.mass, currentSpeed * vehicleRigidbody.transform.forward, strivedSpeed * vehicleRigidbody.transform.forward), ForceMode.Force);
+                vehicleRigidbody.AddForce(PhysicsHelpers.CalculateRequiredForceForSpeed(vehicleRigidbody.mass, currentForwardSpeed * vehicleRigidbody.transform.forward, strivedSpeed * vehicleRigidbody.transform.forward), ForceMode.Force);
             }
 
-            prevCurrentSpeed = currentSpeed;
+            prevCurrentSpeed = currentForwardSpeed;
             prevStrivedSpeed = strivedSpeed;
             //prevVelocity = vehicleRigidbody.velocity;
         }
@@ -207,7 +215,7 @@ namespace UnityHelpers
                 brake = other.brake;
                 steer = other.steer;
 
-                Teleport(other.vehicleRigidbody.position, other.vehicleRigidbody.rotation, other.currentSpeed);
+                Teleport(other.vehicleRigidbody.position, other.vehicleRigidbody.rotation, other.currentForwardSpeed);
                 vehicleRigidbody.angularVelocity = other.vehicleRigidbody.angularVelocity;
             }
         }
@@ -218,11 +226,11 @@ namespace UnityHelpers
         public void Teleport(Vector3 position, Quaternion rotation, float speed = 0)
         {
             SetStrivedSpeed(speed);
-            currentSpeed = strivedSpeed;
+            currentForwardSpeed = strivedSpeed;
 
             vehicleRigidbody.transform.position = position;
             vehicleRigidbody.transform.rotation = rotation;
-            vehicleRigidbody.velocity = vehicleRigidbody.transform.forward * currentSpeed;
+            vehicleRigidbody.velocity = vehicleRigidbody.transform.forward * currentForwardSpeed;
             vehicleRigidbody.angularVelocity = Vector3.zero;
         }
 

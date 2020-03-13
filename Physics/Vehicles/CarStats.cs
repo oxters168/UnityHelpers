@@ -17,6 +17,8 @@ namespace UnityHelpers
         public float maxReverseSpeed = 28.6f;
         [Tooltip("The maximum the tires can rotate in degrees in the local y axis")]
         public float maxWheelAngle = 33.33f;
+        [Tooltip("This is the value that will be put into the abstract wheel, so it depends on your derivation")]
+        public float grip = 3;
 
         [Space(10), Tooltip("The amount of rays (odd index i.e. 1 = 1, 2 = 3, 3 = 5...")]
         public uint forwardRays;
