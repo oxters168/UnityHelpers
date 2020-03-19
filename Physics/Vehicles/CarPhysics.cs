@@ -8,16 +8,31 @@ namespace UnityHelpers
     /// </summary>
     public class CarPhysics : MonoBehaviour
     {
+        public const float MPS_TO_KMH = 3.6f;
+        public const float MPS_TO_MPH = 2.237f;
+
         public Rigidbody vehicleRigidbody;
+        public HealthController vehicleHealth;
         private Bounds vehicleBounds;
 
-        public AbstractWheel wheelFL, wheelFR;
-        public AbstractWheel wheelRL, wheelRR;
+        [Space(10)]
+        public ParticleSystem smoke;
+        public ParticleSystem fire;
+
+        [Space(10)]
+        public AbstractWheel wheelFL;
+        public AbstractWheel wheelFR;
+        public AbstractWheel wheelRL;
+        public AbstractWheel wheelRR;
         [Tooltip("This value sets how far from the center of the rear wheels to check for the ground. If the ground is not being touched, the car won't accelerate.")]
         public float wheelGroundDistance = 1;
 
         [Space(10)]
         public CarStats vehicleStats;
+        public bool healthAffectsAcceleration;
+        public float forwardSpeedMod, reverseSpeedMod;
+        public float accelerationMod, brakelerationMod;
+        public float gripMod;
 
         public float currentForwardSpeed { get; private set; }
         public float currentTotalSpeed { get; private set; }
@@ -38,14 +53,23 @@ namespace UnityHelpers
         private void Awake()
         {
             vehicleBounds = vehicleRigidbody.transform.GetTotalBounds(false, false, true);
+
+            if (vehicleHealth != null)
+                vehicleHealth.onValueChanged.AddListener(OnHealthValueChanged);
+            else
+                Debug.LogWarning("VehiclePhysics(" + gameObject.name + "): No HealthController provided.");
         }
         private void Update()
         {
             if (castRays)
-                DetectCollision();
+                CastAllRays();
         }
         void FixedUpdate()
         {
+            float acceleration = GetAcceleration();
+            float brakeleration = GetBrakeleration();
+            float grip = GetGrip();
+
             Quaternion wheelRotation = Quaternion.Euler(0, vehicleStats.maxWheelAngle * steer, 0);
             wheelFL.transform.localRotation = wheelRotation;
             wheelFR.transform.localRotation = wheelRotation;
@@ -54,10 +78,10 @@ namespace UnityHelpers
             currentTotalSpeed = vehicleRigidbody.velocity.magnitude;
             currentForwardSpeed = currentTotalSpeed * forwardPercent;
 
-            wheelFL.SetGrip(vehicleStats.grip);
-            wheelFR.SetGrip(vehicleStats.grip);
-            wheelRL.SetGrip(vehicleStats.grip);
-            wheelRR.SetGrip(vehicleStats.grip);
+            wheelFL.SetGrip(grip);
+            wheelFR.SetGrip(grip);
+            wheelRL.SetGrip(grip);
+            wheelRR.SetGrip(grip);
 
             //if (wheelRL.IsGrounded(-wheelRL.up, wheelGroundDistance) || wheelRR.IsGrounded(-wheelRR.up, wheelGroundDistance))
             if (wheelRL.IsGrounded() || wheelRR.IsGrounded())
@@ -66,8 +90,8 @@ namespace UnityHelpers
                 brake = Mathf.Clamp(brake, 0, 1);
                 steer = Mathf.Clamp(steer, -1, 1);
 
-                float gasAmount = gas * (vehicleStats.acceleration + (gas > 0 && currentForwardSpeed < 0 || gas < 0 && currentForwardSpeed > 0 ? vehicleStats.brakeleration : 0));
-                float brakeAmount = brake * vehicleStats.brakeleration * (currentForwardSpeed >= 0 ? -1 : 1);
+                float gasAmount = gas * (acceleration + (gas > 0 && currentForwardSpeed < 0 || gas < 0 && currentForwardSpeed > 0 ? brakeleration : 0));
+                float brakeAmount = brake * brakeleration * (currentForwardSpeed >= 0 ? -1 : 1);
                 float totalAcceleration = gasAmount + brakeAmount;
                 if (totalAcceleration > -float.Epsilon && totalAcceleration < float.Epsilon && !(strivedSpeed > -float.Epsilon && strivedSpeed < float.Epsilon))
                     totalAcceleration = vehicleStats.deceleration * (currentForwardSpeed >= 0 ? -1 : 1);
@@ -87,9 +111,72 @@ namespace UnityHelpers
             prevStrivedSpeed = strivedSpeed;
             //prevVelocity = vehicleRigidbody.velocity;
         }
+        private void OnCollisionEnter(Collision collision)
+        {
+            //float otherMass = 0;
+            //if (collision.rigidbody != null)
+            //    otherMass = collision.rigidbody.mass;
 
-        #region Collsion Detection
-        private void DetectCollision()
+            float percentDamage = collision.impulse.magnitude / vehicleRigidbody.mass / 100;
+            if (vehicleHealth != null)
+                vehicleHealth.HurtPercent(percentDamage);
+            //Debug.Log(collision.gameObject.name + " impulse: " + collision.impulse + " percent damage: " + percentDamage);
+        }
+
+        private void OnHealthValueChanged(float value)
+        {
+            if (value <= 0.5f)
+            {
+                smoke.Play();
+                if (value <= 0.25f)
+                    fire.Play();
+                else
+                    fire.Stop();
+            }
+            else
+            {
+                smoke.Stop();
+                fire.Stop();
+            }
+            //Debug.Log("Vehicle health: " + value);
+        }
+
+        public float GetAcceleration()
+        {
+            float percent = 1;
+            if (healthAffectsAcceleration && vehicleHealth != null)
+                percent = Mathf.Clamp(vehicleHealth.value, 0, 0.5f) / 0.5f;
+
+            return (vehicleStats.acceleration + accelerationMod) * percent;
+        }
+        public float GetBrakeleration()
+        {
+            return vehicleStats.brakeleration + brakelerationMod;
+        }
+        public float GetMaxForwardSpeed()
+        {
+            return vehicleStats.maxForwardSpeed + forwardSpeedMod;
+        }
+        public float GetMaxReverseSpeed()
+        {
+            return vehicleStats.maxReverseSpeed + reverseSpeedMod;
+        }
+        public float GetGrip()
+        {
+            return vehicleStats.grip + gripMod;
+        }
+
+        public float GetSpeedInKMH()
+        {
+            return currentForwardSpeed * MPS_TO_KMH;
+        }
+        public float GetSpeedInMPH()
+        {
+            return currentForwardSpeed * MPS_TO_MPH;
+        }
+
+        #region Ray Casting
+        private void CastAllRays()
         {
             int forwardRayCount = MathHelpers.GetOddNumber((int)vehicleStats.forwardRays);
             if (forwardRayResults == null || forwardRayResults.Length != forwardRayCount)
@@ -204,7 +291,9 @@ namespace UnityHelpers
 
         private void SetStrivedSpeed(float value)
         {
-            strivedSpeed = Mathf.Clamp(value, -vehicleStats.maxReverseSpeed, vehicleStats.maxForwardSpeed);
+            float maxForwardSpeed = GetMaxForwardSpeed();
+            float maxReverseSpeed = GetMaxReverseSpeed();
+            strivedSpeed = Mathf.Clamp(value, -maxReverseSpeed, maxForwardSpeed);
         }
 
         public void Match(CarPhysics other)
