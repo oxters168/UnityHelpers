@@ -5,6 +5,10 @@ namespace UnityHelpers
     [CreateAssetMenu(fileName = "CarStats", menuName = "Car/Stats", order = 1)]
     public class CarStats : ScriptableObject
     {
+        [Tooltip("The name of the company that built the car")]
+        public string companyName = "Generic";
+        [Tooltip("The name of the car model itself")]
+        public string modelName = "Model";
         [Tooltip("How fast the vehicle accelerates in m/s^2 when the gas is pressed")]
         public float acceleration = 3.4f;
         [Tooltip("How fast the vehicle slows down in m/s^2 when the gas and brakes aren't pressed")]

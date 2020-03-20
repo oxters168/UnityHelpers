@@ -52,7 +52,7 @@ namespace UnityHelpers
 
         private void Awake()
         {
-            vehicleBounds = vehicleRigidbody.transform.GetTotalBounds(false, false, true);
+            vehicleBounds = CalculateBounds();
 
             if (vehicleHealth != null)
                 vehicleHealth.onValueChanged.AddListener(OnHealthValueChanged);
@@ -164,6 +164,22 @@ namespace UnityHelpers
         public float GetGrip()
         {
             return vehicleStats.grip + gripMod;
+        }
+
+        private Bounds CalculateBounds()
+        {
+            bool isActive = vehicleRigidbody.gameObject.activeSelf;
+            Vector3 position = vehicleRigidbody.transform.position;
+            Quaternion rotation = vehicleRigidbody.transform.rotation;
+            vehicleRigidbody.gameObject.SetActive(false);
+            vehicleRigidbody.transform.position = Vector3.zero;
+            vehicleRigidbody.transform.rotation = Quaternion.identity;
+            Bounds bounds = vehicleBounds = vehicleRigidbody.transform.GetTotalBounds(false, false, true);
+            vehicleRigidbody.transform.position = position;
+            vehicleRigidbody.transform.rotation = rotation;
+            vehicleRigidbody.gameObject.SetActive(isActive);
+
+            return bounds;
         }
 
         public float GetSpeedInKMH()
