@@ -33,6 +33,7 @@ namespace UnityHelpers
         public float forwardSpeedMod, reverseSpeedMod;
         public float accelerationMod, brakelerationMod;
         public float gripMod;
+        public float armorMod;
 
         public float currentForwardSpeed { get; private set; }
         public float currentTotalSpeed { get; private set; }
@@ -49,6 +50,9 @@ namespace UnityHelpers
         public bool castRays;
         private RaycastHitInfo[] forwardRayResults, leftRayResults, rightRayResults, rearRayResults;
         //private Vector3 prevVelocity;
+
+        public event OnHitHandler onHit;
+        public delegate void OnHitHandler(CarPhysics caller, Collision collision);
 
         private void Awake()
         {
@@ -113,14 +117,15 @@ namespace UnityHelpers
         }
         private void OnCollisionEnter(Collision collision)
         {
-            //float otherMass = 0;
-            //if (collision.rigidbody != null)
-            //    otherMass = collision.rigidbody.mass;
-
-            float percentDamage = collision.impulse.magnitude / vehicleRigidbody.mass / 100;
             if (vehicleHealth != null)
+            {
+                armorMod = Mathf.Clamp(armorMod, -1, 1);
+                float percentDamage = (collision.impulse.magnitude / vehicleRigidbody.mass / 100) * (1 - armorMod);
                 vehicleHealth.HurtPercent(percentDamage);
-            //Debug.Log(collision.gameObject.name + " impulse: " + collision.impulse + " percent damage: " + percentDamage);
+                //Debug.Log(collision.gameObject.name + " impulse: " + collision.impulse + " percent damage: " + percentDamage);
+            }
+
+            onHit?.Invoke(this, collision);
         }
 
         private void OnHealthValueChanged(float value)
