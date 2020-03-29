@@ -19,10 +19,15 @@ namespace UnityHelpers
         public float maxForwardSpeed = 57.2f;
         [Tooltip("The maximum speed in m/s the vehicle can reach when driving backward")]
         public float maxReverseSpeed = 28.6f;
-        [Tooltip("The maximum the tires can rotate in degrees in the local y axis")]
-        public float maxWheelAngle = 33.33f;
-        [Tooltip("This is the value that will be put into the abstract wheel, so it depends on your derivation")]
+
+        [Space(10), Tooltip("This is the value that will be put into the abstract wheel, so it depends on your derivation")]
         public float grip = 3;
+        [Tooltip("The maximum the tires can rotate in degrees in the local y axis when stopped")]
+        public float slowWheelAngle = 33.33f;
+        [Tooltip("The maximum the tires can rotate in degrees in the local y axis when going at maxForwardSpeed")]
+        public float fastWheelAngle = 5f;
+        [Tooltip("This graph depicts how quickly we go from slowWheelAngle to fastWheelAngle based on speed, where 0 on the x axis represents not moving and 1 on the x axis represents maxForwardSpeed")]
+        public AnimationCurve wheelAngleCurve;
 
         [Space(10), Tooltip("The amount of rays (odd index i.e. 1 = 1, 2 = 3, 3 = 5...")]
         public uint forwardRays;

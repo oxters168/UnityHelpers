@@ -8,9 +8,6 @@ namespace UnityHelpers
     /// </summary>
     public class CarPhysics : MonoBehaviour
     {
-        public const float MPS_TO_KMH = 3.6f;
-        public const float MPS_TO_MPH = 2.237f;
-
         public Rigidbody vehicleRigidbody;
         public HealthController vehicleHealth;
         private Bounds vehicleBounds;
@@ -53,6 +50,8 @@ namespace UnityHelpers
 
         public event OnHitHandler onHit;
         public delegate void OnHitHandler(CarPhysics caller, Collision collision);
+        public event OnTriggerHandler onTrigger;
+        public delegate void OnTriggerHandler(CarPhysics caller, Collider other);
 
         private void Awake()
         {
@@ -74,7 +73,9 @@ namespace UnityHelpers
             float brakeleration = GetBrakeleration();
             float grip = GetGrip();
 
-            Quaternion wheelRotation = Quaternion.Euler(0, vehicleStats.maxWheelAngle * steer, 0);
+            float currentMaxWheelAngle = vehicleStats.wheelAngleCurve.Evaluate(Mathf.Abs(currentForwardSpeed / vehicleStats.maxForwardSpeed)) * Mathf.Abs(vehicleStats.slowWheelAngle - vehicleStats.fastWheelAngle) + Mathf.Min(vehicleStats.slowWheelAngle, vehicleStats.fastWheelAngle);
+            //Debug.Log(currentMaxWheelAngle);
+            Quaternion wheelRotation = Quaternion.Euler(0, currentMaxWheelAngle * steer, 0);
             wheelFL.transform.localRotation = wheelRotation;
             wheelFR.transform.localRotation = wheelRotation;
 
@@ -126,6 +127,11 @@ namespace UnityHelpers
             }
 
             onHit?.Invoke(this, collision);
+        }
+        private void OnTriggerEnter(Collider other)
+        {
+            //Debug.Log("Triggered " + other.name);
+            onTrigger?.Invoke(this, other);
         }
 
         private void OnHealthValueChanged(float value)
@@ -189,11 +195,11 @@ namespace UnityHelpers
 
         public float GetSpeedInKMH()
         {
-            return currentForwardSpeed * MPS_TO_KMH;
+            return currentForwardSpeed * MathHelpers.MPS_TO_KMH;
         }
         public float GetSpeedInMPH()
         {
-            return currentForwardSpeed * MPS_TO_MPH;
+            return currentForwardSpeed * MathHelpers.MPS_TO_MPH;
         }
 
         #region Ray Casting
