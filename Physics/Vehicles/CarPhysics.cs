@@ -331,7 +331,8 @@ namespace UnityHelpers
                 brake = other.brake;
                 steer = other.steer;
 
-                Teleport(other.vehicleRigidbody.position, other.vehicleRigidbody.rotation, other.currentForwardSpeed);
+                Teleport(other.vehicleRigidbody.transform.position, other.vehicleRigidbody.transform.rotation);
+                vehicleRigidbody.velocity = other.vehicleRigidbody.velocity;
                 vehicleRigidbody.angularVelocity = other.vehicleRigidbody.angularVelocity;
             }
         }
