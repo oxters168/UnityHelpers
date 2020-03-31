@@ -5,6 +5,33 @@ namespace UnityHelpers
     public static class MathHelpers
     {
         /// <summary>
+        /// Converts a value that's in meters per second to kilometers per hour by multiplying (mps * MPS_TO_KMH = kmh).
+        /// </summary>
+        public const float MPS_TO_KMH = 3.6f;
+        /// <summary>
+        /// Converts a value that's in meters per second to miles per hour by multiplying (mps * MPS_TO_MPH = mph).
+        /// </summary>
+        public const float MPS_TO_MPH = 2.237f;
+        /// <summary>
+        /// Converts a value that's in meters to miles by multiplying (meters * METERS_TO_MILES = miles).
+        /// </summary>
+        public const float METERS_TO_MILES = 0.00062150404f;
+        /// <summary>
+        /// Converts a value that's in meters to kilometers by multiplying (meters * METERS_TO_KILOS = kilometers).
+        /// </summary>
+        public const float METERS_TO_KILOS = 0.001f;
+
+        /// <summary>
+        /// Returns an odd number given an index (0 => 1, 1 => 3, 2 => 5...)
+        /// </summary>
+        /// <param name="index">The index of the odd number</param>
+        /// <returns>An odd number</returns>
+        public static int GetOddNumber(int index)
+        {
+            return index != 0 ? Mathf.RoundToInt((index - Mathf.Sign(index)) * 2 + Mathf.Sign(index)) : 0;
+        }
+
+        /// <summary>
         /// Sets the decimal places of the value.
         /// </summary>
         /// <param name="value">The original value</param>

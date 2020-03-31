@@ -7,6 +7,31 @@ namespace UnityHelpers
     public static class VectorHelpers
     {
         /// <summary>
+        /// Calculates the percent a vector's direction is close to another vector's direction.
+        /// </summary>
+        /// <param name="vector">The first vector</param>
+        /// <param name="otherVector">The second vector</param>
+        /// <returns>A value between -1 and 1 representing the distance between the two vector directions.</returns>
+        public static float PercentDirection(this Vector3 vector, Vector3 otherVector)
+        {
+            return -(Vector3.Angle(vector.normalized, otherVector.normalized) / 90 - 1);
+        }
+
+        /// <summary>
+        /// Calculates the signed angle between fromDirection and the direction between the two points on the given axis.
+        /// </summary>
+        /// <param name="point">The start point.</param>
+        /// <param name="otherPoint">The end point.</param>
+        /// <param name="fromDirection">The direction to compare to.</param>
+        /// <param name="axis">The axis to measure on.</param>
+        /// <returns>The angle between the direction generated from the points and the given direction.</returns>
+        public static float SignedAngle(this Vector3 point, Vector3 otherPoint, Vector3 fromDirection, Vector3 axis)
+        {
+            Vector3 obstacleOffset = otherPoint - point;
+            return Vector3.SignedAngle(fromDirection, obstacleOffset.normalized, axis);
+        }
+
+        /// <summary>
         /// Gets just the x and y values of the vector
         /// </summary>
         /// <param name="vector">Original vector</param>
