@@ -133,7 +133,7 @@ namespace UnityHelpers
                     //currentMaxAffectionDistance = float.MinValue;
                 //}
 
-                Vector3 pushForceVector = AffectedBody.CalculateRequiredForce(strivedPosition, Time.fixedDeltaTime, strength, maxForce);
+                Vector3 pushForceVector = AffectedBody.CalculateRequiredForceForPosition(strivedPosition, Time.fixedDeltaTime, strength, maxForce);
                 float percentage = 1;
                 //Vector3 actualPreviousForceVector = affectedBody.mass * (affectedBody.velocity / Time.fixedDeltaTime);
                 //float previousPushForceSqr = previousPushForceVector.sqrMagnitude;
