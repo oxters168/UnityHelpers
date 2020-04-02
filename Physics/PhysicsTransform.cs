@@ -26,8 +26,6 @@ namespace UnityHelpers
         /// Sets striveForPosition and striveForOrientation simultaneously.
         /// </summary>
         public bool strive { set { striveForPosition = value; striveForOrientation = value; } }
-        public bool striveForPosition = true;
-        public bool striveForOrientation = true;
         /// <summary>
         /// Only counteracts gravity if rigidbody is affected by gravity and not kinematic
         /// </summary>
@@ -35,6 +33,7 @@ namespace UnityHelpers
         public bool counteractGravity = true; //Suzan told me about PID controllers and how they work, so maybe in the future I can add the I to positional strivingness to counteract gravity/friction automatically.
 
         [Space(10)]
+        public bool striveForPosition = true;
         public Vector3 position;
         /// <summary>
         /// Sets position relative to parent.
@@ -49,10 +48,20 @@ namespace UnityHelpers
                     position = value;
             }
         }
+        [Tooltip("The final multiplier or coefficient of the calculated force")]
         public float strength = 1;
-        [Tooltip("In kg * m/s^2")]
+        [Tooltip("In kg * m/s^2 (newtons)")]
         public float maxForce = 500;
+        [Tooltip("If set to true, will dynamically set the strength value to be based on distance from given position")]
+        public bool calculateStrengthByDistance = false;
+        [Tooltip("This will be what the current distance is divided by to make a strength percentage (measured in meters)")]
+        public float distanceDivisor = 5;
+        public AnimationCurve strengthGraph = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));
+        [Tooltip("If set to true, will clamp the strength value to between 0 and 1")]
+        public bool clampStrength = true;
+
         [Space(10)]
+        public bool striveForOrientation = true;
         public Quaternion rotation = Quaternion.identity;
         /// <summary>
         /// Sets rotation relative to parent.
@@ -72,6 +81,23 @@ namespace UnityHelpers
         [Tooltip("damping = 1, the system is critically damped\ndamping is greater than 1 the system is over damped(sluggish)\ndamping is less than 1 the system is under damped(it will oscillate a little)")]
         public float damping = 1;
 
+        [Space(10)]
+        public bool striveForVelocity = false;
+        public Vector3 velocity;
+        public Vector3 localVelocity
+        {
+            set
+            {
+                if (parent != null)
+                    velocity = parent.TransformDirection(value);
+                else
+                    velocity = value;
+            }
+        }
+        public float velStrength = 1;
+        [Tooltip("In kg * m/s^2 (newtons)")]
+        public float velMaxForce = 500;
+
         public Rigidbody AffectedBody { get { if (_affectedBody == null) _affectedBody = GetComponent<Rigidbody>(); return _affectedBody; } }
         private Rigidbody _affectedBody;
 
@@ -87,6 +113,12 @@ namespace UnityHelpers
         {
             if (striveForPosition)
                 AffectedBody.AddForce(CalculatePushForceVector(), ForceMode.Force);
+
+            if (striveForVelocity)
+            {
+                Vector3 boneForce = AffectedBody.CalculateRequiredForceForSpeed(velocity, Time.deltaTime, velMaxForce) * velStrength;
+                AffectedBody.AddForce(boneForce, ForceMode.Force);
+            }
 
             if (striveForOrientation)
             {
@@ -126,7 +158,20 @@ namespace UnityHelpers
                 }
             }
 
-            return AffectedBody.CalculateRequiredForceForPosition(strivedPosition, Time.fixedDeltaTime, strength, maxForce);
+            if (calculateStrengthByDistance)
+            {
+                float currentDistance = (strivedPosition - AffectedBody.position).magnitude;
+                strength = currentDistance;
+                if (distanceDivisor != 0)
+                    strength /= distanceDivisor;
+
+                strength = strengthGraph.Evaluate(strength);
+            }
+
+            if (clampStrength)
+                strength = Mathf.Clamp01(strength);
+
+            return AffectedBody.CalculateRequiredForceForPosition(strivedPosition, Time.fixedDeltaTime, maxForce) * strength;
         }
     }
 }
