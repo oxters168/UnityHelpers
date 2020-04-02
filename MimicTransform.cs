@@ -5,8 +5,14 @@ namespace UnityHelpers
     public class MimicTransform : MonoBehaviour
     {
         public Transform other;
-        public Transform lookAt;
+        public bool mimicLocalPosition;
         public bool mimicX = true, mimicY = true, mimicZ = true;
+        public bool mimicRotation;
+        public bool mimicLocalRotation;
+
+        [Space(10)]
+        public Transform lookAt;
+
         [Space(10)]
         public Vector3 offset;
         public Vector3 rotOffset;
@@ -23,19 +29,36 @@ namespace UnityHelpers
             {
                 errored = false;
 
-                Vector3 mimickedPosition = new Vector3(mimicX ? other.position.x : transform.position.x, mimicY ? other.position.y : transform.position.y, mimicZ ? other.position.z : transform.position.z);
+                Vector3 mimickedPosition = mimicLocalPosition ? transform.localPosition : transform.position;
+                Vector3 otherPosition = mimicLocalPosition ? other.localPosition : other.position;
+                if (mimicX)
+                    mimickedPosition.x = otherPosition.x;
+                if (mimicY)
+                    mimickedPosition.y = otherPosition.y;
+                if (mimicZ)
+                    mimickedPosition.z = otherPosition.z;
+
                 Vector3 nextPosition = mimickedPosition + other.right * offset.x + other.up * offset.y + other.forward * offset.z;
                 if (lerpPosition)
                     nextPosition = Vector3.Lerp(transform.position, nextPosition, Time.deltaTime * lerpPositionAmount);
-                transform.position = nextPosition;
 
-                Quaternion mimickedRotation = other.rotation;
+                if (mimicLocalPosition)
+                    transform.localPosition = nextPosition;
+                else
+                    transform.position = nextPosition;
+
+                //Rotation stuff
+                Quaternion mimickedRotation = mimicLocalRotation ? other.localRotation : other.rotation;
                 if (lookAt != null)
                     mimickedRotation = Quaternion.LookRotation(lookAt.position - transform.position);
                 Quaternion nextRotation = mimickedRotation * Quaternion.Euler(rotOffset);
                 if (lerpRotation)
-                    nextRotation = Quaternion.Lerp(transform.rotation, nextRotation, Time.deltaTime * lerpRotationAmount);
-                transform.rotation = nextRotation;
+                    nextRotation = Quaternion.Lerp(mimicLocalRotation ? transform.localRotation : transform.rotation, nextRotation, Time.deltaTime * lerpRotationAmount);
+
+                if (lookAt != null || (!mimicLocalRotation && mimicRotation))
+                    transform.rotation = nextRotation;
+                else if (mimicLocalRotation)
+                    transform.localRotation = nextRotation;
             }
             else if (!errored)
             {
