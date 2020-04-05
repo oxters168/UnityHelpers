@@ -32,8 +32,6 @@ namespace UnityHelpers
         [Range(0, float.MaxValue), Tooltip("The max distance the object can be from original local position, or if there is no parent then world position")]
         public float localLinearLimit = float.MaxValue;
 
-        public ConfigurableJoint joint; //Temporary will move later
-
         /// <summary>
         /// Sets striveForPosition and striveForOrientation simultaneously.
         /// </summary>
