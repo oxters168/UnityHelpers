@@ -186,9 +186,17 @@ namespace UnityHelpers
         {
             return parent != null ? parent.TransformPoint(localAnchorPosition) : worldAnchorPosition;
         }
+        public Vector3 GetAnchorPositionInLocalCoords()
+        {
+            return parent != null ? localAnchorPosition : worldAnchorPosition;
+        }
         public Quaternion GetAnchorRotationInWorldCoords()
         {
             return parent != null ? parent.TransformRotation(localAnchorRotation) : worldAnchorRotation;
+        }
+        public Quaternion GetAnchorRotationInLocalCoords()
+        {
+            return parent != null ? localAnchorRotation : worldAnchorRotation;
         }
         public void SetAnchorPosition(Vector3 anchorPosition, Space space)
         {
@@ -248,29 +256,53 @@ namespace UnityHelpers
         }
         public void ApplyPositionalLock(LockAxes lockedWorldDirections, LockAxes lockedLocalDirections)
         {
-            Vector3 originalPosition = GetAnchorPositionInWorldCoords();
+            Vector3 originalLocalPosition = GetAnchorPositionInLocalCoords();
             IterateDirections((lockedDirection) =>
             {
-                Vector3 positionDifference = AffectedBody.position - originalPosition;
-                float totalPosDifference = positionDifference.magnitude;
+                Vector3 positionDifference = transform.localPosition - originalLocalPosition;
+                //float totalPosDifference = positionDifference.magnitude;
 
-                float percentInDirection = totalPosDifference * positionDifference.PercentDirection(lockedDirection);
-                if (percentInDirection >= localLinearLimit)
+                Vector3 lockInverse = Vector3.one - lockedDirection.Abs();
+                Vector3 positionalOffsetInDirection = positionDifference.Multiply(lockedDirection);
+                float distance = positionalOffsetInDirection.magnitude;
+                float percentInDirection = positionDifference.PercentDirection(lockedDirection);
+                //float percentInDirection = totalPosDifference * positionDifference.PercentDirection(lockedDirection);
+                if (percentInDirection > 0 && distance >= localLinearLimit)
                 {
-                    Vector3 positionalOffsetInDirection = lockedDirection * (percentInDirection - localLinearLimit);
-                    AffectedBody.position = (AffectedBody.position - positionalOffsetInDirection);
-                    //AffectedBody.MovePosition(AffectedBody.position - positionalOffsetInDirection);
+                    transform.localPosition = transform.localPosition.Multiply(lockInverse) + originalLocalPosition.Multiply(lockedDirection);
 
-                    /*Vector3 velocity = AffectedBody.velocity;
-                    float totalSpeed = velocity.magnitude;
-                    float speedInDirection = totalSpeed * velocity.PercentDirection(lockedDirection);
+                    /*Vector3 localVelocity = AffectedBody.velocity.normalized;
+                    if (parent != null)
+                        localVelocity = parent.InverseTransformDirection(localVelocity);
+                    //float totalSpeed = velocity.magnitude;
+                    float speedInDirection = localVelocity.Multiply(lockedDirection).magnitude;
                     if (speedInDirection >= minimumSpeedToBlock)
                     {
-                        Vector3 velocityInDirection = lockedDirection * speedInDirection;
-                        AffectedBody.velocity = velocity - velocityInDirection;
+                        Vector3 adjustedVelocity = localVelocity.Multiply(lockInverse);
+                        float percentMagnitude = adjustedVelocity.magnitude;
+                        if (parent != null)
+                            adjustedVelocity = parent.TransformDirection(adjustedVelocity.normalized);
+                        AffectedBody.velocity = adjustedVelocity * AffectedBody.velocity.magnitude * percentMagnitude;
+                        //Vector3 velocityInDirection = lockedDirection * speedInDirection;
+                        //AffectedBody.velocity = velocity - velocityInDirection;
                     }*/
                 }
-            }, lockedWorldDirections, lockedLocalDirections, parent);
+            }, lockedLocalDirections);
+            //}, lockedWorldDirections, lockedLocalDirections, parent);
+
+            //I don't like that I have the same code here twice, but what can I do
+            Vector3 originalWorldPosition = GetAnchorPositionInWorldCoords();
+            IterateDirections((lockedDirection) =>
+            {
+                Vector3 positionDifference = transform.position - originalWorldPosition;
+
+                Vector3 lockInverse = Vector3.one - lockedDirection.Abs();
+                Vector3 positionalOffsetInDirection = positionDifference.Multiply(lockedDirection);
+                float distance = positionalOffsetInDirection.magnitude;
+                float percentInDirection = positionDifference.PercentDirection(lockedDirection);
+                if (percentInDirection > 0 && distance >= localLinearLimit)
+                    transform.position = transform.position.Multiply(lockInverse) + originalWorldPosition.Multiply(lockedDirection);
+            }, lockedWorldDirections);
         }
         public void ApplyRotationalLock()
         {

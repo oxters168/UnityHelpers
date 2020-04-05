@@ -7,6 +7,25 @@ namespace UnityHelpers
     public static class VectorHelpers
     {
         /// <summary>
+        /// Applies absolute value to all values of the given vector3
+        /// </summary>
+        /// <param name="original">The original vector3</param>
+        /// <returns>Absolute valued vector3</returns>
+        public static Vector3 Abs(this Vector3 original)
+        {
+            return new Vector3(Mathf.Abs(original.x), Mathf.Abs(original.y), Mathf.Abs(original.z));
+        }
+        /// <summary>
+        /// Applies absolute value to all values of the given vector2
+        /// </summary>
+        /// <param name="original">The original vector2</param>
+        /// <returns>Absolute valued vector2</returns>
+        public static Vector2 Abs(this Vector2 original)
+        {
+            return new Vector2(Mathf.Abs(original.x), Mathf.Abs(original.y));
+        }
+
+        /// <summary>
         /// Calculates the percent a vector's direction is close to another vector's direction (1 for same, -1 for opposite, and 0 for perpendicular (so basically Vector3.dot but more correct in-betweens)).
         /// </summary>
         /// <param name="vector">The first vector</param>
