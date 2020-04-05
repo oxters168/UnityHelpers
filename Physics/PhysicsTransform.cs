@@ -1,22 +1,34 @@
 ﻿using UnityEngine;
-using System.Collections.Generic;
 
 namespace UnityHelpers
 {
     [RequireComponent(typeof(Rigidbody))]
     public class PhysicsTransform : MonoBehaviour
     {
+        [System.Flags]
+        public enum LockAxes
+        {
+            none = 0x0,
+
+            up = 0x1,
+            down = 0x2,
+            left = 0x4,
+            right = 0x8,
+            forward = 0x10,
+            back = 0x20,
+        }
+
         /// <summary>
         /// Only used for local position and local rotation calculations, does not actively anchor self unless anchorPosition/anchorRotation is greater than 0. Inspector values are in world coordinates, use scripting to access local position and local rotation.
         /// </summary>
         [Tooltip("Only used for local position and local rotation calculations, does not actively anchor self unless anchorPosition/anchorRotation is greater than 0. Inspector values are in world coordinates, use scripting to access local position and local rotation.")]
         public Transform parent;
-        [Range(0, 1), Tooltip("0 means don't anchor at all, 1 means anchor completely")]
+        [Range(0, 1), Tooltip("0 means don't anchor at all and 1 means anchor completely to the anchor position/rotation (by default is the starting position/rotation and local if there is parent)")]
         public float anchorPositionPercent, anchorRotationPercent;
-        public bool anchorByDistance;
-        public float minAnchorDistance = 0.01f, maxAnchorDistance = 0.04f;
-        private Vector3 originalLocalPosition;
-        private Quaternion originalLocalRotation;
+        private Vector3 worldAnchorPosition;
+        private Quaternion worldAnchorRotation;
+        private Vector3 localAnchorPosition;
+        private Quaternion localAnchorRotation;
         [Range(0, float.MaxValue), Tooltip("The max distance the object can be from original local position, or if there is no parent then world position")]
         public float localLinearLimit = float.MaxValue;
 
@@ -59,6 +71,11 @@ namespace UnityHelpers
         public AnimationCurve strengthGraph = new AnimationCurve(new Keyframe(0, 0), new Keyframe(1, 1));
         [Tooltip("If set to true, will clamp the strength value to between 0 and 1")]
         public bool clampStrength = true;
+        [Tooltip("World space directions where to counteract any forces acted on this Rigidbody (does not work well, better to use freeze position in rigidbody)")]
+        public LockAxes lockedWorldDirections = LockAxes.none;
+        [Tooltip("Local space directions where to counteract any forces acted on this Rigidbody (does not work well, better to use freeze position in rigidbody)")]
+        public LockAxes lockedLocalDirections = LockAxes.none;
+        public float minimumSpeedToBlock = 0.1f;
 
         [Space(10)]
         public bool striveForOrientation = true;
@@ -80,6 +97,8 @@ namespace UnityHelpers
         public float frequency = 6;
         [Tooltip("damping = 1, the system is critically damped\ndamping is greater than 1 the system is over damped(sluggish)\ndamping is less than 1 the system is under damped(it will oscillate a little)")]
         public float damping = 1;
+        [Tooltip("Stops the Rigidbody from rotating or having any angular velocity (does not work well, better to use freeze rotation in rigidbody)")]
+        public bool lockRotation;
 
         [Space(10)]
         public bool striveForVelocity = false;
@@ -101,18 +120,28 @@ namespace UnityHelpers
         public Rigidbody AffectedBody { get { if (_affectedBody == null) _affectedBody = GetComponent<Rigidbody>(); return _affectedBody; } }
         private Rigidbody _affectedBody;
 
+        //private Vector3 strivedPosition;
+
         void Awake()
         {
+            SetAnchorPosition(transform.position, Space.World);
+            SetAnchorRotation(transform.rotation, Space.World);
+            /*worldAnchorPosition = transform.position;
+            worldAnchorRotation = transform.rotation;
+
             if (parent != null)
             {
-                originalLocalPosition = parent.InverseTransformPoint(transform.position);
-                originalLocalRotation = parent.InverseTransformRotation(transform.rotation);
-            }
+                localAnchorPosition = parent.InverseTransformPoint(transform.position);
+                localAnchorRotation = parent.InverseTransformRotation(transform.rotation);
+            }*/
         }
         void FixedUpdate()
         {
             if (striveForPosition)
-                AffectedBody.AddForce(CalculatePushForceVector(), ForceMode.Force);
+            {
+                Vector3 pushForceVector = CalculatePushForceVector();
+                AffectedBody.AddForce(pushForceVector, ForceMode.Force);
+            }
 
             if (striveForVelocity)
             {
@@ -122,13 +151,17 @@ namespace UnityHelpers
 
             if (striveForOrientation)
             {
-                Quaternion strivedOrientation = Quaternion.Lerp(rotation, parent != null ? parent.TransformRotation(originalLocalRotation) : rotation, anchorRotationPercent);
+                Quaternion strivedOrientation = Quaternion.Lerp(rotation, parent != null ? parent.TransformRotation(localAnchorRotation) : rotation, anchorRotationPercent);
                 Vector3 rotationTorque = AffectedBody.CalculateRequiredTorque(strivedOrientation, frequency, damping);
                 AffectedBody.AddTorque(rotationTorque);
             }
 
             if (counteractGravity && AffectedBody.useGravity && !AffectedBody.isKinematic)
                 AffectedBody.AddForce(-Physics.gravity * AffectedBody.mass);
+
+            ApplyPositionalLock(lockedWorldDirections, lockedLocalDirections);
+            if (lockRotation)
+                ApplyRotationalLock();
         }
         private void OnDrawGizmosSelected()
         {
@@ -136,27 +169,54 @@ namespace UnityHelpers
             Gizmos.DrawWireSphere(transform.position, localLinearLimit);
         }
 
+        public Vector3 GetAnchorPositionInWorldCoords()
+        {
+            return parent != null ? parent.TransformPoint(localAnchorPosition) : worldAnchorPosition;
+        }
+        public Quaternion GetAnchorRotationInWorldCoords()
+        {
+            return parent != null ? parent.TransformRotation(localAnchorRotation) : worldAnchorRotation;
+        }
+        public void SetAnchorPosition(Vector3 anchorPosition, Space space)
+        {
+            if (space == Space.Self && parent != null)
+            {
+                localAnchorPosition = anchorPosition;
+                worldAnchorPosition = parent.TransformPoint(anchorPosition);
+            }
+            else
+            {
+                worldAnchorPosition = anchorPosition;
+                if (parent != null)
+                    localAnchorPosition = parent.InverseTransformPoint(anchorPosition);
+            }
+        }
+        public void SetAnchorRotation(Quaternion anchorRotation, Space space)
+        {
+            if (space == Space.Self && parent != null)
+            {
+                localAnchorRotation = anchorRotation;
+                worldAnchorRotation = parent.TransformRotation(anchorRotation);
+            }
+            else
+            {
+                worldAnchorRotation = anchorRotation;
+                if (parent != null)
+                    localAnchorRotation = parent.InverseTransformRotation(anchorRotation);
+            }
+        }
+        public Vector3 GetStrivedPosition()
+        {
+            Vector3 local = GetAnchorPositionInWorldCoords(); //Get original local position or strive position if no parent
+            return Vector3.Lerp(position, local, anchorPositionPercent); //Get interpolated position
+        }
         public Vector3 CalculatePushForceVector()
         {
-            Vector3 local = parent != null ? parent.TransformPoint(originalLocalPosition) : position; //Get original local position or strive position if no parent
-            Vector3 strivedPosition = Vector3.Lerp(position, local, anchorPositionPercent); //Get interpolated position
+            Vector3 strivedPosition = GetStrivedPosition();
 
-            Vector3 delta = strivedPosition - local; //Get difference in position
+            Vector3 delta = strivedPosition - GetAnchorPositionInWorldCoords(); //Get difference in position
             if (delta.sqrMagnitude > localLinearLimit * localLinearLimit) //If greater than limit
-                strivedPosition = local + delta.normalized * localLinearLimit; //Set to limit
-
-            if (anchorByDistance)
-            {
-                Vector3 strivedDifference = strivedPosition - local;
-                float strivedDistance = strivedDifference.magnitude;
-                if (strivedDistance > minAnchorDistance)
-                {
-                    float offsetDistance = Mathf.Abs(maxAnchorDistance - minAnchorDistance);
-                    float lerpAmount = Mathf.Clamp01((strivedDistance - minAnchorDistance) / offsetDistance);
-                    Vector3 minStrivePosition = local + strivedDifference.normalized * minAnchorDistance;
-                    strivedPosition = Vector3.Lerp(strivedPosition, minStrivePosition, lerpAmount);
-                }
-            }
+                strivedPosition = GetAnchorPositionInWorldCoords() + delta.normalized * localLinearLimit; //Set to limit
 
             if (calculateStrengthByDistance)
             {
@@ -172,6 +232,71 @@ namespace UnityHelpers
                 strength = Mathf.Clamp01(strength);
 
             return AffectedBody.CalculateRequiredForceForPosition(strivedPosition, Time.fixedDeltaTime, maxForce) * strength;
+        }
+        public void ApplyPositionalLock(LockAxes lockedWorldDirections, LockAxes lockedLocalDirections)
+        {
+            Vector3 originalPosition = GetAnchorPositionInWorldCoords();
+            IterateDirections((lockedDirection) =>
+            {
+                Vector3 positionDifference = AffectedBody.position - originalPosition;
+                float totalPosDifference = positionDifference.magnitude;
+
+                float percentInDirection = totalPosDifference * positionDifference.PercentDirection(lockedDirection);
+                if (percentInDirection >= localLinearLimit)
+                {
+                    Vector3 positionalOffsetInDirection = lockedDirection * (percentInDirection - localLinearLimit);
+                    AffectedBody.position = (AffectedBody.position - positionalOffsetInDirection);
+                    //AffectedBody.MovePosition(AffectedBody.position - positionalOffsetInDirection);
+
+                    /*Vector3 velocity = AffectedBody.velocity;
+                    float totalSpeed = velocity.magnitude;
+                    float speedInDirection = totalSpeed * velocity.PercentDirection(lockedDirection);
+                    if (speedInDirection >= minimumSpeedToBlock)
+                    {
+                        Vector3 velocityInDirection = lockedDirection * speedInDirection;
+                        AffectedBody.velocity = velocity - velocityInDirection;
+                    }*/
+                }
+            }, lockedWorldDirections, lockedLocalDirections, parent);
+        }
+        public void ApplyRotationalLock()
+        {
+            AffectedBody.angularVelocity = Vector3.zero;
+            transform.rotation = GetAnchorRotationInWorldCoords();
+        }
+
+        public static void IterateDirections(System.Action<Vector3> directionAction, LockAxes worldDirections, LockAxes localDirections = LockAxes.none, Transform transform = null)
+        {
+            LockAxes[] allDirections = (LockAxes[])System.Enum.GetValues(typeof(LockAxes));
+            for (int i = 0; i < allDirections.Length; i++)
+            {
+                var currentDirection = allDirections[i];
+                if ((worldDirections & currentDirection) != 0)
+                    directionAction.Invoke(GetSingleDirection(currentDirection));
+                if ((localDirections & currentDirection) != 0)
+                    directionAction.Invoke(GetSingleDirection(currentDirection, transform));
+            }
+        }
+        public static Vector3 GetSingleDirection(LockAxes direction, Transform transform = null)
+        {
+            Vector3 returnedDirection;
+
+            if ((direction & LockAxes.up) != 0)
+                returnedDirection = transform != null ? transform.up : Vector3.up;
+            else if ((direction & LockAxes.down) != 0)
+                returnedDirection = transform != null ? -transform.up : Vector3.down;
+            else if ((direction & LockAxes.left) != 0)
+                returnedDirection = transform != null ? -transform.right : Vector3.left;
+            else if ((direction & LockAxes.right) != 0)
+                returnedDirection = transform != null ? transform.right : Vector3.right;
+            else if ((direction & LockAxes.forward) != 0)
+                returnedDirection = transform != null ? transform.forward : Vector3.forward;
+            else if ((direction & LockAxes.back) != 0)
+                returnedDirection = transform != null ? -transform.forward : Vector3.back;
+            else
+                returnedDirection = Vector3.zero;
+
+            return returnedDirection;
         }
     }
 }

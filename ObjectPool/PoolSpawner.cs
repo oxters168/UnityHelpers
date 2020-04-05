@@ -7,13 +7,15 @@ namespace UnityHelpers
     /// </summary>
     public class PoolSpawner : MonoBehaviour
     {
-        private ObjectPool<Transform> pool;
+        private ObjectPool<Transform> Pool { get { if (_pool == null) _pool = PoolManager.GetPool(poolName); return _pool; } }
+        private ObjectPool<Transform> _pool;
         [Tooltip("This is the name of the pool from the pool manager")]
         public string poolName;
         public Bounds spawnArea;
         public bool spawn;
         public float spawnMinRate = 2, spawnMaxRate = 5;
         private float prevSpawnTime, currentSpawnTime;
+        public bool setScale;
         public float minScale = 1, maxScale = 1;
         public uint maxConcurrentlySpawned = 5;
 
@@ -23,28 +25,32 @@ namespace UnityHelpers
 
         private void Start()
         {
-            pool = PoolManager.GetPool(poolName);
             SetNextSpawnTime();
         }
         private void Update()
         {
-            if (spawn && Time.time - prevSpawnTime >= currentSpawnTime && pool.activeCount < maxConcurrentlySpawned)
+            if (spawn && Time.time - prevSpawnTime >= currentSpawnTime && Pool.activeCount < maxConcurrentlySpawned)
             {
-                var spawnedItem = pool.Get(spawned =>
-                {
-                    spawned.forward = transform.forward;
-                    spawned.position = GetRandomSpawnPoint();
-                    spawned.localScale = Vector3.one * Random.Range(minScale, maxScale);
-                });
-                if (spawnedItem != null)
-                    onSpawn?.Invoke(spawnedItem, poolName);
+                Spawn();
                 SetNextSpawnTime();
             }
         }
 
+        public void Spawn()
+        {
+            var spawnedItem = Pool.Get(spawned =>
+            {
+                spawned.forward = transform.forward;
+                spawned.position = GetRandomSpawnPoint();
+                if (setScale)
+                    spawned.localScale = Vector3.one * Random.Range(minScale, maxScale);
+            });
+            if (spawnedItem != null)
+                onSpawn?.Invoke(spawnedItem, poolName);
+        }
         public void ReturnAll()
         {
-            pool?.ReturnAll();
+            Pool?.ReturnAll();
         }
         private Vector3 GetRandomSpawnPoint()
         {
@@ -67,7 +73,7 @@ namespace UnityHelpers
             Gizmos.DrawWireCube(Vector3.zero, new Vector3(spawnArea.size.x, spawnArea.size.y, spawnArea.size.z));
             Gizmos.matrix = oldMatrix;
             Vector3 startCorner = transform.position - transform.forward * spawnArea.size.z / 2 - transform.right * spawnArea.size.x / 2 - transform.up * spawnArea.size.y / 2;
-            Gizmos.DrawSphere(startCorner, 1);
+            Gizmos.DrawSphere(startCorner, 0.01f);
         }
 
         [System.Serializable]

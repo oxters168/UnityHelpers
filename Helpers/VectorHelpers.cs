@@ -7,11 +7,11 @@ namespace UnityHelpers
     public static class VectorHelpers
     {
         /// <summary>
-        /// Calculates the percent a vector's direction is close to another vector's direction.
+        /// Calculates the percent a vector's direction is close to another vector's direction (1 for same, -1 for opposite, and 0 for perpendicular (so basically Vector3.dot but more correct in-betweens)).
         /// </summary>
         /// <param name="vector">The first vector</param>
         /// <param name="otherVector">The second vector</param>
-        /// <returns>A value between -1 and 1 representing the distance between the two vector directions.</returns>
+        /// <returns>A value between -1 and 1 representing the angle between the two vector directions.</returns>
         public static float PercentDirection(this Vector3 vector, Vector3 otherVector)
         {
             return -(Vector3.Angle(vector.normalized, otherVector.normalized) / 90 - 1);

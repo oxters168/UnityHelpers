@@ -42,7 +42,7 @@ namespace UnityHelpers
         /// <param name="timestep">The delta time between frames.</param>
         /// <param name="maxSpeed">The max speed the result velocity can have.</param>
         /// <returns>The velocity value to  be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredVelocityForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.2f, float maxSpeed = float.MaxValue)
+        public static Vector3 CalculateRequiredVelocityForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, float maxSpeed = float.MaxValue)
         {
             Vector3 nakedVelocity = (desiredPosition - rigidbody.position) / timestep;
             if (nakedVelocity.sqrMagnitude > maxSpeed * maxSpeed)
@@ -60,7 +60,7 @@ namespace UnityHelpers
         /// <param name="timestep">The delta time between frames.</param>
         /// <param name="maxForce">The max force the result can have.</param>
         /// <returns>The force value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredForceForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.2f, float maxForce = float.MaxValue)
+        public static Vector3 CalculateRequiredForceForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, float maxForce = float.MaxValue)
         {
             Vector3 nakedForce = (desiredPosition - rigidbody.position) / (timestep * timestep);
             nakedForce *= rigidbody.mass;
@@ -78,7 +78,7 @@ namespace UnityHelpers
         /// <param name="timestep">The delta time between frames.</param>
         /// <param name="maxForce">The max force the result can have.</param>
         /// <returns>The force value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredForceForSpeed(this Rigidbody rigidbody, Vector3 desiredVelocity, float timestep = 0.2f, float maxForce = float.MaxValue)
+        public static Vector3 CalculateRequiredForceForSpeed(this Rigidbody rigidbody, Vector3 desiredVelocity, float timestep = 0.02f, float maxForce = float.MaxValue)
         {
             Vector3 nakedForce = desiredVelocity / timestep;
             nakedForce *= rigidbody.mass;
@@ -97,7 +97,7 @@ namespace UnityHelpers
         /// <param name="timestep">The delta time between frames.</param>
         /// <param name="maxForce">The max force the result can have.</param>
         /// <returns>The force value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredForceForSpeed(float mass, Vector3 velocity, Vector3 desiredVelocity, float timestep = 0.2f, float maxForce = float.MaxValue)
+        public static Vector3 CalculateRequiredForceForSpeed(float mass, Vector3 velocity, Vector3 desiredVelocity, float timestep = 0.02f, float maxForce = float.MaxValue)
         {
             Vector3 nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
