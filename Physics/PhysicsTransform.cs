@@ -59,6 +59,13 @@ namespace UnityHelpers
                 else
                     position = value;
             }
+            get
+            {
+                if (parent != null)
+                    return parent.InverseTransformPoint(position);
+                else
+                    return position;
+            }
         }
         [Tooltip("The final multiplier or coefficient of the calculated force")]
         public float strength = 1;
@@ -92,6 +99,13 @@ namespace UnityHelpers
                 else
                     rotation = value;
             }
+            get
+            {
+                if (parent != null)
+                    return parent.InverseTransformRotation(rotation);
+                else
+                    return rotation;
+            }
         }
         [Tooltip("Frequency is the speed of convergence. If damping is 1, frequency is the 1/time taken to reach ~95% of the target value. i.e. a frequency of 6 will bring you very close to your target within 1/6 seconds.")]
         public float frequency = 6;
@@ -112,6 +126,13 @@ namespace UnityHelpers
                 else
                     velocity = value;
             }
+            get
+            {
+                if (parent != null)
+                    return parent.InverseTransformDirection(velocity);
+                else
+                    return velocity;
+            }
         }
         public float velStrength = 1;
         [Tooltip("In kg * m/s^2 (newtons)")]
@@ -126,14 +147,6 @@ namespace UnityHelpers
         {
             SetAnchorPosition(transform.position, Space.World);
             SetAnchorRotation(transform.rotation, Space.World);
-            /*worldAnchorPosition = transform.position;
-            worldAnchorRotation = transform.rotation;
-
-            if (parent != null)
-            {
-                localAnchorPosition = parent.InverseTransformPoint(transform.position);
-                localAnchorRotation = parent.InverseTransformRotation(transform.rotation);
-            }*/
         }
         void FixedUpdate()
         {
