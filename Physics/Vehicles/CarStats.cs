@@ -5,6 +5,8 @@ namespace UnityHelpers
     [CreateAssetMenu(fileName = "CarStats", menuName = "Car/Stats", order = 1)]
     public class CarStats : ScriptableObject
     {
+        public int index;
+
         [Tooltip("The name of the company that built the car")]
         public string companyName = "Generic";
         [Tooltip("The name of the car model itself")]
