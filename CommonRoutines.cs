@@ -65,6 +65,7 @@ namespace UnityHelpers
 
             action?.Invoke(predicateOutput || pred == null);
         }
+        [Obsolete("Use instead TimedAction with the onStart action")]
         /// <summary>
         /// Does an action over a set period of time giving the percent complete as parameter.
         /// </summary>
@@ -73,6 +74,26 @@ namespace UnityHelpers
         /// <returns>Coroutine enumerator</returns>
         public static IEnumerator TimedAction(Action<float> action, float time, Action onComplete = null)
         {
+            time = Mathf.Clamp(time, 0, float.MaxValue);
+            float startTime = Time.time;
+            while (Time.time - startTime <= time)
+            {
+                action?.Invoke((Time.time - startTime) / time);
+                yield return null;
+            }
+            onComplete?.Invoke();
+        }
+        /// <summary>
+        /// Does an action over a set period of time giving the percent complete as parameter.
+        /// </summary>
+        /// <param name="action">The action to be done</param>
+        /// <param name="time">The amount of time in seconds to do the action in</param>
+        /// <param name="onStart">The action to be done directly before the time has started (can be set to null)</param>
+        /// <param name="onComplete">The action to be done when the time has ended (can be set to null)</param>
+        /// <returns>Coroutine enumerator</returns>
+        public static IEnumerator TimedAction(Action<float> action, float time, Action onStart, Action onComplete)
+        {
+            onStart?.Invoke();
             time = Mathf.Clamp(time, 0, float.MaxValue);
             float startTime = Time.time;
             while (Time.time - startTime <= time)
