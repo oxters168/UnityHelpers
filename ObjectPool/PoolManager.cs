@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace UnityHelpers
 {
+    [DefaultExecutionOrder(-50)]
     public class PoolManager : MonoBehaviour
     {
         private static PoolManager poolManagerInScene;

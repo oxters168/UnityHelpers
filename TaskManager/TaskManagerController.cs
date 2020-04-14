@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace UnityHelpers
 {
+    [DefaultExecutionOrder(-50)]
     public class TaskManagerController : MonoBehaviour
     {
         public int maxConcurrentTasks = 5;
