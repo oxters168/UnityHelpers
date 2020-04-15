@@ -73,15 +73,17 @@ namespace UnityHelpers
             float brakeleration = GetBrakeleration();
             float grip = GetGrip();
 
-            float currentMaxWheelAngle = vehicleStats.wheelAngleCurve.Evaluate(Mathf.Abs(currentForwardSpeed / vehicleStats.maxForwardSpeed)) * Mathf.Abs(vehicleStats.slowWheelAngle - vehicleStats.fastWheelAngle) + Mathf.Min(vehicleStats.slowWheelAngle, vehicleStats.fastWheelAngle);
+            Vector3 vehicleProjectedForward = vehicleRigidbody.transform.forward.Planar(Vector3.up);
+            float forwardPercent = vehicleRigidbody.velocity.PercentDirection(vehicleProjectedForward);
+            currentTotalSpeed = vehicleRigidbody.velocity.magnitude;
+            currentForwardSpeed = currentTotalSpeed * forwardPercent;
+            float currentSpeedPercent = Mathf.Abs(currentForwardSpeed / vehicleStats.maxForwardSpeed);
+
+            float currentMaxWheelAngle = vehicleStats.wheelAngleCurve.Evaluate(currentSpeedPercent) * Mathf.Abs(vehicleStats.slowWheelAngle - vehicleStats.fastWheelAngle) + Mathf.Min(vehicleStats.slowWheelAngle, vehicleStats.fastWheelAngle);
             //Debug.Log(currentMaxWheelAngle);
             Quaternion wheelRotation = Quaternion.Euler(0, currentMaxWheelAngle * steer, 0);
             wheelFL.transform.localRotation = wheelRotation;
             wheelFR.transform.localRotation = wheelRotation;
-
-            float forwardPercent = vehicleRigidbody.velocity.PercentDirection(vehicleRigidbody.transform.forward);
-            currentTotalSpeed = vehicleRigidbody.velocity.magnitude;
-            currentForwardSpeed = currentTotalSpeed * forwardPercent;
 
             wheelFL.SetGrip(grip);
             wheelFR.SetGrip(grip);
@@ -96,7 +98,7 @@ namespace UnityHelpers
                 steer = Mathf.Clamp(steer, -1, 1);
 
                 float gasAmount = gas * (acceleration + (gas > 0 && currentForwardSpeed < 0 || gas < 0 && currentForwardSpeed > 0 ? brakeleration : 0));
-                float brakeAmount = brake * brakeleration * (currentForwardSpeed >= 0 ? -1 : 1);
+                float brakeAmount = Mathf.Clamp01(brake + Mathf.Abs(steer) * vehicleStats.percentSteerEffectsBrake.Evaluate(currentSpeedPercent)) * brakeleration * (currentForwardSpeed >= 0 ? -1 : 1);
                 float totalAcceleration = gasAmount + brakeAmount;
                 if (totalAcceleration > -float.Epsilon && totalAcceleration < float.Epsilon && !(strivedSpeed > -float.Epsilon && strivedSpeed < float.Epsilon))
                     totalAcceleration = vehicleStats.deceleration * (currentForwardSpeed >= 0 ? -1 : 1);
@@ -105,8 +107,8 @@ namespace UnityHelpers
                 SetStrivedSpeed(strivedSpeed + deltaSpeed);
 
                 float nextCurrentSpeed = currentForwardSpeed + deltaSpeed;
-                //If strived speed is changing differently from current speed then set strived speed to current speed
-                if (Mathf.Sign(strivedSpeed - prevStrivedSpeed) != Mathf.Sign(nextCurrentSpeed - prevCurrentSpeed))
+                //If there is too high a difference between the strived speed and the expected next speed then set strived speed to the expected
+                if (Mathf.Abs(strivedSpeed - nextCurrentSpeed) > acceleration)
                     SetStrivedSpeed(nextCurrentSpeed);
 
                 vehicleRigidbody.AddForce(PhysicsHelpers.CalculateRequiredForceForSpeed(vehicleRigidbody.mass, currentForwardSpeed * vehicleRigidbody.transform.forward, strivedSpeed * vehicleRigidbody.transform.forward), ForceMode.Force);
