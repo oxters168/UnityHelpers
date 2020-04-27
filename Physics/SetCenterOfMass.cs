@@ -14,7 +14,7 @@ namespace UnityHelpers
         public Vector3 centerOfMass;
 
         [Range(0, 100)]
-        public float gizmoSize;
+        public float gizmoSize = 0.2f;
 
         [Space(10)]
 

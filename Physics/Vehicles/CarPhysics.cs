@@ -74,9 +74,12 @@ namespace UnityHelpers
             float grip = GetGrip();
 
             Vector3 vehicleProjectedForward = vehicleRigidbody.transform.forward.Planar(Vector3.up);
-            float forwardPercent = vehicleRigidbody.velocity.PercentDirection(vehicleProjectedForward);
-            currentTotalSpeed = vehicleRigidbody.velocity.magnitude;
-            currentForwardSpeed = currentTotalSpeed * forwardPercent;
+            //float forwardPercent = vehicleRigidbody.velocity.PercentDirection(vehicleProjectedForward);
+            //currentTotalSpeed = vehicleRigidbody.velocity.magnitude;
+            //currentForwardSpeed = currentTotalSpeed * forwardPercent;
+            Vector3 planarVelocityVector = vehicleRigidbody.velocity.Planar(Vector3.up);
+            float direction = Mathf.Sign(planarVelocityVector.normalized.PercentDirection(vehicleProjectedForward));
+            currentForwardSpeed = planarVelocityVector.magnitude * direction;
             float currentSpeedPercent = Mathf.Abs(currentForwardSpeed / vehicleStats.maxForwardSpeed);
 
             float currentMaxWheelAngle = vehicleStats.wheelAngleCurve.Evaluate(currentSpeedPercent) * Mathf.Abs(vehicleStats.slowWheelAngle - vehicleStats.fastWheelAngle) + Mathf.Min(vehicleStats.slowWheelAngle, vehicleStats.fastWheelAngle);
@@ -108,7 +111,7 @@ namespace UnityHelpers
 
                 float nextCurrentSpeed = currentForwardSpeed + deltaSpeed;
                 //If there is too high a difference between the strived speed and the expected next speed then set strived speed to the expected
-                if (Mathf.Abs(strivedSpeed - nextCurrentSpeed) > acceleration)
+                if (Mathf.Abs(strivedSpeed - nextCurrentSpeed) > 0)
                     SetStrivedSpeed(nextCurrentSpeed);
 
                 vehicleRigidbody.AddForce(PhysicsHelpers.CalculateRequiredForceForSpeed(vehicleRigidbody.mass, currentForwardSpeed * vehicleRigidbody.transform.forward, strivedSpeed * vehicleRigidbody.transform.forward), ForceMode.Force);
