@@ -81,11 +81,12 @@ namespace UnityHelpers
         /// <param name="rigidbody">The rigidbody that the force will be applied to.</param>
         /// <param name="desiredVelocity">The velocity that you'd like the rigidbody to have.</param>
         /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
         /// <param name="maxForce">The max force the result can have.</param>
         /// <returns>The force value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredForceForSpeed(this Rigidbody rigidbody, Vector3 desiredVelocity, float timestep = 0.02f, float maxForce = float.MaxValue)
+        public static Vector3 CalculateRequiredForceForSpeed(this Rigidbody rigidbody, Vector3 desiredVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
         {
-            return CalculateRequiredForceForSpeed(rigidbody.mass, rigidbody.velocity, desiredVelocity, timestep, maxForce);
+            return CalculateRequiredForceForSpeed(rigidbody.mass, rigidbody.velocity, desiredVelocity, timestep, accountForGravity, maxForce);
         }
         /// <summary>
         /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired speed. Works with the Force ForceMode.
@@ -94,16 +95,23 @@ namespace UnityHelpers
         /// <param name="velocity">The velocity of the rigidbody.</param>
         /// <param name="desiredVelocity">The velocity that you'd like the rigidbody to have.</param>
         /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
         /// <param name="maxForce">The max force the result can have.</param>
         /// <returns>The force value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredForceForSpeed(float mass, Vector3 velocity, Vector3 desiredVelocity, float timestep = 0.02f, float maxForce = float.MaxValue)
+        public static Vector3 CalculateRequiredForceForSpeed(float mass, Vector3 velocity, Vector3 desiredVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
         {
             Vector3 nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
             if (nakedForce.sqrMagnitude > maxForce * maxForce)
                 nakedForce = nakedForce.normalized * maxForce;
 
-            Vector3 deltaForce = nakedForce - (velocity / timestep * mass);
+            Vector3 currentForce = (velocity / timestep * mass);
+
+            Vector3 gravityForce = Vector3.zero;
+            if (accountForGravity)
+                gravityForce = Physics.gravity * mass;
+
+            Vector3 deltaForce = nakedForce - (currentForce + gravityForce);
             return deltaForce;
         }
 
