@@ -280,8 +280,8 @@ namespace UnityHelpers
             Vector3 extentsOffset = Vector3.right * bounds.extents.x * percentExtents.x + Vector3.up * bounds.extents.y * percentExtents.y + Vector3.forward * bounds.extents.z * percentExtents.z;
             Vector3 checkPosition = root.TransformPoint(bounds.center + extentsOffset);
             bool castHit = Physics.Raycast(checkPosition, rayDirection, out hitInfo, maxDistance, layerMask);
-            Debug.DrawLine(root.TransformPoint(bounds.center), checkPosition, Color.blue);
-            Debug.DrawRay(checkPosition, rayDirection * maxDistance, castHit ? Color.green : Color.red);
+            //Debug.DrawLine(root.TransformPoint(bounds.center), checkPosition, Color.blue);
+            //Debug.DrawRay(checkPosition, rayDirection * Mathf.Min(maxDistance, 100f), castHit ? Color.green : Color.red);
             return castHit;
         }
 
