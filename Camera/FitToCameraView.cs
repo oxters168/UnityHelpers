@@ -26,7 +26,7 @@ namespace UnityHelpers
                 cameraErrored = false;
                 ResetRenderTexturePosition();
             }
-            else
+            else if (!cameraErrored)
             {
                 Debug.LogError("FitToCameraView(" + transform.name + "): Camera component not set");
                 cameraErrored = true;

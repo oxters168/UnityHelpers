@@ -7,6 +7,31 @@ namespace UnityHelpers
     public static class VectorHelpers
     {
         /// <summary>
+        /// Transforms a point from a transform's local space to another transform's local space directly
+        /// </summary>
+        /// <param name="transform">The transform whose space the point is originally represented in</param>
+        /// <param name="otherTransform">The transform whose space you'd like the point to be represented in</param>
+        /// <param name="point">The point in terms of the original transform's space</param>
+        /// <returns></returns>
+        public static Vector3 TransformPointToAnotherSpace(this Transform transform, Transform otherTransform, Vector3 point)
+        {
+            var localToLocalMatrix = otherTransform.worldToLocalMatrix * transform.localToWorldMatrix;
+            return localToLocalMatrix.MultiplyPoint(point);
+        }
+        /// <summary>
+        /// Transforms a point from a transform's local space to another transform's local space directly
+        /// </summary>
+        /// <param name="transform">The transform whose space the point is originally represented in</param>
+        /// <param name="otherTransform">The transform whose space you'd like the point to be represented in</param>
+        /// <param name="point">The point in terms of the original transform's space</param>
+        /// <returns></returns>
+        public static Vector3 TransformDirectionToAnotherSpace(this Transform transform, Transform otherTransform, Vector3 direction)
+        {
+            var localToLocalMatrix = otherTransform.worldToLocalMatrix * transform.localToWorldMatrix;
+            return localToLocalMatrix.MultiplyVector(direction);
+        }
+
+        /// <summary>
         /// Applies absolute value to all values of the given vector3
         /// </summary>
         /// <param name="original">The original vector3</param>

@@ -13,6 +13,7 @@ namespace UnityHelpers
         /// <param name="fromColliders">If set to true, will get the total bounds from colliders rather than renderers</param>
         /// <param name="includeDisabled">If set to true includes renderers or colliders that are on disabled gameobjects</param>
         /// <returns>A bounds that encapsulates the entire model</returns>
+        [System.Obsolete("Please use the new GetTotalBounds functions which properly get local/world space bounds")]
         public static Bounds GetTotalBounds(this Transform transform, bool worldSpace = true, bool fromColliders = false, bool includeDisabled = false)
         {
             return GetTotalBounds(transform, ~0, worldSpace, fromColliders, includeDisabled);
@@ -26,6 +27,7 @@ namespace UnityHelpers
         /// <param name="fromColliders">If set to true, will get the total bounds from colliders rather than renderers</param>
         /// <param name="includeDisabled">If set to true includes renderers or colliders that are on disabled gameobjects</param>
         /// <returns>A bounds that encapsulates the entire model</returns>
+        [System.Obsolete("Please use the new GetTotalBounds functions which properly get local/world space bounds")]
         public static Bounds GetTotalBounds(this Transform transform, LayerMask layer, bool worldSpace = true, bool fromColliders = false, bool includeDisabled = false)
         {
             Bounds totalBounds = new Bounds();
@@ -60,6 +62,7 @@ namespace UnityHelpers
         /// <param name="transform">The transform of the object</param>
         /// <param name="worldSpace">An option to return the bounds' center to be relative or absolute</param>
         /// <returns>A bounds that encapsulates only the given transform's model</returns>
+        [System.Obsolete("Please use the new GetBounds functions which properly gets local/world space bounds")]
         public static Bounds GetBounds(this Transform transform, bool worldSpace = true)
         {
             Bounds singleBounds = new Bounds();
@@ -72,6 +75,84 @@ namespace UnityHelpers
 
             return singleBounds;
         }
+        
+        /// <summary>
+        /// Gets the total bounds of an object including all it's children
+        /// </summary>
+        /// <param name="root">The root transform of the object</param>
+        /// <param name="space">An option to return the bounds based on local or world space (local space would be relative to the root transform)</param>
+        /// <param name="includeDisabled">Includes disabled gameobjects if set to true</param>
+        /// <returns>A bounds that encapsulates the entire model</returns>
+        public static Bounds GetTotalBounds(this Transform root, Space space, bool includeDisabled = false)
+        {
+            return root.GetTotalBounds(space, ~0, includeDisabled);
+        }
+        /// <summary>
+        /// Gets the total bounds of an object including all it's children
+        /// </summary>
+        /// <param name="root">The root transform of the object</param>
+        /// <param name="space">An option to return the bounds based on local or world space (local space would be relative to the root transform)</param>
+        /// <param name="layers">The layers to include in bounds calculation</param>
+        /// <param name="includeDisabled">Includes disabled gameobjects if set to true</param>
+        /// <returns>A bounds that encapsulates the entire model</returns>
+        public static Bounds GetTotalBounds(this Transform root, Space space, LayerMask layers, bool includeDisabled = false)
+        {
+            Bounds totalBounds = default;
+
+            List<Bounds> innerBounds = new List<Bounds>();
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+                if (((1 << renderer.gameObject.layer) & layers.value) != 0 && (includeDisabled || renderer.gameObject.activeSelf))
+                {
+                    var currentBounds = renderer.transform.GetBounds(space);
+                    if (space == Space.Self && renderer.transform != root)
+                    {
+                        var adjustedMin = renderer.transform.TransformPointToAnotherSpace(root, currentBounds.min);
+                        var adjustedMax = renderer.transform.TransformPointToAnotherSpace(root, currentBounds.max);
+                        var adjustedCenter = renderer.transform.TransformPointToAnotherSpace(root, currentBounds.center);
+                        currentBounds = new Bounds(adjustedCenter, Vector3.zero);
+                        currentBounds.SetMinMax(adjustedMin, adjustedMax);
+                    }
+                    innerBounds.Add(currentBounds);
+                }
+            
+            if (innerBounds.Count > 0)
+                totalBounds = Combine(innerBounds.ToArray());
+            else
+                totalBounds = new Bounds(space == Space.Self ? root.localPosition : root.position, Vector3.zero);
+
+            return totalBounds;
+        }
+        /// <summary>
+        /// Gets only the current transform's bounds.
+        /// </summary>
+        /// <param name="transform">The transform of the object</param>
+        /// <param name="space">An option to return the bounds based on local or world space</param>
+        /// <returns>A bounds that encapsulates only the given transform's model</returns>
+        public static Bounds GetBounds(this Transform transform, Space space)
+        {
+            Bounds singleBounds = default;
+
+            Renderer renderer = transform.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                if (space == Space.World)
+                    singleBounds = renderer.bounds;
+                else
+                {
+                    if (renderer is SpriteRenderer)
+                        singleBounds = ((SpriteRenderer)renderer).sprite.bounds;
+                    else
+                    {
+                        MeshFilter meshFilter = transform.GetComponent<MeshFilter>();
+                        if (meshFilter != null)
+                            singleBounds = meshFilter.sharedMesh.bounds;
+                    }
+                }
+            }
+
+            return singleBounds;
+        }
+
         /// <summary>
         /// Combines any number of bounds
         /// </summary>
