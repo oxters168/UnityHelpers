@@ -223,6 +223,21 @@ namespace UnityHelpers
         /// </summary>
         /// <param name="root">The object's transform</param>
         /// <param name="rayDirection">The direction the ray will be cast in</param>
+        /// <param name="hitInfo">The returned info of the ray cast</param>
+        /// <param name="percentExtents">How far from the center to the extents to start ray casting from (axes in root's local space)</param>
+        /// <param name="totalBounds">If set to true, will use childrens' bounds as well rather than just the current object's bounds</param>
+        /// <param name="maxDistance">The max distance the ray cast should be</param>
+        /// <param name="useColliders">Whether the bounds should be calculated from the colliders or from the renderers</param>
+        /// <returns>True if an object was hit, false otherwise</returns>
+        public static bool RaycastFromBounds(this Transform root, Vector3 rayDirection, out RaycastHit hitInfo, Vector3 percentExtents, bool totalBounds = true, float maxDistance = 0.1f, bool useColliders = false)
+        {
+            return root.RaycastFromBounds(rayDirection, ~0, out hitInfo, percentExtents, totalBounds, maxDistance, useColliders);
+        }
+        /// <summary>
+        /// Raycasts from the center of the object's bounds plus bounds extents based on percentExtents
+        /// </summary>
+        /// <param name="root">The object's transform</param>
+        /// <param name="rayDirection">The direction the ray will be cast in</param>
         /// <param name="layerMask">Which layers to whitelist in the ray cast</param>
         /// <param name="percentExtents">How far from the center to the extents to start ray casting from (axes in root's local space)</param>
         /// <param name="totalBounds">If set to true, will use childrens' bounds as well rather than just the current object's bounds</param>
