@@ -116,6 +116,55 @@ namespace UnityHelpers
         }
 
         /// <summary>
+        /// Calculates the force value required to be applied to a rigidbody through AddForce to achieve the desired speed. Works with the Force ForceMode.
+        /// </summary>
+        /// <param name="mass">The mass of the rigidbody.</param>
+        /// <param name="velocity">The velocity of the rigidbody.</param>
+        /// <param name="desiredVelocity">The velocity that you'd like the rigidbody to have.</param>
+        /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
+        /// <param name="maxForce">The max force the result can have.</param>
+        /// <returns>The force value to be applied to the rigidbody.</returns>
+        public static float CalculateRequiredForceForSpeed(float mass, float velocity, float desiredVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
+        {
+            float nakedForce = desiredVelocity / timestep;
+            nakedForce *= mass;
+            if (nakedForce > maxForce)
+                nakedForce = maxForce;
+
+            float currentForce = (velocity / timestep * mass);
+
+            float gravityForce = 0;
+            if (accountForGravity)
+                gravityForce = -Physics.gravity.magnitude * mass;
+
+            float deltaForce = nakedForce - (currentForce + gravityForce);
+            return deltaForce;
+        }
+        /// <summary>
+        /// Calculates the velocity value required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the VelocityChange ForceMode.
+        /// </summary>
+        /// <param name="changeInPosition">The amount of distance to traverse within the given time</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
+        /// <param name="maxSpeed">The max speed the result velocity can have.</param>
+        /// <returns>The velocity value to  be applied to the rigidbody.</returns>
+        public static float CalculateRequiredVelocityForPosition(float changeInPosition, float currentVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxSpeed = float.MaxValue)
+        {
+            float nakedVelocity = changeInPosition / timestep;
+            if (nakedVelocity > maxSpeed)
+                nakedVelocity = maxSpeed;
+
+            float gravityVelocity = 0;
+            if (accountForGravity)
+                gravityVelocity = -Physics.gravity.magnitude * timestep;
+
+            float deltaVelocity = nakedVelocity - (currentVelocity + gravityVelocity);
+
+            return deltaVelocity;
+        }
+
+        /// <summary>
         /// Checks if the rigidbody is grounded.
         /// </summary>
         /// <param name="physicsBody">The rigidbody to be checked</param>
