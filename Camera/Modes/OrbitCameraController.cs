@@ -5,6 +5,8 @@ namespace UnityHelpers
     public class OrbitCameraController : BaseCameraController
     {
         public Transform target;
+        [Tooltip("If set to true will use the target's local axes to offset")]
+        public bool localOffset;
         public Vector3 offset;
         public float distance = 10;
         public float minDistance = 0, maxDistance = 100;
@@ -40,7 +42,10 @@ namespace UnityHelpers
 
             if (target != null)
             {
-                transform.position = target.position + offset;
+                Vector3 offsetPosition = target.position + offset;
+                if (localOffset)
+                    offsetPosition = target.TransformPoint(offset);
+                transform.position = offsetPosition;
                 asserted = false;
             }
             else
