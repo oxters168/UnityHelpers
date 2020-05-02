@@ -1,13 +1,15 @@
 ﻿using UnityEngine;
-using UnityHelpers;
 
-public class LocalToLocalTest : MonoBehaviour
+namespace UnityHelpers
 {
-    public Transform parentFrom, parentTo, child;
-
-    void Update()
+    public class LocalToLocalTest : MonoBehaviour
     {
-        if (parentFrom != null && parentTo != null && child != null)
-            Debug.Log(child.name + "'s local position in " + parentTo.name + " would be: " + parentFrom.TransformPointToAnotherSpace(parentTo, child.localPosition));
+        public Transform parentFrom, parentTo, child;
+
+        void Update()
+        {
+            if (parentFrom != null && parentTo != null && child != null)
+                Debug.Log(child.name + "'s local position in " + parentTo.name + " would be: " + parentFrom.TransformPointToAnotherSpace(parentTo, child.localPosition));
+        }
     }
 }

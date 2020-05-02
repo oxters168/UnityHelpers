@@ -1,14 +1,16 @@
 ﻿using UnityEngine;
-using UnityHelpers;
 
-public class PhysicsTransformTest : MonoBehaviour
+namespace UnityHelpers
 {
-    public PhysicsTransform physicsTransform;
-    public Transform target;
-
-    void Update()
+    public class PhysicsTransformTest : MonoBehaviour
     {
-        physicsTransform.position = target.position;
-        physicsTransform.rotation = target.rotation;
+        public PhysicsTransform physicsTransform;
+        public Transform target;
+
+        void Update()
+        {
+            physicsTransform.position = target.position;
+            physicsTransform.rotation = target.rotation;
+        }
     }
 }

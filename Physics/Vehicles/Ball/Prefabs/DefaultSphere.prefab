@@ -52,8 +52,22 @@ MonoBehaviour:
   maxRotSpeed: 3
   forward: {x: 0, y: 0, z: 1}
   up: {x: 0, y: 1, z: 0}
-  horizontal: 0
-  vertical: 0
+  valuesVault:
+    inputValues:
+    - name: Horizontal
+      storedTypes: 1
+      axis: 0
+      toggle: 0
+      direction: {x: 0, y: 0, z: 0}
+      point: {x: 0, y: 0, z: 0}
+      orientation: {x: 0, y: 0, z: 0, w: 0}
+    - name: Vertical
+      storedTypes: 1
+      axis: 0
+      toggle: 0
+      direction: {x: 0, y: 0, z: 0}
+      point: {x: 0, y: 0, z: 0}
+      orientation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!33 &1016675033882739274
 MeshFilter:
   m_ObjectHideFlags: 0

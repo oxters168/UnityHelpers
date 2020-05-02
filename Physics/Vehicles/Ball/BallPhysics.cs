@@ -5,7 +5,7 @@ namespace UnityHelpers
     /// <summary>
     /// A ball that can be rolled around using torque
     /// </summary>
-    public class BallPhysics : MonoBehaviour
+    public class BallPhysics : MonoBehaviour, IValueManager
     {
         public Rigidbody ballBody;
 
@@ -31,16 +31,18 @@ namespace UnityHelpers
         [Tooltip("The world space up of the ball (used to calculate the torque direction)")]
         public Vector3 up = Vector3.up;
 
+        public ValuesVault valuesVault;
+        //public ValueWrapper[] inputValues;
         /// <summary>
         /// The horizontal axis input
         /// </summary>
-        [Range(-1, 1), Tooltip("The horizontal axis input")]
-        public float horizontal;
+        //[Range(-1, 1), Tooltip("The horizontal axis input")]
+        //public float horizontal;
         /// <summary>
         /// The vertical axis input
         /// </summary>
-        [Range(-1, 1), Tooltip("The vertical axis input")]
-        public float vertical;
+        //[Range(-1, 1), Tooltip("The vertical axis input")]
+        //public float vertical;
 
         void FixedUpdate()
         {
@@ -50,11 +52,13 @@ namespace UnityHelpers
 
         private void AdjustInput()
         {
-            horizontal = Mathf.Clamp(horizontal, -1, 1);
-            vertical = Mathf.Clamp(vertical, -1, 1);
+            //horizontal = Mathf.Clamp(horizontal, -1, 1);
+            //vertical = Mathf.Clamp(vertical, -1, 1);
         }
         private void AccelerateBall()
         {        
+            float horizontal = GetAxis("Horizontal");
+            float vertical = GetAxis("Vertical");
             //Turns the given 2D square input into a circular input
             Vector2 circularInput = new Vector2(horizontal, vertical).ToCircle();
             //Turns the input into a Vector3 direction
@@ -86,6 +90,47 @@ namespace UnityHelpers
             }
 
             ballBody.AddTorque(angularAcceleration, ForceMode.Acceleration);
+        }
+
+        public void SetAxis(string name, float value)
+        {
+            valuesVault.GetValue(name).SetAxis(value);
+        }
+        public float GetAxis(string name)
+        {
+            return valuesVault.GetValue(name).GetAxis();
+        }
+        public void SetToggle(string name, bool value)
+        {
+            valuesVault.GetValue(name).SetToggle(value);
+        }
+        public bool GetToggle(string name)
+        {
+            return valuesVault.GetValue(name).GetToggle();
+        }
+        public void SetDirection(string name, Vector3 value)
+        {
+            valuesVault.GetValue(name).SetDirection(value);
+        }
+        public Vector3 GetDirection(string name)
+        {
+            return valuesVault.GetValue(name).GetDirection();
+        }
+        public void SetPoint(string name, Vector3 value)
+        {
+            valuesVault.GetValue(name).SetPoint(value);
+        }
+        public Vector3 GetPoint(string name)
+        {
+            return valuesVault.GetValue(name).GetPoint();
+        }
+        public void SetOrientation(string name, Quaternion value)
+        {
+            valuesVault.GetValue(name).SetOrientation(value);
+        }
+        public Quaternion GetOrientation(string name)
+        {
+            return valuesVault.GetValue(name).GetOrientation();
         }
     }
 }
