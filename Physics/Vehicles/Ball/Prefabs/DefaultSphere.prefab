@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ballBody: {fileID: 1016675033882739255}
-  rotAcceleration: 6
+  rotAcceleration: 8
   maxRotSpeed: 3
   forward: {x: 0, y: 0, z: 1}
   up: {x: 0, y: 1, z: 0}

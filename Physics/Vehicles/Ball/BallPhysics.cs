@@ -32,17 +32,6 @@ namespace UnityHelpers
         public Vector3 up = Vector3.up;
 
         public ValuesVault valuesVault;
-        //public ValueWrapper[] inputValues;
-        /// <summary>
-        /// The horizontal axis input
-        /// </summary>
-        //[Range(-1, 1), Tooltip("The horizontal axis input")]
-        //public float horizontal;
-        /// <summary>
-        /// The vertical axis input
-        /// </summary>
-        //[Range(-1, 1), Tooltip("The vertical axis input")]
-        //public float vertical;
 
         void FixedUpdate()
         {
@@ -52,8 +41,8 @@ namespace UnityHelpers
 
         private void AdjustInput()
         {
-            //horizontal = Mathf.Clamp(horizontal, -1, 1);
-            //vertical = Mathf.Clamp(vertical, -1, 1);
+            SetAxis("Horizontal", Mathf.Clamp(GetAxis("Horizontal"), -1, 1));
+            SetAxis("Vertical", Mathf.Clamp(GetAxis("Vertical"), -1, 1));
         }
         private void AccelerateBall()
         {        
