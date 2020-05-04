@@ -300,7 +300,7 @@ namespace UnityHelpers
 
             foreach (Transform currentTransform in rootObject.GetComponentsInChildren<Transform>())
             {
-                if (currentTransform.GetBounds().Contains(point))
+                if (currentTransform.GetBounds(Space.World).Contains(point))
                     pointPierces.Add(currentTransform);
             }
             return pointPierces;
@@ -308,7 +308,7 @@ namespace UnityHelpers
         public static bool HasPointInBounds(this Transform currentTransform, Vector3 point)
         {
             bool hasPoint = false;
-            if (currentTransform.GetBounds().Contains(point))
+            if (currentTransform.GetBounds(Space.World).Contains(point))
                 hasPoint = true;
             return hasPoint;
         }

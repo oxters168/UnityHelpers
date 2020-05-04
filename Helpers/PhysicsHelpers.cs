@@ -320,6 +320,22 @@ namespace UnityHelpers
         /// <returns>True if an object was hit, false otherwise</returns>
         public static bool RaycastFromBounds(this Transform root, Vector3 rayDirection, int layerMask, out RaycastHit hitInfo, Vector3 percentExtents, bool totalBounds = true, float maxDistance = 0.1f, bool useColliders = false)
         {
+            Vector3 checkPosition = root.GetPointInBounds(percentExtents, totalBounds, useColliders);
+            bool castHit = Physics.Raycast(checkPosition, rayDirection, out hitInfo, maxDistance, layerMask);
+            //Debug.DrawLine(root.TransformPoint(bounds.center), checkPosition, Color.blue);
+            //Debug.DrawRay(checkPosition, rayDirection * Mathf.Min(maxDistance, 100f), castHit ? Color.green : Color.red);
+            return castHit;
+        }
+        /// <summary>
+        /// Calculates a world space point in the bounds of the given transform
+        /// </summary>
+        /// <param name="root">The object's transform</param>
+        /// <param name="percentExtents">How far the point should be from the center to the extents of the bounds (axes in root's local space)</param>
+        /// <param name="totalBounds">If set to true, will use childrens' bounds as well rather than just the current object's bounds</param>
+        /// <param name="useColliders">Whether the bounds should be calculated from the colliders or from the renderers</param>
+        /// <returns>A point within the bounds of the object</returns>
+        public static Vector3 GetPointInBounds(this Transform root, Vector3 percentExtents, bool totalBounds = true, bool useColliders = false)
+        {
             Bounds bounds;
             if (totalBounds)
                 bounds = root.GetTotalBounds(Space.Self, useColliders);
@@ -327,11 +343,8 @@ namespace UnityHelpers
                 bounds = root.GetBounds(Space.Self, useColliders);
                 
             Vector3 extentsOffset = Vector3.right * bounds.extents.x * percentExtents.x + Vector3.up * bounds.extents.y * percentExtents.y + Vector3.forward * bounds.extents.z * percentExtents.z;
-            Vector3 checkPosition = root.TransformPoint(bounds.center + extentsOffset);
-            bool castHit = Physics.Raycast(checkPosition, rayDirection, out hitInfo, maxDistance, layerMask);
-            //Debug.DrawLine(root.TransformPoint(bounds.center), checkPosition, Color.blue);
-            //Debug.DrawRay(checkPosition, rayDirection * Mathf.Min(maxDistance, 100f), castHit ? Color.green : Color.red);
-            return castHit;
+            Vector3 boundsPoint = root.TransformPoint(bounds.center + extentsOffset);
+            return boundsPoint;
         }
 
         /// <summary>

@@ -22,9 +22,9 @@ namespace UnityHelpers
         {
             if (targets.Count > 0)
             {
-                Bounds totalBounds = targets[0].GetTotalBounds();
+                Bounds totalBounds = targets[0].GetTotalBounds(Space.World);
                 for (int i = 1; i < targets.Count; i++)
-                    totalBounds = totalBounds.Combine(targets[i].GetTotalBounds());
+                    totalBounds = totalBounds.Combine(targets[i].GetTotalBounds(Space.World));
 
                 Vector3 startPosition = totalBounds.min.ProjectPointToSurface(totalBounds.center, targetNormal);
                 Vector3 endPosition = totalBounds.max.ProjectPointToSurface(totalBounds.center, targetNormal);

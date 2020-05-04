@@ -45,8 +45,8 @@ namespace UnityHelpers
                 float velocitySqrMag = body.velocity.sqrMagnitude;
                 if (velocitySqrMag > 0.1f)
                 {
-                    Bounds objectBounds = transform.GetTotalBounds(boundsMask, true, true);
-                    Vector3 comCenterOffset = body.worldCenterOfMass - objectBounds.center;
+                    Bounds objectBounds = transform.GetTotalBounds(Space.Self, boundsMask);
+                    Vector3 comCenterOffset = body.worldCenterOfMass - transform.TransformPoint(objectBounds.center);
 
                     float comSqrMag = comCenterOffset.sqrMagnitude;
                     if (comSqrMag > 0.1f)
@@ -80,7 +80,7 @@ namespace UnityHelpers
             }
 
             Gizmos.color = Color.green;
-            Bounds objectBounds = transform.GetTotalBounds(boundsMask, false, true);
+            Bounds objectBounds = transform.GetTotalBounds(Space.Self, boundsMask);
             Gizmos.DrawWireCube(objectBounds.center, objectBounds.size);
         }
     }
