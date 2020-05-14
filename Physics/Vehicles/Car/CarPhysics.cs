@@ -10,7 +10,6 @@ namespace UnityHelpers
     {
         public Rigidbody vehicleRigidbody;
         public HealthController vehicleHealth;
-        private Bounds vehicleBounds;
 
         [Space(10)]
         public ParticleSystem smoke;
@@ -55,8 +54,6 @@ namespace UnityHelpers
 
         private void Awake()
         {
-            vehicleBounds = CalculateBounds();
-
             if (vehicleHealth != null)
                 vehicleHealth.onValueChanged.AddListener(OnHealthValueChanged);
             else
@@ -73,15 +70,20 @@ namespace UnityHelpers
             float brakeleration = GetBrakeleration();
             float grip = GetGrip();
 
-            float currentMaxWheelAngle = vehicleStats.wheelAngleCurve.Evaluate(Mathf.Abs(currentForwardSpeed / vehicleStats.maxForwardSpeed)) * Mathf.Abs(vehicleStats.slowWheelAngle - vehicleStats.fastWheelAngle) + Mathf.Min(vehicleStats.slowWheelAngle, vehicleStats.fastWheelAngle);
+            Vector3 vehicleProjectedForward = vehicleRigidbody.transform.forward.Planar(Vector3.up);
+            //float forwardPercent = vehicleRigidbody.velocity.PercentDirection(vehicleProjectedForward);
+            currentTotalSpeed = vehicleRigidbody.velocity.magnitude;
+            //currentForwardSpeed = currentTotalSpeed * forwardPercent;
+            Vector3 planarVelocityVector = vehicleRigidbody.velocity.Planar(Vector3.up);
+            float direction = Mathf.Sign(planarVelocityVector.normalized.PercentDirection(vehicleProjectedForward));
+            currentForwardSpeed = planarVelocityVector.magnitude * direction;
+            float currentSpeedPercent = Mathf.Abs(currentForwardSpeed / vehicleStats.maxForwardSpeed);
+
+            float currentMaxWheelAngle = vehicleStats.wheelAngleCurve.Evaluate(currentSpeedPercent) * Mathf.Abs(vehicleStats.slowWheelAngle - vehicleStats.fastWheelAngle) + Mathf.Min(vehicleStats.slowWheelAngle, vehicleStats.fastWheelAngle);
             //Debug.Log(currentMaxWheelAngle);
             Quaternion wheelRotation = Quaternion.Euler(0, currentMaxWheelAngle * steer, 0);
             wheelFL.transform.localRotation = wheelRotation;
             wheelFR.transform.localRotation = wheelRotation;
-
-            float forwardPercent = vehicleRigidbody.velocity.PercentDirection(vehicleRigidbody.transform.forward);
-            currentTotalSpeed = vehicleRigidbody.velocity.magnitude;
-            currentForwardSpeed = currentTotalSpeed * forwardPercent;
 
             wheelFL.SetGrip(grip);
             wheelFR.SetGrip(grip);
@@ -96,7 +98,7 @@ namespace UnityHelpers
                 steer = Mathf.Clamp(steer, -1, 1);
 
                 float gasAmount = gas * (acceleration + (gas > 0 && currentForwardSpeed < 0 || gas < 0 && currentForwardSpeed > 0 ? brakeleration : 0));
-                float brakeAmount = brake * brakeleration * (currentForwardSpeed >= 0 ? -1 : 1);
+                float brakeAmount = Mathf.Clamp01(brake + Mathf.Abs(steer) * vehicleStats.percentSteerEffectsBrake.Evaluate(currentSpeedPercent)) * brakeleration * (currentForwardSpeed >= 0 ? -1 : 1);
                 float totalAcceleration = gasAmount + brakeAmount;
                 if (totalAcceleration > -float.Epsilon && totalAcceleration < float.Epsilon && !(strivedSpeed > -float.Epsilon && strivedSpeed < float.Epsilon))
                     totalAcceleration = vehicleStats.deceleration * (currentForwardSpeed >= 0 ? -1 : 1);
@@ -105,8 +107,8 @@ namespace UnityHelpers
                 SetStrivedSpeed(strivedSpeed + deltaSpeed);
 
                 float nextCurrentSpeed = currentForwardSpeed + deltaSpeed;
-                //If strived speed is changing differently from current speed then set strived speed to current speed
-                if (Mathf.Sign(strivedSpeed - prevStrivedSpeed) != Mathf.Sign(nextCurrentSpeed - prevCurrentSpeed))
+                //If there is too high a difference between the strived speed and the expected next speed then set strived speed to the expected
+                if (Mathf.Abs(strivedSpeed - nextCurrentSpeed) > 0)
                     SetStrivedSpeed(nextCurrentSpeed);
 
                 vehicleRigidbody.AddForce(PhysicsHelpers.CalculateRequiredForceForSpeed(vehicleRigidbody.mass, currentForwardSpeed * vehicleRigidbody.transform.forward, strivedSpeed * vehicleRigidbody.transform.forward), ForceMode.Force);
@@ -177,22 +179,6 @@ namespace UnityHelpers
             return vehicleStats.grip + gripMod;
         }
 
-        private Bounds CalculateBounds()
-        {
-            bool isActive = vehicleRigidbody.gameObject.activeSelf;
-            Vector3 position = vehicleRigidbody.transform.position;
-            Quaternion rotation = vehicleRigidbody.transform.rotation;
-            vehicleRigidbody.gameObject.SetActive(false);
-            vehicleRigidbody.transform.position = Vector3.zero;
-            vehicleRigidbody.transform.rotation = Quaternion.identity;
-            Bounds bounds = vehicleBounds = vehicleRigidbody.transform.GetTotalBounds(false, false, true);
-            vehicleRigidbody.transform.position = position;
-            vehicleRigidbody.transform.rotation = rotation;
-            vehicleRigidbody.gameObject.SetActive(isActive);
-
-            return bounds;
-        }
-
         public float GetSpeedInKMH()
         {
             return currentForwardSpeed * MathHelpers.MPS_TO_KMH;
@@ -249,7 +235,7 @@ namespace UnityHelpers
             {
                 int offsetIndex = i - extents;
                 float currentOffset = extents != 0 ? (step * offsetIndex) / (step * extents) : 0;
-                vehicleRayStart = GetPointOnBoundsBorder((Mathf.Abs(zBorder) > Mathf.Epsilon ? extentPercent : 0) * currentOffset + xBorder, -0.5f, (Mathf.Abs(xBorder) > Mathf.Epsilon ? extentPercent : 0) * currentOffset + zBorder);
+                vehicleRayStart = vehicleRigidbody.transform.GetPointInBounds(new Vector3((Mathf.Abs(zBorder) > Mathf.Epsilon ? extentPercent : 0) * currentOffset + xBorder, -0.5f, (Mathf.Abs(xBorder) > Mathf.Epsilon ? extentPercent : 0) * currentOffset + zBorder));
 
                 bool rayhit = Physics.Raycast(vehicleRayStart, rayDirection, out rayhitInfo, distanceObstacleCheck);
                 rayResults[i] = new RaycastHitInfo() { hit = rayhit, info = rayhitInfo, rayStart = vehicleRayStart, rayStartDirection = rayDirection, rayMaxDistance = distanceObstacleCheck };
@@ -349,22 +335,6 @@ namespace UnityHelpers
             vehicleRigidbody.transform.rotation = rotation;
             vehicleRigidbody.velocity = vehicleRigidbody.transform.forward * currentForwardSpeed;
             vehicleRigidbody.angularVelocity = Vector3.zero;
-        }
-
-        /// <summary>
-        /// Gets a point in the bounds of the car. This assumes the car's pivot is low down near the ground.
-        /// </summary>
-        /// <param name="percentX">A value between -1 and 1 where 0 would mean at the center of the bounds.</param>
-        /// <param name="percentY">A value between -1 and 1 where 0 would mean at the center of the bounds.</param>
-        /// <param name="percentZ">A value between -1 and 1 where 0 would mean at the center of the bounds.</param>
-        /// <returns>A point within the bounds.</returns>
-        public Vector3 GetPointOnBoundsBorder(float percentX, float percentY, float percentZ)
-        {
-            percentX = Mathf.Clamp(percentX, -1, 1);
-            percentY = Mathf.Clamp(percentY, -1, 1);
-            percentZ = Mathf.Clamp(percentZ, -1, 1);
-            Vector3 borderPercentOffset = vehicleRigidbody.transform.right * vehicleBounds.extents.x * percentX + vehicleRigidbody.transform.up * vehicleBounds.extents.y * percentY + vehicleRigidbody.transform.forward * vehicleBounds.extents.z * percentZ;
-            return vehicleRigidbody.position + borderPercentOffset + vehicleRigidbody.transform.up * vehicleBounds.extents.y;
         }
     }
 

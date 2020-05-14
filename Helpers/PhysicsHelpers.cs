@@ -39,16 +39,21 @@ namespace UnityHelpers
         /// </summary>
         /// <param name="rigidbody">The rigidbody that the velocity will be applied to.</param>
         /// <param name="desiredPosition">The position that you'd like the rigidbody to have.</param>
-        /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
         /// <param name="maxSpeed">The max speed the result velocity can have.</param>
         /// <returns>The velocity value to  be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredVelocityForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, float maxSpeed = float.MaxValue)
+        public static Vector3 CalculateRequiredVelocityForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, bool accountForGravity = false, float maxSpeed = float.MaxValue)
         {
             Vector3 nakedVelocity = (desiredPosition - rigidbody.position) / timestep;
             if (nakedVelocity.sqrMagnitude > maxSpeed * maxSpeed)
                 nakedVelocity = nakedVelocity.normalized * maxSpeed;
 
-            Vector3 deltaVelocity = nakedVelocity - rigidbody.velocity;
+            Vector3 gravityVelocity = Vector3.zero;
+            if (accountForGravity)
+                gravityVelocity = Physics.gravity * timestep;
+
+            Vector3 deltaVelocity = nakedVelocity - (rigidbody.velocity + gravityVelocity);
 
             return deltaVelocity;
         }
@@ -76,17 +81,12 @@ namespace UnityHelpers
         /// <param name="rigidbody">The rigidbody that the force will be applied to.</param>
         /// <param name="desiredVelocity">The velocity that you'd like the rigidbody to have.</param>
         /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
         /// <param name="maxForce">The max force the result can have.</param>
         /// <returns>The force value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredForceForSpeed(this Rigidbody rigidbody, Vector3 desiredVelocity, float timestep = 0.02f, float maxForce = float.MaxValue)
+        public static Vector3 CalculateRequiredForceForSpeed(this Rigidbody rigidbody, Vector3 desiredVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
         {
-            Vector3 nakedForce = desiredVelocity / timestep;
-            nakedForce *= rigidbody.mass;
-            if (nakedForce.sqrMagnitude > maxForce * maxForce)
-                nakedForce = nakedForce.normalized * maxForce;
-
-            Vector3 deltaForce = nakedForce - (rigidbody.velocity / timestep * rigidbody.mass);
-            return deltaForce;
+            return CalculateRequiredForceForSpeed(rigidbody.mass, rigidbody.velocity, desiredVelocity, timestep, accountForGravity, maxForce);
         }
         /// <summary>
         /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired speed. Works with the Force ForceMode.
@@ -95,17 +95,73 @@ namespace UnityHelpers
         /// <param name="velocity">The velocity of the rigidbody.</param>
         /// <param name="desiredVelocity">The velocity that you'd like the rigidbody to have.</param>
         /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
         /// <param name="maxForce">The max force the result can have.</param>
         /// <returns>The force value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredForceForSpeed(float mass, Vector3 velocity, Vector3 desiredVelocity, float timestep = 0.02f, float maxForce = float.MaxValue)
+        public static Vector3 CalculateRequiredForceForSpeed(float mass, Vector3 velocity, Vector3 desiredVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
         {
             Vector3 nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
             if (nakedForce.sqrMagnitude > maxForce * maxForce)
                 nakedForce = nakedForce.normalized * maxForce;
 
-            Vector3 deltaForce = nakedForce - (velocity / timestep * mass);
+            Vector3 currentForce = (velocity / timestep * mass);
+
+            Vector3 gravityForce = Vector3.zero;
+            if (accountForGravity)
+                gravityForce = Physics.gravity * mass;
+
+            Vector3 deltaForce = nakedForce - (currentForce + gravityForce);
             return deltaForce;
+        }
+
+        /// <summary>
+        /// Calculates the force value required to be applied to a rigidbody through AddForce to achieve the desired speed. Works with the Force ForceMode.
+        /// </summary>
+        /// <param name="mass">The mass of the rigidbody.</param>
+        /// <param name="velocity">The velocity of the rigidbody.</param>
+        /// <param name="desiredVelocity">The velocity that you'd like the rigidbody to have.</param>
+        /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
+        /// <param name="maxForce">The max force the result can have.</param>
+        /// <returns>The force value to be applied to the rigidbody.</returns>
+        public static float CalculateRequiredForceForSpeed(float mass, float velocity, float desiredVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
+        {
+            float nakedForce = desiredVelocity / timestep;
+            nakedForce *= mass;
+            if (nakedForce > maxForce)
+                nakedForce = maxForce;
+
+            float currentForce = (velocity / timestep * mass);
+
+            float gravityForce = 0;
+            if (accountForGravity)
+                gravityForce = -Physics.gravity.magnitude * mass;
+
+            float deltaForce = nakedForce - (currentForce + gravityForce);
+            return deltaForce;
+        }
+        /// <summary>
+        /// Calculates the velocity value required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the VelocityChange ForceMode.
+        /// </summary>
+        /// <param name="changeInPosition">The amount of distance to traverse within the given time</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
+        /// <param name="maxSpeed">The max speed the result velocity can have.</param>
+        /// <returns>The velocity value to  be applied to the rigidbody.</returns>
+        public static float CalculateRequiredVelocityForPosition(float changeInPosition, float currentVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxSpeed = float.MaxValue)
+        {
+            float nakedVelocity = changeInPosition / timestep;
+            if (nakedVelocity > maxSpeed)
+                nakedVelocity = maxSpeed;
+
+            float gravityVelocity = 0;
+            if (accountForGravity)
+                gravityVelocity = -Physics.gravity.magnitude * timestep;
+
+            float deltaVelocity = nakedVelocity - (currentVelocity + gravityVelocity);
+
+            return deltaVelocity;
         }
 
         /// <summary>
@@ -189,11 +245,7 @@ namespace UnityHelpers
         /// <returns>True if the rigidbody is grounded false otherwise</returns>
         public static bool IsGrounded(this Transform root, Vector3 groundDirection, float groundDistance = 0.1f, bool useColliders = false)
         {
-            var bounds = BoundsHelpers.GetTotalBounds(root, true, useColliders);
-            Vector3 checkPosition = bounds.center + groundDirection * bounds.extents.y + Vector3.up * groundDistance / 2;
-            bool grounded = Physics.Raycast(checkPosition, groundDirection, groundDistance);
-            Debug.DrawRay(checkPosition, groundDirection * groundDistance, grounded ? Color.green : Color.red);
-            return grounded;
+            return root.IsGrounded(groundDirection, ~0, groundDistance, useColliders);
         }
         /// <summary>
         /// Checks if the transforn is grounded.
@@ -206,12 +258,95 @@ namespace UnityHelpers
         /// <returns>True if the rigidbody is grounded false otherwise</returns>
         public static bool IsGrounded(this Transform root, Vector3 groundDirection, int layerMask, float groundDistance = 0.1f, bool useColliders = false)
         {
-            var bounds = BoundsHelpers.GetTotalBounds(root, true, useColliders);
-            Vector3 checkPosition = bounds.center + groundDirection * bounds.extents.y + Vector3.up * groundDistance / 2;
-            bool grounded = Physics.Raycast(checkPosition, groundDirection, groundDistance, layerMask);
-            Debug.DrawRay(checkPosition, groundDirection * groundDistance, grounded ? Color.green : Color.red);
-            return grounded;
+            return root.RaycastFromBounds(groundDirection, layerMask, Vector3.down * 0.9f, true, groundDistance, useColliders);
         }
+        /// <summary>
+        /// Raycasts from the center of the object's bounds plus bounds extents based on percentExtents
+        /// </summary>
+        /// <param name="root">The object's transform</param>
+        /// <param name="rayDirection">The direction the ray will be cast in</param>
+        /// <param name="percentExtents">How far from the center to the extents to start ray casting from (axes in root's local space)</param>
+        /// <param name="totalBounds">If set to true, will use childrens' bounds as well rather than just the current object's bounds</param>
+        /// <param name="maxDistance">The max distance the ray cast should be</param>
+        /// <param name="useColliders">Whether the bounds should be calculated from the colliders or from the renderers</param>
+        /// <returns>True if an object was hit, false otherwise</returns>
+        public static bool RaycastFromBounds(this Transform root, Vector3 rayDirection, Vector3 percentExtents, bool totalBounds = true, float maxDistance = 0.1f, bool useColliders = false)
+        {
+            RaycastHit hitInfo;
+            return root.RaycastFromBounds(rayDirection, ~0, out hitInfo, percentExtents, totalBounds, maxDistance, useColliders);
+        }
+        /// <summary>
+        /// Raycasts from the center of the object's bounds plus bounds extents based on percentExtents
+        /// </summary>
+        /// <param name="root">The object's transform</param>
+        /// <param name="rayDirection">The direction the ray will be cast in</param>
+        /// <param name="hitInfo">The returned info of the ray cast</param>
+        /// <param name="percentExtents">How far from the center to the extents to start ray casting from (axes in root's local space)</param>
+        /// <param name="totalBounds">If set to true, will use childrens' bounds as well rather than just the current object's bounds</param>
+        /// <param name="maxDistance">The max distance the ray cast should be</param>
+        /// <param name="useColliders">Whether the bounds should be calculated from the colliders or from the renderers</param>
+        /// <returns>True if an object was hit, false otherwise</returns>
+        public static bool RaycastFromBounds(this Transform root, Vector3 rayDirection, out RaycastHit hitInfo, Vector3 percentExtents, bool totalBounds = true, float maxDistance = 0.1f, bool useColliders = false)
+        {
+            return root.RaycastFromBounds(rayDirection, ~0, out hitInfo, percentExtents, totalBounds, maxDistance, useColliders);
+        }
+        /// <summary>
+        /// Raycasts from the center of the object's bounds plus bounds extents based on percentExtents
+        /// </summary>
+        /// <param name="root">The object's transform</param>
+        /// <param name="rayDirection">The direction the ray will be cast in</param>
+        /// <param name="layerMask">Which layers to whitelist in the ray cast</param>
+        /// <param name="percentExtents">How far from the center to the extents to start ray casting from (axes in root's local space)</param>
+        /// <param name="totalBounds">If set to true, will use childrens' bounds as well rather than just the current object's bounds</param>
+        /// <param name="maxDistance">The max distance the ray cast should be</param>
+        /// <param name="useColliders">Whether the bounds should be calculated from the colliders or from the renderers</param>
+        /// <returns>True if an object was hit, false otherwise</returns>
+        public static bool RaycastFromBounds(this Transform root, Vector3 rayDirection, int layerMask, Vector3 percentExtents, bool totalBounds = true, float maxDistance = 0.1f, bool useColliders = false)
+        {
+            RaycastHit hitInfo;
+            return root.RaycastFromBounds(rayDirection, layerMask, out hitInfo, percentExtents, totalBounds, maxDistance, useColliders);
+        }
+        /// <summary>
+        /// Raycasts from the center of the object's bounds plus bounds extents based on percentExtents
+        /// </summary>
+        /// <param name="root">The object's transform</param>
+        /// <param name="rayDirection">The direction the ray will be cast in</param>
+        /// <param name="layerMask">Which layers to whitelist in the ray cast</param>
+        /// <param name="hitInfo">The returned info of the ray cast</param>
+        /// <param name="percentExtents">How far from the center to the extents to start ray casting from (axes in root's local space)</param>
+        /// <param name="totalBounds">If set to true, will use childrens' bounds as well rather than just the current object's bounds</param>
+        /// <param name="maxDistance">The max distance the ray cast should be</param>
+        /// <param name="useColliders">Whether the bounds should be calculated from the colliders or from the renderers</param>
+        /// <returns>True if an object was hit, false otherwise</returns>
+        public static bool RaycastFromBounds(this Transform root, Vector3 rayDirection, int layerMask, out RaycastHit hitInfo, Vector3 percentExtents, bool totalBounds = true, float maxDistance = 0.1f, bool useColliders = false)
+        {
+            Vector3 checkPosition = root.GetPointInBounds(percentExtents, totalBounds, useColliders);
+            bool castHit = Physics.Raycast(checkPosition, rayDirection, out hitInfo, maxDistance, layerMask);
+            //Debug.DrawLine(root.TransformPoint(bounds.center), checkPosition, Color.blue);
+            //Debug.DrawRay(checkPosition, rayDirection * Mathf.Min(maxDistance, 100f), castHit ? Color.green : Color.red);
+            return castHit;
+        }
+        /// <summary>
+        /// Calculates a world space point in the bounds of the given transform
+        /// </summary>
+        /// <param name="root">The object's transform</param>
+        /// <param name="percentExtents">How far the point should be from the center to the extents of the bounds (axes in root's local space)</param>
+        /// <param name="totalBounds">If set to true, will use childrens' bounds as well rather than just the current object's bounds</param>
+        /// <param name="useColliders">Whether the bounds should be calculated from the colliders or from the renderers</param>
+        /// <returns>A point within the bounds of the object</returns>
+        public static Vector3 GetPointInBounds(this Transform root, Vector3 percentExtents, bool totalBounds = true, bool useColliders = false)
+        {
+            Bounds bounds;
+            if (totalBounds)
+                bounds = root.GetTotalBounds(Space.Self, useColliders);
+            else
+                bounds = root.GetBounds(Space.Self, useColliders);
+                
+            Vector3 extentsOffset = Vector3.right * bounds.extents.x * percentExtents.x + Vector3.up * bounds.extents.y * percentExtents.y + Vector3.forward * bounds.extents.z * percentExtents.z;
+            Vector3 boundsPoint = root.TransformPoint(bounds.center + extentsOffset);
+            return boundsPoint;
+        }
+
         /// <summary>
         /// Predicts where the rigidbody will be in the next physics timestep
         /// </summary>

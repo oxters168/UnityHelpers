@@ -30,6 +30,8 @@ namespace UnityHelpers
         public float fastWheelAngle = 5f;
         [Tooltip("This graph depicts how quickly we go from slowWheelAngle to fastWheelAngle based on speed, where 0 on the x axis represents not moving and 1 on the x axis represents maxForwardSpeed")]
         public AnimationCurve wheelAngleCurve;
+        [Tooltip("How much does steering cause the vehicle to slow down relative to speed")]
+        public AnimationCurve percentSteerEffectsBrake;
 
         [Space(10), Tooltip("The amount of rays (odd index i.e. 1 = 1, 2 = 3, 3 = 5...")]
         public uint forwardRays;

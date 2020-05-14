@@ -2,18 +2,19 @@
 
 namespace UnityHelpers
 {
+    [ExecuteAlways]
     public class SetCenterOfMass : MonoBehaviour
     {
-        private Rigidbody body;
+        private Rigidbody body { get { if (_body == null) { _body = GetComponent<Rigidbody>(); if (_body != null) InitCOM(); } return _body; } }
+        private Rigidbody _body;
 
         [SerializeField, HideInInspector]
         private Vector3 centerOfMassOffset;
         private Vector3 originalCenterOfMass;
-        [DraggablePoint(true)]
         public Vector3 centerOfMass;
 
-        [Range(0, float.MaxValue)]
-        public float gizmoSize;
+        [Range(0, 100)]
+        public float gizmoSize = 0.2f;
 
         [Space(10)]
 
@@ -25,29 +26,17 @@ namespace UnityHelpers
         public float directionCorrectionDamping = 0.333f;
         private bool skippedFirstFrame; //This seems to be necessary for arrows just shot out of a bow
 
-        private void Start()
+        private void InitCOM()
         {
-            body = GetComponent<Rigidbody>();
             if (body != null)
-            {
-                originalCenterOfMass = body.centerOfMass;
-                centerOfMass = originalCenterOfMass + centerOfMassOffset;
                 body.centerOfMass = centerOfMass;
-            }
             else
                 Debug.LogError("Could not get rigidbody");
         }
         void Update()
         {
             if (body != null)
-            {
-                Vector3 newOffset = centerOfMass - originalCenterOfMass;
-                if (newOffset != centerOfMassOffset)
-                {
-                    centerOfMassOffset = newOffset;
-                    body.centerOfMass = originalCenterOfMass + centerOfMassOffset;
-                }
-            }
+                body.centerOfMass = centerOfMass;
         }
         void FixedUpdate()
         {
@@ -56,8 +45,8 @@ namespace UnityHelpers
                 float velocitySqrMag = body.velocity.sqrMagnitude;
                 if (velocitySqrMag > 0.1f)
                 {
-                    Bounds objectBounds = transform.GetTotalBounds(boundsMask, true, true);
-                    Vector3 comCenterOffset = body.worldCenterOfMass - objectBounds.center;
+                    Bounds objectBounds = transform.GetTotalBounds(Space.Self, boundsMask);
+                    Vector3 comCenterOffset = body.worldCenterOfMass - transform.TransformPoint(objectBounds.center);
 
                     float comSqrMag = comCenterOffset.sqrMagnitude;
                     if (comSqrMag > 0.1f)
@@ -82,14 +71,16 @@ namespace UnityHelpers
 
         private void OnDrawGizmosSelected()
         {
+            Gizmos.matrix = transform.localToWorldMatrix;
+
             if (body != null && gizmoSize > 0)
             {
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawSphere(body.worldCenterOfMass, gizmoSize);
+                Gizmos.DrawSphere(body.centerOfMass, gizmoSize);
             }
 
             Gizmos.color = Color.green;
-            Bounds objectBounds = transform.GetTotalBounds(boundsMask, true, true);
+            Bounds objectBounds = transform.GetTotalBounds(Space.Self, boundsMask);
             Gizmos.DrawWireCube(objectBounds.center, objectBounds.size);
         }
     }

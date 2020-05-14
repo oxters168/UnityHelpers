@@ -156,7 +156,7 @@ namespace UnityHelpers
 
             if (striveForVelocity)
             {
-                Vector3 boneForce = AffectedBody.CalculateRequiredForceForSpeed(velocity, Time.deltaTime, velMaxForce) * velStrength;
+                Vector3 boneForce = AffectedBody.CalculateRequiredForceForSpeed(velocity, Time.deltaTime, false, velMaxForce) * velStrength;
                 AffectedBody.AddForce(boneForce, ForceMode.Force);
             }
 
