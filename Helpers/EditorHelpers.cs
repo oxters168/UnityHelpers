@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace UnityHelpers
 {
+    #if UNITY_EDITOR
     public static class EditorHelpers
     {
         /// <summary>
@@ -211,4 +212,5 @@ namespace UnityHelpers
             }
         }
     }
+    #endif
 }
