@@ -1,4 +1,6 @@
-﻿//Source:
+﻿// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
+//Source:
 //https://github.com/keijiro/UnitySkyboxShaders/blob/master/Assets/Skybox%20Shaders/Horizontal%20Skybox.shader
 
 Shader "UnityHelpers/Skybox/Procedural Skybox"
@@ -12,12 +14,13 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 		_Exponent2("Exponent Factor for Bottom Half", Float) = 1.0
 		_Intensity("Intensity Amplifier", Float) = 1.0
 
+        _SkyboxRadius("Skybox Radius", Float) = 1000 //Doesn't really make a difference in the outcome, might remove later
+
         _StarSpread("Star Spread", Range(0, 1)) = 0.1
-        _StarMoveMultiplier("Star Follow Camera", Float) = 1.0
-        //_StarParallaxDistance("Star Parallax Distance", Float) = 0
+        _StarMoveMultiplier("Star Follow Camera", Float) = 0
 
         _NebulaColor("Nebula Color", Color) = (1, 1, 1, 1)
-        _NebulaMoveMultiplier("Nebula Follow Camera", Float) = 1.0
+        _NebulaMoveMultiplier("Nebula Follow Camera", Float) = 0
 		_NebulaNoiseValue("Nebula Noise Value", Float) = 0.0001
         _NebulaShrink("Nebula Shrink", Range(0, 1)) = 0
         _NebulaVelocity("Move Speed", Vector) = (0, 0, 0)
@@ -52,6 +55,7 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 				float4 position : SV_POSITION;
 				float3 texcoord : TEXCOORD0;
 				float3 worldPos : TEXCOORD1;
+                float3 viewDir : TEXCOORD2;
 			};
 
 			half4 _Color1;
@@ -63,7 +67,7 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 
 			float _StarSpread;
             float _StarMoveMultiplier;
-            //float _StarParallaxDistance;
+            float _SkyboxRadius;
 
             half4 _NebulaColor;
             float _NebulaMoveMultiplier;
@@ -78,6 +82,7 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 				o.texcoord = v.texcoord;
 
 				o.worldPos = mul(unity_ObjectToWorld, v.position);
+                o.viewDir = normalize(WorldSpaceViewDir(v.position));
 
 				return o;
 			}
@@ -86,8 +91,11 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 			{
 				half4 finalColor = 0;
                 
+                float3 pointDirection = normalize(i.worldPos);
+
                 //Calculate nebula value
-                float nebulaValue = ((snoise((i.worldPos + ((_WorldSpaceCameraPos * _NebulaMoveMultiplier + (_NebulaVelocity.xyz * _Time.y)) / _NebulaNoiseValue)) * _NebulaNoiseValue) + 1) / 2);
+				float nebulaNoiseValue = _NebulaNoiseValue / _SkyboxRadius;
+                float nebulaValue = ((snoise((pointDirection * _SkyboxRadius + ((_WorldSpaceCameraPos * _NebulaMoveMultiplier + (_NebulaVelocity.xyz * _Time.y)) / nebulaNoiseValue)) * nebulaNoiseValue) + 1) / 2);
                 if (_NebulaShrink < 1)
                 {
                     nebulaValue = (clamp(nebulaValue, _NebulaShrink, 1) - _NebulaShrink) / (1 - _NebulaShrink);
@@ -97,15 +105,11 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
                     nebulaValue = 0;
                 }
 
-                //float3 pointDirection = normalize(i.worldPos - _WorldSpaceCameraPos);
-                //float3 parallaxedPosition = i.worldPos + pointDirection * _StarParallaxDistance;
-                float starNoiseValue = 0.004; //0.004 goodrange=>(0.001 - 0.008)
-                float starValue = (snoise((i.worldPos + (_WorldSpaceCameraPos * _StarMoveMultiplier / starNoiseValue)) * starNoiseValue) + 1) / 2;
-                //float starValue2 = (snoise((parallaxedPosition + (_WorldSpaceCameraPos * _StarMoveMultiplier / starNoiseValue)) * starNoiseValue) + 1) / 2;
-                //float parallaxedStarValue = (snoise((parallaxedPosition + (_WorldSpaceCameraPos * _StarMoveMultiplier / starNoiseValue)) * starNoiseValue) + 1) / 2;
+				//Calculate star value
+                float starNoiseValue = 40 / _SkyboxRadius; //0.004 goodrange=>(0.001 - 0.008)
+                float starValue = (snoise((pointDirection * _SkyboxRadius + (_WorldSpaceCameraPos * _StarMoveMultiplier / starNoiseValue)) * starNoiseValue) + 1) / 2;
                 if (starValue > (1 - _StarSpread))
                 {
-                    //float3 cameraDirection = UNITY_MATRIX_IT_MV[2].xyz;
                     finalColor = 1;
 				}
 				else
@@ -121,10 +125,7 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
                     finalColor = lerp(skyColor, _NebulaColor * nebulaValue, nebulaValue);
 				}
 
-                //finalColor = frac(sin(_WorldSpaceCameraPos.x + _WorldSpaceCameraPos.y + _WorldSpaceCameraPos.z) * 1234.567);
-                //finalColor = snoise(_WorldSpaceCameraPos * 10);
-                //finalColor = sin(half4(i.worldPos.x, i.worldPos.y, i.worldPos.z, 1) / 200000);
-				return finalColor;
+                return finalColor;
 			}
 			ENDCG
 		}
