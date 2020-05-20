@@ -95,7 +95,7 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 
                 //Calculate nebula value
 				float nebulaNoiseValue = _NebulaNoiseValue / _SkyboxRadius;
-                float nebulaValue = ((snoise((pointDirection * _SkyboxRadius + ((_WorldSpaceCameraPos * _NebulaMoveMultiplier + (_NebulaVelocity.xyz * _Time.y)) / nebulaNoiseValue)) * nebulaNoiseValue) + 1) / 2);
+                float nebulaValue = ((snoise((pointDirection * _SkyboxRadius) * nebulaNoiseValue + (_WorldSpaceCameraPos * _NebulaMoveMultiplier + (_NebulaVelocity.xyz * _Time.y))) + 1) / 2);
                 if (_NebulaShrink < 1)
                 {
                     nebulaValue = (clamp(nebulaValue, _NebulaShrink, 1) - _NebulaShrink) / (1 - _NebulaShrink);
@@ -107,7 +107,7 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 
 				//Calculate star value
                 float starNoiseValue = 40 / _SkyboxRadius; //0.004 goodrange=>(0.001 - 0.008)
-                float starValue = (snoise((pointDirection * _SkyboxRadius + (_WorldSpaceCameraPos * _StarMoveMultiplier / starNoiseValue)) * starNoiseValue) + 1) / 2;
+                float starValue = (snoise((pointDirection * _SkyboxRadius) * starNoiseValue + (_WorldSpaceCameraPos * _StarMoveMultiplier)) + 1) / 2;
                 if (starValue > (1 - _StarSpread))
                 {
                     finalColor = 1;
