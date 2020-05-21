@@ -25,15 +25,15 @@ namespace UnityHelpers
             Vector3 x;
             float xMag;
             Quaternion q = desiredRotation * Quaternion.Inverse(rigidbody.transform.rotation);
+            if (q.w < 0)
+            {
+                q.x = -q.x;
+                q.y = -q.y;
+                q.z = -q.z;
+                q.w = -q.w;
+            }
             q.ToAngleAxis(out xMag, out x);
             x.Normalize();
-
-            float expectedAngle = Quaternion.Angle(desiredRotation, rigidbody.transform.rotation); //Calculate the actual angle between the quaternions
-            if (Mathf.Abs(xMag - expectedAngle) > 1f) //If the angle from ToAngleAxis is larger than the actual angle
-            {
-                xMag = expectedAngle; //Set the angle to the actual angle
-                x = (-x).normalized; //Invert the axis
-            }
 
             x *= Mathf.Deg2Rad;
             Vector3 pidv = kp * x * xMag - kd * rigidbody.angularVelocity;
