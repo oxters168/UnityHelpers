@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace UnityHelpers
+namespace UnityHelpers.Tests
 {
     public class BoundsTest : MonoBehaviour
     {

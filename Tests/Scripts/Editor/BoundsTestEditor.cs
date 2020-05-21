@@ -1,6 +1,6 @@
 ﻿using UnityEditor;
 
-namespace UnityHelpers
+namespace UnityHelpers.Tests
 {
     [CustomEditor(typeof(BoundsTest)), CanEditMultipleObjects]
     public class BoundsTestEditor : Editor

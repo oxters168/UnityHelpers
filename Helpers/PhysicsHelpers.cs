@@ -21,11 +21,20 @@ namespace UnityHelpers
             float g = 1 / (1 + kd * dt + kp * dt * dt);
             float ksg = kp * g;
             float kdg = (kd + kp * dt) * g;
+
             Vector3 x;
             float xMag;
             Quaternion q = desiredRotation * Quaternion.Inverse(rigidbody.transform.rotation);
             q.ToAngleAxis(out xMag, out x);
             x.Normalize();
+
+            float expectedAngle = Quaternion.Angle(desiredRotation, rigidbody.transform.rotation); //Calculate the actual angle between the quaternions
+            if (Mathf.Abs(xMag - expectedAngle) > 1f) //If the angle from ToAngleAxis is larger than the actual angle
+            {
+                xMag = expectedAngle; //Set the angle to the actual angle
+                x = (-x).normalized; //Invert the axis
+            }
+
             x *= Mathf.Deg2Rad;
             Vector3 pidv = kp * x * xMag - kd * rigidbody.angularVelocity;
             Quaternion rotInertia2World = rigidbody.inertiaTensorRotation * rigidbody.transform.rotation;
