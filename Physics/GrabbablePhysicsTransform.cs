@@ -6,7 +6,7 @@ namespace UnityHelpers
 {
     public class GrabbablePhysicsTransform : MonoBehaviour, IGrabbable
     {
-        private List<LocalInfo> parents = new List<LocalInfo>();
+        private List<LocalInfo> grabbers = new List<LocalInfo>();
 
         private PhysicsTransform PhysicsObject { get { if (_physicsObject == null) _physicsObject = GetComponent<PhysicsTransform>(); return _physicsObject; } }
         private PhysicsTransform _physicsObject;
@@ -24,10 +24,10 @@ namespace UnityHelpers
         void Update()
         {            
             //Calculate position and rotation based on parents
-            if (parents.Count > 0 && PhysicsObject != null)
+            if (grabbers.Count > 0 && PhysicsObject != null)
             {
-                var positions = parents.Select(parentInfo => parentInfo.parent.TransformPoint(parentInfo.localPosition));
-                var rotations = parents.Select(parentInfo => parentInfo.parent.TransformRotation(parentInfo.localRotation));
+                var positions = grabbers.Select(grabber => grabber.info.parent.TransformPoint(grabber.localPosition));
+                var rotations = grabbers.Select(grabber => grabber.info.parent.TransformRotation(grabber.localRotation));
                 var averagedPosition = positions.Average();
                 var averagedRotation = rotations.Average();
                 PhysicsObject.position = averagedPosition;
@@ -35,16 +35,16 @@ namespace UnityHelpers
             }
         }
 
-        public void Grab(Transform grabber, float maxForce)
+        public void Grab(Grabber.GrabInfo grabberInfo, float maxForce)
         {
-            if (!parents.Exists(parentInfo => parentInfo.parent == grabber))
+            if (!grabbers.Exists(grabber => grabber.info == grabberInfo))
             {
                 //Add current grabber as parent
-                parents.Add(new LocalInfo()
+                grabbers.Add(new LocalInfo()
                 {
-                    parent = grabber,
-                    localPosition = grabber.InverseTransformPoint(transform.position),
-                    localRotation = grabber.InverseTransformRotation(transform.rotation)
+                    info = grabberInfo,
+                    localPosition = grabberInfo.parent.InverseTransformPoint(transform.position),
+                    localRotation = grabberInfo.parent.InverseTransformRotation(transform.rotation)
                 });
 
                 //Add physics transform if doesn't already exist and store it's values (important for when it does exist)
@@ -66,15 +66,15 @@ namespace UnityHelpers
                 PhysicsObject.enabled = true;
             }
         }
-        public void Ungrab(Transform grabber)
+        public void Ungrab(Grabber.GrabInfo grabberInfo)
         {
             //Remove grabber from parents list
-            var matches = parents.Where(parentInfo => parentInfo.parent == grabber);
+            var matches = grabbers.Where(grabber => grabber.info == grabberInfo);
             if (matches.Count() > 0)
-                parents.Remove(matches.First());
+                grabbers.Remove(matches.First());
 
             //If there are no more objects grabbing, then restore the PhysicsTransform script and possibly destroy
-            if (parents.Count <= 0)
+            if (grabbers.Count <= 0)
             {
                 RestoreValues();
                 if (createdSelf)
@@ -116,7 +116,7 @@ namespace UnityHelpers
     
     public struct LocalInfo
     {
-        public Transform parent;
+        public Grabber.GrabInfo info;
         public Vector3 localPosition;
         public Quaternion localRotation;
     }

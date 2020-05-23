@@ -7,14 +7,17 @@ namespace UnityHelpers
     public class Grabber : MonoBehaviour
     {
         private Dictionary<string, GrabInfo> grabSpots = new Dictionary<string, GrabInfo>();
-        public Transform parent;
+        //public Transform parent;
         public float maxForce;
         public bool debug;
 
         void Update()
         {
+            //string debugOutput = "";
             foreach (var grabSpot in grabSpots)
             {
+                //debugOutput += "\n" + grabSpot.Key + "\nRadius: " + grabSpot.Value.spherecastInfo.radius;
+
                 bool canGrab = false;
                 if (grabSpot.Value.grab && !grabSpot.Value.grabbed)
                 {
@@ -26,37 +29,49 @@ namespace UnityHelpers
                     grabSpot.Value.grabbed = false;
                 }
 
+                grabSpot.Value.grab = false;
                 grabSpot.Value.RefreshInRange(
                     (currentGrabbableItem) =>
                     {
+                        var currentItemBounds = currentGrabbableItem.GetTotalBounds(Space.World);
+                        var itemBoundsInDirection = currentItemBounds.extents.Multiply(grabSpot.Value.spherecastInfo.direction);
+                        //float itemBoundsExtents = (itemBoundsInDirection.x + itemBoundsInDirection.y + itemBoundsInDirection.z) / 3;
+                        float itemBoundsExtents = itemBoundsInDirection.magnitude * 1.5f;
+                        grabSpot.Value.grab = itemBoundsExtents >= grabSpot.Value.spherecastInfo.radius;
+                        //debugOutput += "\n" + currentGrabbableItem.name + "\nExtents: " + itemBoundsExtents;
+
                         if (canGrab)
                         {
-                            currentGrabbableItem.Grab(parent, maxForce);
+                            currentGrabbableItem.GetComponent<IGrabbable>().Grab(grabSpot.Value, maxForce);
                         }
                         else if (!grabSpot.Value.grab)
                         {
-                            currentGrabbableItem.Ungrab(parent);
+                            currentGrabbableItem.GetComponent<IGrabbable>().Ungrab(grabSpot.Value);
                         }
                     },
                     (lostItem) =>
                     {
                         //Stop grabbing any item that went out of range
-                        lostItem.Ungrab(parent);
+                        lostItem.Ungrab(grabSpot.Value);
                     }
                 );
 
                 if (debug)
+                {
                     grabSpot.Value.DrawDebugSphere();
+                }
             }
+
+            //DebugPanel.Log(gameObject.name, debugOutput);
         }
 
-        public void AddGrabSpot(string name)
+        public void AddGrabSpot(string name, Transform grabbedParentedTo)
         {
-            AddGrabSpot(name, default);
+            AddGrabSpot(name, grabbedParentedTo, default);
         }
-        public void AddGrabSpot(string name, SpherecastInfo dimensions)
+        public void AddGrabSpot(string name, Transform grabbedParentedTo, SpherecastInfo dimensions)
         {
-            grabSpots.Add(name, new GrabInfo() { spherecastInfo = dimensions });
+            grabSpots.Add(name, new GrabInfo() { parent = grabbedParentedTo, spherecastInfo = dimensions });
         }
         public void SetGrabSpotGrabbing(string name, bool isGrabbing)
         {
@@ -74,27 +89,31 @@ namespace UnityHelpers
 
         public class GrabInfo
         {
+            public Transform parent;
             public SpherecastInfo spherecastInfo;
             public bool grab;
             public bool grabbed;
             private List<IGrabbable> inRange = new List<IGrabbable>();
-            private Transform debugSphere;
+            private Renderer debugSphere;
 
-            public void RefreshInRange(System.Action<IGrabbable> enteredRange, System.Action<IGrabbable> leftRange)
+            public void RefreshInRange(System.Action<Transform> enteredRange, System.Action<IGrabbable> leftRange)
             {
                 var oldInRange = inRange;
                 inRange = new List<IGrabbable>();
-                var inCast = Physics.SphereCastAll(spherecastInfo.position, spherecastInfo.radius, spherecastInfo.direction, spherecastInfo.distance, spherecastInfo.castMask);
-                foreach (var itemInCast in inCast)
+                if (spherecastInfo.radius > 0)
                 {
-                    var grabbableItem = itemInCast.rigidbody.GetComponent<IGrabbable>();
-                    if (grabbableItem != null)
+                    var inCast = Physics.SphereCastAll(spherecastInfo.position, spherecastInfo.radius, spherecastInfo.direction, spherecastInfo.distance, spherecastInfo.castMask);
+                    foreach (var itemInCast in inCast)
                     {
-                        inRange.Add(grabbableItem);
-                        enteredRange?.Invoke(grabbableItem);
+                        var grabbableItem = itemInCast.rigidbody.GetComponent<IGrabbable>();
+                        if (grabbableItem != null)
+                        {
+                            inRange.Add(grabbableItem);
+                            enteredRange?.Invoke(itemInCast.transform);
+                        }
                     }
                 }
-                
+
                 foreach (var lostItem in oldInRange.Except(inRange))
                 {
                     leftRange?.Invoke(lostItem);
@@ -104,12 +123,13 @@ namespace UnityHelpers
             public void DrawDebugSphere()
             {
                 if (debugSphere == null)
-                    debugSphere = PoolManager.GetPool("DebugSpheres").Get();
+                    debugSphere = PoolManager.GetPool("DebugSpheres").Get<Renderer>();
 
                 if (debugSphere != null)
                 {
-                    debugSphere.position = spherecastInfo.position + spherecastInfo.direction * spherecastInfo.distance;
-                    debugSphere.localScale = Vector3.one * spherecastInfo.radius * 2;
+                    debugSphere.transform.position = spherecastInfo.position + spherecastInfo.direction * spherecastInfo.distance;
+                    debugSphere.transform.localScale = Vector3.one * spherecastInfo.radius * 2;
+                    debugSphere.material.color = grab ? new Color(1, 0, 0, 0.25f) : new Color(0, 1, 0, 0.25f);
                 }
                 else
                     Debug.LogError("Debugging GrabInfo requires a pool in pool manager called DebugSpheres");
@@ -117,7 +137,7 @@ namespace UnityHelpers
             public void ReturnDebugSphere()
             {
                 if (debugSphere != null)
-                    PoolManager.GetPool("DebugSpheres")?.Return(debugSphere);
+                    PoolManager.GetPool("DebugSpheres")?.Return(debugSphere.transform);
             }
 
             public int CountInRange()
