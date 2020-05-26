@@ -9,6 +9,8 @@ namespace UnityHelpers
     /// </summary>
     public class DebugPanel : MonoBehaviour
     {
+        public string emptyMessage = "Nothing to show";
+
         private static Dictionary<string, (float, float, object)> debugValues = new Dictionary<string, (float, float, object)>();
         private static bool refreshed;
 
@@ -40,7 +42,7 @@ namespace UnityHelpers
 
             var builtOutput = GetOutput();
             if (string.IsNullOrEmpty(builtOutput))
-                builtOutput = "Nothing to show";
+                builtOutput = emptyMessage;
             output.text = builtOutput;
         }
         private void LateUpdate()
