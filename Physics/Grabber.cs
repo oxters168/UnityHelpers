@@ -34,10 +34,10 @@ namespace UnityHelpers
                     (currentGrabbableItem) =>
                     {
                         var currentItemBounds = currentGrabbableItem.GetTotalBounds(Space.World);
-                        var itemBoundsInDirection = currentItemBounds.extents.Multiply(grabSpot.Value.spherecastInfo.direction);
+                        var itemBoundsInDirection = currentItemBounds.size.Multiply(grabSpot.Value.physicsCaster.GetDirection());
                         //float itemBoundsExtents = (itemBoundsInDirection.x + itemBoundsInDirection.y + itemBoundsInDirection.z) / 3;
-                        float itemBoundsExtents = itemBoundsInDirection.magnitude * 1.5f;
-                        grabSpot.Value.grab = itemBoundsExtents >= grabSpot.Value.spherecastInfo.radius;
+                        float itemBoundsSize = itemBoundsInDirection.magnitude * 1.2f;
+                        grabSpot.Value.grab = itemBoundsSize >= grabSpot.Value.physicsCaster.GetSize();
                         //debugOutput += "\n" + currentGrabbableItem.name + "\nExtents: " + itemBoundsExtents;
 
                         if (canGrab)
@@ -58,7 +58,7 @@ namespace UnityHelpers
 
                 if (debug)
                 {
-                    grabSpot.Value.DrawDebugSphere();
+                    grabSpot.Value.DrawDebugCast();
                 }
             }
 
@@ -69,40 +69,40 @@ namespace UnityHelpers
         {
             AddGrabSpot(name, grabbedParentedTo, default);
         }
-        public void AddGrabSpot(string name, Transform grabbedParentedTo, SpherecastInfo dimensions)
+        public void AddGrabSpot(string name, Transform grabbedParentedTo, ICastable dimensions)
         {
-            grabSpots.Add(name, new GrabInfo() { parent = grabbedParentedTo, spherecastInfo = dimensions });
+            grabSpots.Add(name, new GrabInfo() { parent = grabbedParentedTo, physicsCaster = dimensions });
         }
         public void SetGrabSpotGrabbing(string name, bool isGrabbing)
         {
             grabSpots[name].grab = isGrabbing;
         }
-        public void SetGrabSpotDimensions(string name, SpherecastInfo dimensions)
+        public void SetGrabSpotDimensions(string name, ICastable dimensions)
         {
-            grabSpots[name].spherecastInfo = dimensions;
+            grabSpots[name].physicsCaster = dimensions;
         }
         public void RemoveGrabSpot(string name)
         {
-            grabSpots[name].ReturnDebugSphere();
+            grabSpots[name].ReturnDebugCast();
             grabSpots.Remove(name);
         }
 
         public class GrabInfo
         {
             public Transform parent;
-            public SpherecastInfo spherecastInfo;
+            public ICastable physicsCaster;
             public bool grab;
             public bool grabbed;
             private List<IGrabbable> inRange = new List<IGrabbable>();
-            private Renderer debugSphere;
+            private LineRenderer debugLine;
 
             public void RefreshInRange(System.Action<Transform> enteredRange, System.Action<IGrabbable> leftRange)
             {
                 var oldInRange = inRange;
                 inRange = new List<IGrabbable>();
-                if (spherecastInfo.radius > 0)
+                if (physicsCaster != null)
                 {
-                    var inCast = Physics.SphereCastAll(spherecastInfo.position, spherecastInfo.radius, spherecastInfo.direction, spherecastInfo.distance, spherecastInfo.castMask);
+                    var inCast = physicsCaster.CastAll();
                     foreach (var itemInCast in inCast)
                     {
                         var grabbableItem = itemInCast.rigidbody.GetComponent<IGrabbable>();
@@ -120,24 +120,34 @@ namespace UnityHelpers
                 }
             }
 
-            public void DrawDebugSphere()
+            public void DrawDebugCast()
             {
-                if (debugSphere == null)
-                    debugSphere = PoolManager.GetPool("DebugSpheres").Get<Renderer>();
+                if (debugLine == null)
+                    debugLine = PoolManager.GetPool("DebugLines").Get<LineRenderer>();
 
-                if (debugSphere != null)
+                if (debugLine != null)
                 {
-                    debugSphere.transform.position = spherecastInfo.position + spherecastInfo.direction * spherecastInfo.distance;
-                    debugSphere.transform.localScale = Vector3.one * spherecastInfo.radius * 2;
-                    debugSphere.material.color = grab ? new Color(1, 0, 0, 0.25f) : new Color(0, 1, 0, 0.25f);
+                    if (physicsCaster != null)
+                    {
+                        debugLine.SetPositions(
+                            new Vector3[]
+                            {
+                                physicsCaster.GetPosition(),
+                                physicsCaster.GetPosition() + physicsCaster.GetDirection() * physicsCaster.GetSize()
+                            }
+                        );
+                        //debugLine.transform.position = physicsCaster.GetPosition() + physicsCaster.GetDirection() * physicsCaster.GetSize();
+                        //debugLine.transform.localScale = Vector3.one * physicsCaster.radius * 2;
+                        debugLine.material.color = grab ? new Color(0, 1, 0) : new Color(1, 1, 1);
+                    }
                 }
                 else
-                    Debug.LogError("Debugging GrabInfo requires a pool in pool manager called DebugSpheres");
+                    Debug.LogError("Debugging GrabInfo requires a pool in pool manager called DebugLines");
             }
-            public void ReturnDebugSphere()
+            public void ReturnDebugCast()
             {
-                if (debugSphere != null)
-                    PoolManager.GetPool("DebugSpheres")?.Return(debugSphere.transform);
+                if (debugLine != null)
+                    PoolManager.GetPool("DebugSpheres")?.Return(debugLine.transform);
             }
 
             public int CountInRange()
@@ -145,15 +155,5 @@ namespace UnityHelpers
                 return inRange.Count;
             }
         }
-    }
-
-    [System.Serializable]
-    public struct SpherecastInfo
-    {
-        public LayerMask castMask;
-        public Vector3 position;
-        public Vector3 direction;
-        public float distance;
-        public float radius;
     }
 }
