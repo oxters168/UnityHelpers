@@ -7,6 +7,51 @@ namespace UnityHelpers
     public static class QuaternionHelpers
     {
         /// <summary>
+        /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
+        /// Gets angle of quaternion only along the specified axis
+        /// </summary>
+        /// <param name="rot">The rotation quaternion</param>
+        /// <param name="axis">The axis to be polled</param>
+        /// <param name="axisNormal">The orthogonal vector of the axis</param>
+        /// <returns>The angle around the given axis</returns>
+        public static float PollAxisAngle(this Quaternion rot, Vector3 axis, Vector3 axisNormal)
+        {
+            axis.Normalize();
+
+            Vector3 transformed = rot * axisNormal;
+
+            // Project transformed vector onto plane
+            Vector3 flattened = transformed - (Vector3.Dot(transformed, axis) * axis);
+            flattened.Normalize();
+
+            // Get angle between original vector and projected transform to get angle around normal
+            float a = (float)Mathf.Acos(Vector3.Dot(axisNormal, flattened));
+
+            return a;
+        }
+
+        /// <summary>
+        /// If the quaternion is going the long way around the axis, then this function will
+        /// find the complementary shorter angle on the axis
+        /// </summary>
+        /// <param name="value">The original quaternion value</param>
+        /// <returns>The shortened quaternion value</returns>
+        public static Quaternion Shorten(this Quaternion value)
+        {
+            //Source: https://answers.unity.com/questions/147712/what-is-affected-by-the-w-in-quaternionxyzw.html
+            //"If w is -1 the quaternion defines +/-2pi rotation angle around an undefined axis"
+            //So by doing this we check to see if that is true, and if so turn it the other way around
+            if (value.w < 0)
+            {
+                value.x = -value.x;
+                value.y = -value.y;
+                value.z = -value.z;
+                value.w = -value.w;
+            }
+            return value;
+        }
+
+        /// <summary>
         /// Transform rotation from local space to world space.
         /// </summary>
         /// <param name="transform">The anchor.</param>

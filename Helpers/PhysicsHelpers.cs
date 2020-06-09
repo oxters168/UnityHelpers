@@ -25,13 +25,7 @@ namespace UnityHelpers
             Vector3 x;
             float xMag;
             Quaternion q = desiredRotation * Quaternion.Inverse(rigidbody.transform.rotation);
-            if (q.w < 0)
-            {
-                q.x = -q.x;
-                q.y = -q.y;
-                q.z = -q.z;
-                q.w = -q.w;
-            }
+            q = q.Shorten();
             q.ToAngleAxis(out xMag, out x);
             x.Normalize();
 

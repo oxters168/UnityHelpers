@@ -8,6 +8,11 @@ namespace UnityHelpers
     {
         private Dictionary<string, GrabInfo> grabSpots = new Dictionary<string, GrabInfo>();
         //public Transform parent;
+        /// <summary>
+        /// The item size multiplier to be compared to the grab size when grabbing (Larger value means more easily grabbed)
+        /// </summary>
+        [Tooltip("The item size multiplier to be compared to the grab size when grabbing (Larger value means more easily grabbed)")]
+        public float itemGrabPercentSize = 1.25f;
         public float maxForce;
         public bool debug;
 
@@ -36,7 +41,7 @@ namespace UnityHelpers
                         var currentItemBounds = currentGrabbableItem.GetTotalBounds(Space.World);
                         var itemBoundsInDirection = currentItemBounds.size.Multiply(grabSpot.Value.physicsCaster.GetDirection());
                         //float itemBoundsExtents = (itemBoundsInDirection.x + itemBoundsInDirection.y + itemBoundsInDirection.z) / 3;
-                        float itemBoundsSize = itemBoundsInDirection.magnitude * 1.2f;
+                        float itemBoundsSize = itemBoundsInDirection.magnitude * itemGrabPercentSize;
                         grabSpot.Value.grab = itemBoundsSize >= grabSpot.Value.physicsCaster.GetSize();
                         //debugOutput += "\n" + currentGrabbableItem.name + "\nExtents: " + itemBoundsExtents;
 
