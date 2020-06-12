@@ -47,7 +47,7 @@ namespace UnityHelpers
 
             if (shader != null && _material != null)
             {
-                _material.SetVector("_CameraDir", transform.position);
+                _material.SetVector("_CameraPos", transform.position);
 
                 Matrix4x4 matrixCameraToWorld = CurrentCamera.cameraToWorldMatrix;
                 Matrix4x4 matrixProjectionInverse = GL.GetGPUProjectionMatrix(CurrentCamera.projectionMatrix, false).inverse;
