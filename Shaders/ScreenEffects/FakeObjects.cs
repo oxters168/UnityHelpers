@@ -12,13 +12,21 @@ namespace UnityHelpers
         private Material _material;
 
         public float epsilon = 0.001f;
-        public float zValue;
-        public Vector3 eulerRot;
-        public BoxInfo box = new BoxInfo() { position = Vector3.zero, rotation = Quaternion.identity, size = Vector3.one };
+        //public float zValue;
+        //public Vector3 eulerRot;
+        //public BoxInfo box = new BoxInfo() { position = Vector3.zero, rotation = Quaternion.identity, size = Vector3.one };
+        public BoxInfo[] boxes;
 
+        private ComputeBuffer buffer;
+
+        void OnDestroy()
+        {
+            if (buffer != null)
+                buffer.Dispose();
+        }
         void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            box.rotation = Quaternion.Euler(eulerRot);
+            //box.rotation = Quaternion.Euler(eulerRot);
             if (_material)
             {
                 DestroyImmediate(_material);
@@ -31,44 +39,25 @@ namespace UnityHelpers
             }
 
             if (shader != null && _material != null)
-            {
-                var allSquares = box.SplitToSquares()
-                .SelectMany(
-                    (polygon) =>
-                    new Vector4[]
+            {                
+                Vector3[] allSquares = null;
+                if (boxes != null)
+                    allSquares = boxes.SelectMany((box) => box.SplitToSquares().SelectMany((polygon) => polygon.vertices)).ToArray();
+
+                //Shader.SetGlobalFloat("_AllSquaresLength", allSquares != null ? allSquares.Length : 0);
+                if (allSquares != null && allSquares.Length > 0)
+                {
+                    if (buffer == null || buffer.count != allSquares.Length)
                     {
-                        //new Vector4(polygon.vertices[0].x, polygon.vertices[0].y, polygon.vertices[0].z),
-                        //new Vector4(polygon.vertices[1].x, polygon.vertices[1].y, polygon.vertices[1].z),
-                        //new Vector4(polygon.vertices[2].x, polygon.vertices[2].y, polygon.vertices[2].z),
-                        //new Vector4(polygon.vertices[3].x, polygon.vertices[3].y, polygon.vertices[3].z),
-                        polygon.vertices[0],
-                        polygon.vertices[1],
-                        polygon.vertices[2],
-                        polygon.vertices[3],
-                        polygon.CalculateNormal()
+                        buffer?.Dispose();
+                        buffer = new ComputeBuffer(allSquares.Length, sizeof(float) * 3);
                     }
-                )
-                .ToArray();
-
-                /*allSquares = new Vector4[]
-                    {
-                        new Vector4(-0.5f, -0.5f, zValue),
-                        new Vector4(0.5f, -0.5f, zValue),
-                        new Vector4(0.5f, 0.5f, zValue),
-                        new Vector4(-0.5f, 0.5f, zValue),
-                        Vector3.forward
-                    };*/
-                
-                //string verticesLog = allSquares.Length + "\n";
-                //foreach (var vertex in allSquares)
-                //    verticesLog += vertex + "\n";
-                //Debug.Log(verticesLog);
-
-                Shader.SetGlobalVectorArray("_AllSquares", allSquares);
+                    buffer.SetData(allSquares);
+                    Shader.SetGlobalBuffer("_AllSquares", buffer);
+                }
 
                 _material.SetVector("_CameraPos", transform.position);
                 _material.SetFloat("epsilon", epsilon);
-                _material.SetFloat("radius", zValue);
 
                 Matrix4x4 matrixCameraToWorld = CurrentCamera.cameraToWorldMatrix;
                 Matrix4x4 matrixProjectionInverse = GL.GetGPUProjectionMatrix(CurrentCamera.projectionMatrix, false).inverse;

@@ -25,17 +25,12 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 			#include "UnityCG.cginc"
 			#pragma vertex vert_img
 			#pragma fragment frag
-
+			#pragma require compute
+			
+			//Provided CPU side
             uniform float4x4 _MatrixHClipToWorld;
-
-			uniform float4 _AllSquares[30]; //5 * 6 (blCorner, brCorner, trCorner, tlCorner, color...)
-			//uniform float4 _AllSquares[5];
-
-			float _currentSquareDepth; //Until I find a better solution, this'll have to do
-			float _currentAngleSum;
-			float radius;
-			float3 _currentSquareColor;
-
+			uniform RWStructuredBuffer<float3> _AllSquares;
+			//uniform int _AllSquaresLength; //The virtual length of _AllSquares, must be smaller than or equal to the actual length
 			float epsilon = 0.001;
 			float3 _CameraPos;
 			sampler2D _CameraDepthTexture;
@@ -52,24 +47,6 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
                 return mul(_MatrixHClipToWorld, positionCS).xyz;
             }
 
-			inline float RayToPlaneIntersection2(float3 pointOnPlane, float3 planeNormal, float3 rayStartPos, float3 rayDir)
-			{
-				//Equation of plane: https://web.ma.utexas.edu/users/m408m/Display12-5-3.shtml
-				//Equation of line: http://sites.science.oregonstate.edu/math/home/programs/undergrad/CalculusQuestStudyGuides/vcalc/lineplane/lineplane.html
-				//Intersection equation: https://math.libretexts.org/Bookshelves/Calculus/Supplemental_Modules_(Calculus)/Multivariable_Calculus/1%3A_Vectors_in_Space/Intersection_of_a_Line_and_a_Plane
-
-				float coefficient;
-
-				float planeNumber = planeNormal.x * -pointOnPlane.x + planeNormal.y * -pointOnPlane.y + planeNormal.z * -pointOnPlane.z;
-
-				float3 otherDistribution = planeNormal * rayStartPos;
-				float3 varDistribution = planeNormal * rayDir;
-				float otherSum = otherDistribution.x + otherDistribution.y + otherDistribution.z;
-				float varCoefficient = varDistribution.x + varDistribution.y + varDistribution.z;
-				coefficient = -(otherSum + planeNumber) / varCoefficient; //Apparently it's ok to divide by zero, it will return a large number
-				
-				return coefficient;
-			}
 			inline float RayToPlaneIntersection(float3 pointOnPlane, float3 planeNormal, float3 rayStartPos, float3 rayDir)
 			{
 				//Source: https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
@@ -87,6 +64,7 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 			{
 				//< means angle between, ikjl are the corners of the square and p is the point
 				//<ipj + <jpk + <kpl + <lpi should be around 360
+				//courtesy of @bmabsout
 				float twopi = 6.28318;
 				
 				float3 ip = normalize(pointToBeChecked - bottomLeftCorner);
@@ -107,7 +85,6 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 				float3 squareRight = normalize(squareBottomRightCorner - squareBottomLeftCorner);
 				float3 squareUp = normalize(squareTopLeftCorner - squareBottomLeftCorner);
 				float3 squareNormal = cross(squareRight, squareUp);
-				_currentSquareColor = squareNormal;
 				return RayToPlaneIntersection(squareBottomLeftCorner, squareNormal, rayStart, rayDir);
 			}
 			inline bool PointInSphere(float3 givenPoint, float3 sphereCenter, float sphereRadius)
@@ -117,6 +94,10 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 			}
 			inline int FindClosestSquare(float3 rayStart, float3 rayDir, float maxDepth)
 			{
+				uint squaresLength;
+				uint stride = 12;
+				_AllSquares.GetDimensions(squaresLength, stride); //This does work, but I don't want it to use an old buffer if it exists
+
 				int nearestSquareIndex = -1;
 				float closestDepth = maxDepth;
 				float3 blCorner;
@@ -124,24 +105,19 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 				float3 trCorner;
 				float3 tlCorner;
 				float squareNormal;
-				for (int currentSquareIndex = 0; currentSquareIndex < 30; currentSquareIndex += 5)
+				for (int currentSquareIndex = 0; currentSquareIndex < squaresLength; currentSquareIndex += 4)
 				{
 					blCorner = _AllSquares[currentSquareIndex];
 					brCorner = _AllSquares[currentSquareIndex + 1];
 					trCorner = _AllSquares[currentSquareIndex + 2];
 					tlCorner = _AllSquares[currentSquareIndex + 3];
-					squareNormal = _AllSquares[currentSquareIndex + 4];
-					//float3 squareCenter = (blCorner + brCorner + trCorner + tlCorner) / 4;
 					float squareDepth = GetSquareDepth(rayStart, rayDir, tlCorner, blCorner, brCorner);
-					//float squareDepth = RayToPlaneIntersection(blCorner, squareNormal, rayStart, rayDir);
 					if (squareDepth >= 0 && squareDepth < closestDepth)
 					{
 						float3 pointOnPlane = rayStart + (rayDir * squareDepth);
 						if (PointInSquare(pointOnPlane, blCorner, brCorner, trCorner, tlCorner))
-						//if (PointInSphere(pointOnPlane, squareCenter, radius))
 						{
 							closestDepth = squareDepth;
-							_currentSquareDepth = squareDepth;
 							nearestSquareIndex = currentSquareIndex;
 						}
 					}
@@ -166,34 +142,11 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 				float3 startPosition = TransformUVToWorldPos(i.uv, _ProjectionParams.y);
 				float3 rayDir = normalize(startPosition - _CameraPos);
 				
-				//finalColor = 1;
-				//int squareIndex = 5;
 				int squareIndex = FindClosestSquare(startPosition, rayDir, worldDepth);
 				if (squareIndex >= 0)
 				{
-					//float3 bottomLeftCorner = _AllSquares[squareIndex];
-					//float3 bottomRightCorner = _AllSquares[squareIndex + 1];
-					//float3 topRightCorner = _AllSquares[squareIndex + 2];
-					//float3 topLeftCorner = _AllSquares[squareIndex + 3];
-					//float3 bottomLeftCorner = float3(-0.5, -0.5, 0);
-					//float3 bottomRightCorner = float3(0.5, -0.5, 0);
-					//float3 topRightCorner = float3(0.5, 0.5, 0);
-					//float3 topLeftCorner = float3(-0.5, 0.5, 0);
-
-
-					//float squareDepth = GetSquareDepth(startPosition, rayDir, topLeftCorner, bottomLeftCorner, bottomRightCorner);
-
-					//if(squareDepth >= 0 && squareDepth < worldDepth)
-					//{
-						//float3 pointOnPlane = startPosition + (rayDir * _currentSquareDepth);
-						//if (PointInSquare(pointOnPlane, bottomLeftCorner, bottomRightCorner, topRightCorner, topLeftCorner))
-						//{
-							float3 lightDirection = normalize(_WorldSpaceLightPos0.xyz);
-							finalColor = dot(-rayDir, lightDirection);
-						//}
-						//else
-						//	finalColor = 0;
-					//}
+					float3 lightDirection = normalize(_WorldSpaceLightPos0.xyz);
+					finalColor = dot(-rayDir, lightDirection);
 					//finalColor = 1;
 					//float3 summed = (bottomLeftCorner + bottomRightCorner + topRightCorner + topLeftCorner) / 4;
 					//finalColor = fixed4(summed.r, summed.g, summed.b, 1);
@@ -203,10 +156,7 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 					//finalColor = fixed4(rayDir.r, rayDir.g, rayDir.b, 1);
 					//finalColor = fixed4(_currentSquareColor.r, _currentSquareColor.g, _currentSquareColor.b, 1);
 				}
-				//else
-				//{
-				//	finalColor = 0;
-				//}
+
 				//finalColor = _currentSquareDepth / 10;
 				//finalColor = squareIndex;
 				//finalColor = fixed4(startPosition.r, startPosition.g, startPosition.b, 1);
