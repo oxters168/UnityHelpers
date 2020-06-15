@@ -589,7 +589,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 4800000, guid: 615860c9745c5cf61b1b9b1d94647cf9, type: 3}
-  squareBottomLeftCorner: {x: -1, y: -1, z: 0, w: 0}
-  squareBottomRightCorner: {x: 1, y: -1, z: 0, w: 0}
-  squareTopRightCorner: {x: 1, y: 1, z: 0, w: 0}
-  squareTopLeftCorner: {x: -1, y: 1, z: 0, w: 0}
+  epsilon: 0.001
+  zValue: 0
+  box:
+    position: {x: 0, y: 0, z: 0.5}
+    rotation: {x: 0, y: 0, z: 0, w: 1}
+    size: {x: 1, y: 1, z: 1}
