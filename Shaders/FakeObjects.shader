@@ -60,7 +60,8 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 				return pointOnPlane - dist * planeNormal;
 			}
 			//Corners should be in order (clockwise or counter-clockwise) and point should be on the same plane as polygon
-			inline bool PointInSquare(float3 pointToBeChecked, float3 bottomLeftCorner, float3 bottomRightCorner, float3 topRightCorner, float3 topLeftCorner)
+			//Returns 1 if in square and 0 if outside
+			inline int PointInSquare(float3 pointToBeChecked, float3 bottomLeftCorner, float3 bottomRightCorner, float3 topRightCorner, float3 topLeftCorner)
 			{
 				//< means angle between, ikjl are the corners of the square and p is the point
 				//<ipj + <jpk + <kpl + <lpi should be around 360
@@ -77,8 +78,9 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 				float ang3 = acos(dot(kp, lp));
 				float ang4 = acos(dot(lp, ip));
 				float sum = ang1 + ang2 + ang3 + ang4;
-				
-				return sum < (twopi + epsilon) && sum > (twopi - epsilon);
+
+				return 1 - clamp(floor(abs((sum - twopi) / epsilon)), 0, 1);
+				//return sum < (twopi + epsilon) && sum > (twopi - epsilon);
 			}
 			inline float GetSquareDepth(float3 rayStart, float3 rayDir, float3 squareTopLeftCorner, float3 squareBottomLeftCorner, float3 squareBottomRightCorner)
 			{
@@ -112,15 +114,13 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 					trCorner = _AllSquares[currentSquareIndex + 2];
 					tlCorner = _AllSquares[currentSquareIndex + 3];
 					float squareDepth = GetSquareDepth(rayStart, rayDir, tlCorner, blCorner, brCorner);
-					if (squareDepth >= 0 && squareDepth < closestDepth)
-					{
-						float3 pointOnPlane = rayStart + (rayDir * squareDepth);
-						if (PointInSquare(pointOnPlane, blCorner, brCorner, trCorner, tlCorner))
-						{
-							closestDepth = squareDepth;
-							nearestSquareIndex = currentSquareIndex;
-						}
-					}
+					float3 pointOnPlane = rayStart + (rayDir * squareDepth);
+
+					int backsideLerp = clamp(ceil(squareDepth), 0, 1);
+					int closestLerp = clamp(ceil(closestDepth - squareDepth), 0, 1);
+					int inSquareLerp = PointInSquare(pointOnPlane, blCorner, brCorner, trCorner, tlCorner);
+					nearestSquareIndex = lerp(nearestSquareIndex, currentSquareIndex, backsideLerp * closestLerp * inSquareLerp);
+					closestDepth = lerp(closestDepth, squareDepth, backsideLerp * closestLerp * inSquareLerp);
 				}
 				return nearestSquareIndex;
 			}
@@ -137,30 +137,16 @@ Shader "UnityHelpers/PostEffects/FakeObjects"
 				float worldDepth = tex2D(_CameraDepthTexture, i.uv).r;
 				worldDepth = Linear01Depth(worldDepth);
 				worldDepth = worldDepth * _ProjectionParams.z;
-				//_currentSquareDepth = worldDepth;
 
 				float3 startPosition = TransformUVToWorldPos(i.uv, _ProjectionParams.y);
 				float3 rayDir = normalize(startPosition - _CameraPos);
 				
 				int squareIndex = FindClosestSquare(startPosition, rayDir, worldDepth);
-				if (squareIndex >= 0)
-				{
-					float3 lightDirection = normalize(_WorldSpaceLightPos0.xyz);
-					finalColor = dot(-rayDir, lightDirection);
-					//finalColor = 1;
-					//float3 summed = (bottomLeftCorner + bottomRightCorner + topRightCorner + topLeftCorner) / 4;
-					//finalColor = fixed4(summed.r, summed.g, summed.b, 1);
-					//finalColor = _currentAngleSum / 6.28318;
-					//finalColor = _currentSquareDepth / 10;
-					//finalColor = _AllSquares[squareIndex + 4];
-					//finalColor = fixed4(rayDir.r, rayDir.g, rayDir.b, 1);
-					//finalColor = fixed4(_currentSquareColor.r, _currentSquareColor.g, _currentSquareColor.b, 1);
-				}
+				float3 lightDirection = normalize(_WorldSpaceLightPos0.xyz);
+				fixed4 squareColor = dot(-rayDir, lightDirection);
+				int colorLerp = clamp(ceil(squareIndex), 0, 1);
+				finalColor = lerp(finalColor, squareColor, colorLerp);
 
-				//finalColor = _currentSquareDepth / 10;
-				//finalColor = squareIndex;
-				//finalColor = fixed4(startPosition.r, startPosition.g, startPosition.b, 1);
-				//finalColor = fixed4(rayDir.r, rayDir.g, rayDir.b, 1);
 				return finalColor;
 			}
             ENDCG
