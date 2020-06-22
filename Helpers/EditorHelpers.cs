@@ -194,6 +194,7 @@ namespace UnityHelpers
                         field = GetFieldOfProperty(prop);
                         return field != null ? field.FieldType : typeof(UnityEngine.Object);
                     }
+				#if CSHARP_7_3_OR_NEWER
                 case SerializedPropertyType.FixedBufferSize:
                     return typeof(int);
                 case SerializedPropertyType.Vector2Int:
@@ -204,6 +205,7 @@ namespace UnityHelpers
                     return typeof(RectInt);
                 case SerializedPropertyType.BoundsInt:
                     return typeof(BoundsInt);
+				#endif
                 default:
                     {
                         field = GetFieldOfProperty(prop);

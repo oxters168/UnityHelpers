@@ -53,14 +53,18 @@ namespace UnityHelpers
             var eventSystemSelection = EventSystem.current.currentSelectedGameObject;
             if (eventSystemSelection != currentlySelected)
             {
-                var button = eventSystemSelection?.GetComponent<KeyController>(); //Should change this to be keyboard key component when created
+				KeyController button = null;
+				if (eventSystemSelection != null)
+					button = eventSystemSelection.GetComponent<KeyController>(); //Should change this to be keyboard key component when created
 
                 if (button == null)
                 {
                     currentlySelected = eventSystemSelection;
 
-                    inputField?.onValueChanged.RemoveListener(InputFieldValueChanged);
-                    tmpInputField?.onValueChanged.RemoveListener(InputFieldValueChanged);
+					if (inputField != null)
+                    	inputField.onValueChanged.RemoveListener(InputFieldValueChanged);
+					if (tmpInputField != null)
+						tmpInputField.onValueChanged.RemoveListener(InputFieldValueChanged);
 
                     inputField = null;
                     tmpInputField = null;
@@ -76,8 +80,10 @@ namespace UnityHelpers
                         else if (tmpInputField != null)
                             SetText(tmpInputField.text);
 
-                        inputField?.onValueChanged.AddListener(InputFieldValueChanged);
-                        tmpInputField?.onValueChanged.AddListener(InputFieldValueChanged);
+						if (inputField != null)
+                        	inputField.onValueChanged.AddListener(InputFieldValueChanged);
+						if (tmpInputField != null)
+							tmpInputField.onValueChanged.AddListener(InputFieldValueChanged);
                     }
                 }
             }
@@ -93,7 +99,8 @@ namespace UnityHelpers
         }
         public void SetText(string value)
         {
-            builtOutput.Clear();
+			builtOutput.Remove (0, builtOutput.Length);
+            //builtOutput.Clear();
             builtOutput.Append(value);
         }
 

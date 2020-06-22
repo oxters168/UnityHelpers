@@ -5,7 +5,7 @@ namespace UnityHelpers
     /// <summary>
     /// Use this to get an object to fit properly in a camera's view.
     /// </summary>
-    [ExecuteAlways]
+	[ExecuteInEditMode]
     public class FitToCameraView : MonoBehaviour
     {
         [Range(0, 10000)]

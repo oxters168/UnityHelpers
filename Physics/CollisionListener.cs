@@ -20,48 +20,52 @@ namespace UnityHelpers
 
         private void OnCollisionStay(Collision collision)
         {
-            onCollisionStay?.Invoke(new TreeCollider.CollisionInfo
-            {
-                collidedWith = collision.gameObject,
-                collision = collision,
-                collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
-                isTrigger = false,
-                otherCollider = collision.collider,
-                sender = gameObject
-            });
+			if (onCollisionStay != null)
+	            onCollisionStay.Invoke(new TreeCollider.CollisionInfo
+	            {
+	                collidedWith = collision.gameObject,
+	                collision = collision,
+	                collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
+	                isTrigger = false,
+	                otherCollider = collision.collider,
+	                sender = gameObject
+	            });
         }
         private void OnTriggerStay(Collider other)
         {
-            onTriggerStay?.Invoke(new TreeCollider.CollisionInfo
-            {
-                collidedWith = other.gameObject,
-                collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
-                isTrigger = true,
-                otherCollider = other,
-                sender = gameObject
-            });
+			if (onTriggerStay != null)
+	            onTriggerStay.Invoke(new TreeCollider.CollisionInfo
+	            {
+	                collidedWith = other.gameObject,
+	                collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
+	                isTrigger = true,
+	                otherCollider = other,
+	                sender = gameObject
+	            });
         }
         private void OnTriggerEnter(Collider other)
         {
-            onTriggerEnter?.Invoke(new TreeCollider.CollisionInfo
-            {
-                collidedWith = other.gameObject,
-                collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
-                isTrigger = true,
-                otherCollider = other,
-                sender = gameObject
-            });
+			if (onTriggerEnter != null)
+	            onTriggerEnter.Invoke(new TreeCollider.CollisionInfo
+	            {
+	                collidedWith = other.gameObject,
+	                collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
+	                isTrigger = true,
+	                otherCollider = other,
+	                sender = gameObject
+	            });
         }
         private void OnTriggerExit(Collider other)
         {
-            onTriggerExit?.Invoke(new TreeCollider.CollisionInfo
-            {
-                collidedWith = other.gameObject,
-                collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
-                isTrigger = true,
-                otherCollider = other,
-                sender = gameObject
-            });
+			if (onTriggerExit != null)
+	            onTriggerExit.Invoke(new TreeCollider.CollisionInfo
+	            {
+	                collidedWith = other.gameObject,
+	                collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
+	                isTrigger = true,
+	                otherCollider = other,
+	                sender = gameObject
+	            });
         }
     }
 }

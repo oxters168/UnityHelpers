@@ -34,11 +34,14 @@ namespace UnityHelpers
             else
                 transform.position = Vector3.zero;
 
-            if (strafe >= shiftMinimum || lookHorizontal >= shiftMinimum)
-                shiftRight?.Invoke();
-            else if (strafe <= -shiftMinimum || lookHorizontal <= -shiftMinimum)
-                shiftLeft?.Invoke();
-
+			if (strafe >= shiftMinimum || lookHorizontal >= shiftMinimum) {
+				if (shiftRight != null)
+					shiftRight.Invoke ();
+			} else if (strafe <= -shiftMinimum || lookHorizontal <= -shiftMinimum)
+			{
+				if (shiftLeft != null)
+					shiftLeft.Invoke ();
+			}
         }
     }
 }

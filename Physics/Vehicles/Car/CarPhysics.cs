@@ -128,12 +128,14 @@ namespace UnityHelpers
                 //Debug.Log(collision.gameObject.name + " impulse: " + collision.impulse + " percent damage: " + percentDamage);
             }
 
-            onHit?.Invoke(this, collision);
+			if (onHit != null)
+	            onHit.Invoke(this, collision);
         }
         private void OnTriggerEnter(Collider other)
         {
             //Debug.Log("Triggered " + other.name);
-            onTrigger?.Invoke(this, other);
+			if (onTrigger != null)
+            	onTrigger.Invoke(this, other);
         }
 
         private void OnHealthValueChanged(float value)
@@ -246,7 +248,7 @@ namespace UnityHelpers
 
         private static RaycastHitInfo GetClosestHitInfo(RaycastHitInfo[] directionRayResults)
         {
-            RaycastHitInfo bestRay = default;
+			RaycastHitInfo bestRay = new RaycastHitInfo();
             if (directionRayResults != null)
             {
                 float closestRay = float.MaxValue;

@@ -62,10 +62,15 @@ namespace UnityHelpers
             distance = Mathf.Clamp(distance, minDistance, maxDistance);
             transform.position -= transform.forward * distance;
 
-            if (strafe >= shiftMinimum)
-                shiftRight?.Invoke();
-            else if (strafe <= -shiftMinimum)
-                shiftLeft?.Invoke();
+			if (strafe >= shiftMinimum) {
+				if (shiftRight != null)
+					shiftRight.Invoke ();
+			}
+			else if (strafe <= -shiftMinimum)
+			{
+				if (shiftLeft != null)
+					shiftLeft.Invoke ();
+			}
         }
     }
 }

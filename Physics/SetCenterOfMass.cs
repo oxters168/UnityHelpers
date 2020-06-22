@@ -2,7 +2,7 @@
 
 namespace UnityHelpers
 {
-    [ExecuteAlways]
+	[ExecuteInEditMode]
     public class SetCenterOfMass : MonoBehaviour
     {
         private Rigidbody body { get { if (_body == null) { _body = GetComponent<Rigidbody>(); if (_body != null) InitCOM(); } return _body; } }

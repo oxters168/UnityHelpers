@@ -10,11 +10,11 @@ namespace UnityHelpers
         }
         public static Vector2 RemovePivotOffset(this Vector2 localPosition, RectTransform relativeTo)
         {
-            return localPosition + relativeTo.pivot * relativeTo.rect.size;
+			return localPosition + relativeTo.pivot.Multiply(relativeTo.rect.size);
         }
         public static void ShiftPivot(this RectTransform rectTransform, Vector2 newPivot)
         {
-            Vector2 positionOffset = (newPivot - rectTransform.pivot) * rectTransform.rect.size;
+			Vector2 positionOffset = (newPivot - rectTransform.pivot).Multiply(rectTransform.rect.size);
             rectTransform.localPosition += (Vector3)positionOffset;
             rectTransform.pivot = newPivot;
         }

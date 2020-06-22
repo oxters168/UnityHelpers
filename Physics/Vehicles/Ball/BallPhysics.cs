@@ -54,7 +54,7 @@ namespace UnityHelpers
             Vector3 worldDirection = new Vector3(circularInput.x, 0, circularInput.y);
 
             //Get the angle offset of the input direction from world forward
-            float upAngle = Vector3.SignedAngle(Vector3.forward, worldDirection, Vector3.up);
+			float upAngle = Vector3.forward.SignedAngle(worldDirection, Vector3.up);
             //Apply the same angle offset but to the given ball forward and make sure the input magnitude is the same
             Vector3 adjustedWorldDirection = Quaternion.AngleAxis(upAngle, up) * forward * worldDirection.magnitude;
 

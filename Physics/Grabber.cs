@@ -72,7 +72,7 @@ namespace UnityHelpers
 
         public void AddGrabSpot(string name, Transform grabbedParentedTo)
         {
-            AddGrabSpot(name, grabbedParentedTo, default);
+			AddGrabSpot(name, grabbedParentedTo, new RaycastInfo());
         }
         public void AddGrabSpot(string name, Transform grabbedParentedTo, ICastable dimensions)
         {
@@ -114,14 +114,16 @@ namespace UnityHelpers
                         if (grabbableItem != null)
                         {
                             inRange.Add(grabbableItem);
-                            enteredRange?.Invoke(itemInCast.transform);
+							if (enteredRange != null)
+                            	enteredRange.Invoke(itemInCast.transform);
                         }
                     }
                 }
 
                 foreach (var lostItem in oldInRange.Except(inRange))
                 {
-                    leftRange?.Invoke(lostItem);
+					if (leftRange != null)
+                    	leftRange.Invoke(lostItem);
                 }
             }
 
@@ -151,8 +153,9 @@ namespace UnityHelpers
             }
             public void ReturnDebugCast()
             {
-                if (debugLine != null)
-                    PoolManager.GetPool("DebugSpheres")?.Return(debugLine.transform);
+				var spheresPool = PoolManager.GetPool("DebugSpheres");
+				if (debugLine != null && spheresPool != null)
+					spheresPool.Return(debugLine.transform);
             }
 
             public int CountInRange()

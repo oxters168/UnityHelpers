@@ -30,7 +30,8 @@ namespace UnityHelpers
                 Debug.Assert(hits[col.gameObject] >= 0);
                 if (hits[col.gameObject] <= 0)
                 {
-                    onCollisionExit?.Invoke(col);
+					if (onCollisionExit != null)
+                    	onCollisionExit.Invoke(col);
                     hits.Remove(col.gameObject);
                 }
             }

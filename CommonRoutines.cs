@@ -42,7 +42,8 @@ namespace UnityHelpers
                 if (pred != null)
                     predicateOutput = pred();
             }
-            postAction?.Invoke();
+			if (postAction != null)
+            	postAction.Invoke();
         }
         /// <summary>
         /// Waits to do action using either a timer or condition.
@@ -63,7 +64,8 @@ namespace UnityHelpers
                     predicateOutput = pred();
             }
 
-            action?.Invoke(predicateOutput || pred == null);
+			if (action != null)
+            	action.Invoke(predicateOutput || pred == null);
         }
         [Obsolete("Use instead TimedAction with the onStart action")]
         /// <summary>
@@ -78,10 +80,12 @@ namespace UnityHelpers
             float startTime = Time.time;
             while (Time.time - startTime <= time)
             {
-                action?.Invoke((Time.time - startTime) / time);
+				if (action != null)
+                	action.Invoke((Time.time - startTime) / time);
                 yield return null;
             }
-            onComplete?.Invoke();
+			if (onComplete != null)
+            	onComplete.Invoke();
         }
         /// <summary>
         /// Does an action over a set period of time giving the percent complete as parameter.
@@ -93,15 +97,18 @@ namespace UnityHelpers
         /// <returns>Coroutine enumerator</returns>
         public static IEnumerator TimedAction(Action<float> action, float time, Action onStart, Action onComplete)
         {
-            onStart?.Invoke();
+			if (onStart != null)
+            	onStart.Invoke();
             time = Mathf.Clamp(time, 0, float.MaxValue);
             float startTime = Time.time;
             while (Time.time - startTime <= time)
             {
-                action?.Invoke((Time.time - startTime) / time);
+				if (action != null)
+                	action.Invoke((Time.time - startTime) / time);
                 yield return null;
             }
-            onComplete?.Invoke();
+			if (onComplete != null)
+            	onComplete.Invoke();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if CSHARP_7_3_OR_NEWER
+using UnityEngine;
 
 using System;
 using System.Linq;
@@ -226,3 +227,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif

@@ -100,7 +100,7 @@ namespace UnityHelpers
         /// <returns>A bounds that encapsulates the entire model</returns>
         public static Bounds GetTotalBounds(this Transform root, Space space, LayerMask layers, bool fromColliders = false, bool includeDisabled = false)
         {
-            Bounds totalBounds = default;
+			Bounds totalBounds = new Bounds();
 
             IEnumerable<GameObject> boundedObjects;
             if (fromColliders)
@@ -140,7 +140,7 @@ namespace UnityHelpers
         /// <returns>A bounds that encapsulates only the given transform's model</returns>
         public static Bounds GetBounds(this Transform transform, Space space, bool useCollider = false)
         {
-            Bounds singleBounds = default;
+			Bounds singleBounds = new Bounds();
 
             if (useCollider)
             {

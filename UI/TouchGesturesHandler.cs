@@ -79,8 +79,8 @@ namespace UnityHelpers
                 EndPinch();
                 EndDrag();
 
-                if (highestTouchCount == 1 && Time.time - startTouchTime <= tapDuration && (EventSystem.current.currentSelectedGameObject == null || EventSystem.current.currentSelectedGameObject.GetComponent<IPointerClickHandler>() == null))
-                    onUp?.Invoke(prevTouches[0], Vector2.zero);
+                if (onUp != null && highestTouchCount == 1 && Time.time - startTouchTime <= tapDuration && (EventSystem.current.currentSelectedGameObject == null || EventSystem.current.currentSelectedGameObject.GetComponent<IPointerClickHandler>() == null))
+                    onUp.Invoke(prevTouches[0], Vector2.zero);
 
                 startTouchTime = -1;
                 highestTouchCount = 0;
@@ -95,19 +95,22 @@ namespace UnityHelpers
         {
             Vector2 delta = position - prevTouches[0];
             prevTouches[0] = position;
-            onDown?.Invoke(position, delta);
+			if (onDown != null)
+            	onDown.Invoke(position, delta);
         }
         private void Drag(Vector2 position)
         {
             isDragging = true;
             Vector2 delta = position - prevTouches[0];
             prevTouches[0] = position;
-            onDrag?.Invoke(position, delta);
+			if (onDrag != null)
+            	onDrag.Invoke(position, delta);
         }
         private void EndDrag()
         {
             isDragging = false;
-            onEndDrag?.Invoke(prevTouches[0], Vector2.zero);
+			if (onEndDrag != null)
+            	onEndDrag.Invoke(prevTouches[0], Vector2.zero);
         }
 
         private void StartPinch(Vector2 pos1, Vector2 pos2)
@@ -116,13 +119,14 @@ namespace UnityHelpers
             prevTouches[0] = pos1;
             prevTouches[1] = pos2;
 
-            onPinchStart?.Invoke(pos1, pos2, 0, 0);
+			if (onPinchStart != null)
+            	onPinchStart.Invoke(pos1, pos2, 0, 0);
         }
         private void Pinching(Vector2 pos1, Vector2 pos2)
         {
             Vector2 dir1 = (pos2 - pos1).normalized;
             Vector2 dir2 = (prevTouches[1] - prevTouches[0]).normalized;
-            float rot = Vector2.SignedAngle(dir2, dir1);
+            float rot = dir2.SignedAngle(dir1);
 
             float oldDistance = Vector2.Distance(prevTouches[0], prevTouches[1]);
             float newDistance = Vector2.Distance(pos1, pos2);
@@ -130,12 +134,14 @@ namespace UnityHelpers
             prevTouches[1] = pos2;
 
             float delta = newDistance - oldDistance;
-            onPinch?.Invoke(pos1, pos2, delta, rot);
+			if (onPinch != null)
+            	onPinch.Invoke(pos1, pos2, delta, rot);
         }
         private void EndPinch()
         {
             isPinching = false;
-            onPinchEnd?.Invoke(prevTouches[0], prevTouches[1], 0, 0);
+			if (onPinchEnd != null)
+            	onPinchEnd.Invoke(prevTouches[0], prevTouches[1], 0, 0);
         }
 
         private Vector2 GetTouchAsLocal(int touchIndex)

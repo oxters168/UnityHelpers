@@ -7,7 +7,7 @@ namespace UnityHelpers
     /// This script is meant to be used on objects that have many colliders in their children
     /// that you'd like to listen to from a parent. Only attach this script to the parent.
     /// </summary>
-    [ExecuteAlways]
+	[ExecuteInEditMode]
     public class TreeCollider : MonoBehaviour
     {
         private List<TreeCollider> childTrees = new List<TreeCollider>();
@@ -85,7 +85,8 @@ namespace UnityHelpers
             if (debugMessages)
                 Debug.Log(GetDebugCollisionMessage(colInfo));
 
-            onCollided?.Invoke(colInfo);
+			if (onCollided != null)
+            	onCollided.Invoke(colInfo);
         }
         #region 3D Trigger Events
         private void OnTriggerEnter(Collider other)
@@ -94,7 +95,8 @@ namespace UnityHelpers
         }
         private void OnTriggerEnter(CollisionInfo colInfo)
         {
-            onTriggerEnter?.Invoke(colInfo);
+			if (onTriggerEnter != null)
+            	onTriggerEnter.Invoke(colInfo);
             OnCollided(colInfo);
         }
         private void OnTriggerStay(Collider other)
@@ -103,7 +105,8 @@ namespace UnityHelpers
         }
         private void OnTriggerStay(CollisionInfo colInfo)
         {
-            onTriggerStay?.Invoke(colInfo);
+			if (onTriggerStay != null)
+            	onTriggerStay.Invoke(colInfo);
             OnCollided(colInfo);
         }
         private void OnTriggerExit(Collider other)
@@ -112,7 +115,8 @@ namespace UnityHelpers
         }
         private void OnTriggerExit(CollisionInfo colInfo)
         {
-            onTriggerExit?.Invoke(colInfo);
+			if (onTriggerExit != null)
+            	onTriggerExit.Invoke(colInfo);
             OnCollided(colInfo);
         }
         #endregion
@@ -123,7 +127,8 @@ namespace UnityHelpers
         }
         private void OnCollisionEnter(CollisionInfo colInfo)
         {
-            onCollisionEnter?.Invoke(colInfo);
+			if (onCollisionEnter != null)
+            	onCollisionEnter.Invoke(colInfo);
             OnCollided(colInfo);
         }
         private void OnCollisionStay(Collision collision)
@@ -132,7 +137,8 @@ namespace UnityHelpers
         }
         private void OnCollisionStay(CollisionInfo colInfo)
         {
-            onCollisionStay?.Invoke(colInfo);
+			if (onCollisionStay != null)
+            	onCollisionStay.Invoke(colInfo);
             OnCollided(colInfo);
         }
         private void OnCollisionExit(Collision collision)
@@ -141,7 +147,8 @@ namespace UnityHelpers
         }
         private void OnCollisionExit(CollisionInfo colInfo)
         {
-            onCollisionExit?.Invoke(colInfo);
+			if (onCollisionExit != null)
+            	onCollisionExit.Invoke(colInfo);
             OnCollided(colInfo);
         }
         #endregion
@@ -166,7 +173,7 @@ namespace UnityHelpers
             Collider[] childrenColliders = GetComponentsInChildren<Collider>(true);
             foreach (var collider in childrenColliders)
             {
-                if (collider.transform.parent?.GetComponentInParent<TreeCollider>().transform == transform)
+				if (collider.transform.parent != null && collider.transform.parent.GetComponentInParent<TreeCollider>().transform == transform)
                 {
                     var childTreeCollider = collider.gameObject.GetComponent<TreeCollider>();
                     if (childTreeCollider == null)

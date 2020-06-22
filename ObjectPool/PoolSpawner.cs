@@ -45,12 +45,13 @@ namespace UnityHelpers
                 if (setScale)
                     spawned.localScale = Vector3.one * Random.Range(minScale, maxScale);
             });
-            if (spawnedItem != null)
-                onSpawn?.Invoke(spawnedItem, poolName);
+			if (spawnedItem != null && onSpawn != null)
+                onSpawn.Invoke(spawnedItem, poolName);
         }
         public void ReturnAll()
         {
-            Pool?.ReturnAll();
+			if (Pool != null)
+            	Pool.ReturnAll();
         }
         private Vector3 GetRandomSpawnPoint()
         {

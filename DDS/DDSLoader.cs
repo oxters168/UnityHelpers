@@ -58,7 +58,7 @@ namespace UnityHelpers
                 bool isCompressed = (header.ddspf.dwFlags & PIXELFORMAT_DWFlags.DDPF_FOURCC) != 0;
                 if (isCompressed && header.ddspf.dwFourCC == DDS_DX10)
                 {
-                    Debug.Log(nameof(DDSLoader) + ": Reading extra header");
+                    Debug.Log("DDSLoader: Reading extra header");
                     header_10.dxgiFormat = (DXGI_FORMAT)DataParser.ReadInt(data);
                     header_10.resourceDimension = (D3D10_RESOURCE_DIMENSION)DataParser.ReadInt(data);
                     header_10.miscFlag = DataParser.ReadUInt(data);
@@ -70,7 +70,7 @@ namespace UnityHelpers
                 Texture2DHelpers.FlipVertical(imageColors, (ushort)header.dwWidth, (ushort)header.dwHeight);
             }
             else
-                Debug.LogError(nameof(DDSLoader) + ": Invalid DDS magic, expected " + DDS_ + " got " + magic);
+                Debug.LogError("DDSLoader: Invalid DDS magic, expected " + DDS_ + " got " + magic);
 
             if (imageColors != null)
             {

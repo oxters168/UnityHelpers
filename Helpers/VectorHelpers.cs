@@ -72,8 +72,36 @@ namespace UnityHelpers
         public static float SignedAngle(this Vector3 point, Vector3 otherPoint, Vector3 fromDirection, Vector3 axis)
         {
             Vector3 obstacleOffset = otherPoint - point;
-            return Vector3.SignedAngle(fromDirection, obstacleOffset.normalized, axis);
+            //return Vector3.SignedAngle(fromDirection, obstacleOffset.normalized, axis);
+			return fromDirection.SignedAngle(obstacleOffset.normalized, axis);
         }
+		/// <summary>
+		/// Gets the signed angle between fromDirection and toDirection on the given axis.
+		/// </summary>
+		/// <param name="fromDirection">The direction to measure from.</param>
+		/// <param name="toDirection">The direction to measure to.</param>
+		/// <param name="axis">The axis to measure on.</param>
+		/// <returns>The signed angle.</returns>
+		public static float SignedAngle(this Vector3 fromDirection, Vector3 toDirection, Vector3 axis)
+		{
+			var diffRot = Quaternion.Euler(axis) * Quaternion.Inverse(Quaternion.Euler(Vector3.forward));
+			var adjustedAxis = diffRot * axis;
+			Vector3 firstDir = Vector3.ProjectOnPlane(diffRot * fromDirection, adjustedAxis).normalized;
+			Vector3 secondDir = Vector3.ProjectOnPlane(diffRot * toDirection, adjustedAxis).normalized;
+			return Mathf.Atan2(Mathf.Abs(firstDir.y - secondDir.y), Mathf.Abs(firstDir.x - secondDir.x)) * Mathf.Rad2Deg;
+		}
+		/// <summary>
+		/// Gets the signed angle between fromDirection and toDirection.
+		/// </summary>
+		/// <param name="fromDirection">The direction to measure from.</param>
+		/// <param name="toDirection">The direction to measure to.</param>
+		/// <returns>The signed angle.</returns>
+		public static float SignedAngle(this Vector2 fromDirection, Vector2 toDirection)
+		{
+			fromDirection = fromDirection.normalized;
+			toDirection = toDirection.normalized;
+			return Mathf.Atan2(Mathf.Abs(fromDirection.y - toDirection.y), Mathf.Abs(fromDirection.x - toDirection.x)) * Mathf.Rad2Deg;
+		}
 
         /// <summary>
         /// Gets just the x and y values of the vector

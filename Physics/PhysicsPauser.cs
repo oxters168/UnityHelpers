@@ -8,7 +8,7 @@ namespace UnityHelpers
     /// </summary>
     public static class PhysicsPauser
     {
-        private static Dictionary<Rigidbody, (Vector3, Vector3)> history = new Dictionary<Rigidbody, (Vector3, Vector3)>();
+		private static Dictionary<Rigidbody, PhysicsSnapshot> history = new Dictionary<Rigidbody, PhysicsSnapshot>();
 
         public static void Pause(bool onOff)
         {
@@ -18,7 +18,7 @@ namespace UnityHelpers
                 {
                     if (!physicsObject.isKinematic) //if something was originally kinematic don't touch it
                     {
-                        history[physicsObject] = (physicsObject.velocity, physicsObject.angularVelocity);
+						history[physicsObject] = new PhysicsSnapshot() { velocity = physicsObject.velocity, angularVelocity = physicsObject.angularVelocity };
                         physicsObject.isKinematic = true;
                     }
                 }
@@ -28,11 +28,17 @@ namespace UnityHelpers
                 foreach (var historyObject in history)
                 {
                     historyObject.Key.isKinematic = false;
-                    historyObject.Key.velocity = historyObject.Value.Item1;
-                    historyObject.Key.angularVelocity = historyObject.Value.Item2;
+					historyObject.Key.velocity = historyObject.Value.velocity;
+					historyObject.Key.angularVelocity = historyObject.Value.angularVelocity;
                 }
                 history.Clear();
             }
         }
+
+		public struct PhysicsSnapshot
+		{
+			public Vector3 velocity;
+			public Vector3 angularVelocity;
+		}
     }
 }

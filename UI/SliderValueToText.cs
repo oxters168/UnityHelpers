@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace UnityHelpers
 {
-    [ExecuteAlways]
+	[ExecuteInEditMode]
     public class SliderValueToText : MonoBehaviour
     {
         private Slider slider;

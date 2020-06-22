@@ -88,7 +88,7 @@ namespace UnityHelpers
         public void RemoveAxis()
         {
             storedTypes &= ~CommonType.axis;
-            axis = default;
+            axis = 0;
         }
 
         public void SetToggle(bool value)
@@ -106,7 +106,7 @@ namespace UnityHelpers
         public void RemoveToggle()
         {
             storedTypes &= ~CommonType.toggle;
-            toggle = default;
+			toggle = false;
         }
 
         public void SetDirection(Vector3 value)
@@ -124,7 +124,7 @@ namespace UnityHelpers
         public void RemoveDirection()
         {
             storedTypes &= ~CommonType.direction;
-            direction = default;
+			direction = Vector3.zero;
         }
 
         public void SetPoint(Vector3 value)
@@ -142,7 +142,7 @@ namespace UnityHelpers
         public void RemovePoint()
         {
             storedTypes &= ~CommonType.point;
-            point = default;
+			point = Vector3.zero;
         }
 
         public void SetOrientation(Quaternion value)
@@ -160,7 +160,7 @@ namespace UnityHelpers
         public void RemoveOrientation()
         {
             storedTypes &= ~CommonType.orientation;
-            orientation = default;
+			orientation = Quaternion.identity;
         }
     }
 }

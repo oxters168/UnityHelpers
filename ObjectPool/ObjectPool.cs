@@ -80,9 +80,10 @@ namespace UnityHelpers
             G componentOnObject = null;
             Get((poolObject) =>
             {
-                componentOnObject = poolObject?.GetComponent<G>();
-                if (componentOnObject != null)
-                    action?.Invoke(componentOnObject);
+				if (poolObject != null)
+                	componentOnObject = poolObject.GetComponent<G>();
+                if (componentOnObject != null && action != null)
+                    action.Invoke(componentOnObject);
             });
             return componentOnObject;
         }
@@ -114,7 +115,8 @@ namespace UnityHelpers
 
                 availableObject = objectPool[availableIndex];
 
-                action?.Invoke(availableObject);
+				if (action != null)
+                	action.Invoke(availableObject);
 
                 availableObject.gameObject.SetActive(true);
             }

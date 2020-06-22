@@ -21,7 +21,7 @@ namespace UnityHelpers
 
         void Update()
         {
-            if (target != null && checkpoints?.Length > 0)
+			if (target != null && checkpoints != null && checkpoints.Length > 0)
             {
                 if (loop && value >= 1)
                     value = 0;

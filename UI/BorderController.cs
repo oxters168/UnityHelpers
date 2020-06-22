@@ -73,7 +73,8 @@ namespace UnityHelpers
         {
             if (!Mathf.Approximately(rectTransform.rect.width, _prevSize.x) || !Mathf.Approximately(rectTransform.rect.height, _prevSize.y))
             {
-                onSizeChanged?.Invoke();
+				if (onSizeChanged != null)
+                	onSizeChanged.Invoke();
 
                 ResetBorders();
                 _prevSize = rectTransform.rect.size;
@@ -86,7 +87,8 @@ namespace UnityHelpers
 
             if (shownEdges != _prevShownEdges)
             {
-                onEdgesShownChanged?.Invoke();
+				if (onEdgesShownChanged != null)
+                	onEdgesShownChanged.Invoke();
 
                 ResetBorders();
 
@@ -102,7 +104,8 @@ namespace UnityHelpers
 
             if (borderSize != _prevBorderSize)
             {
-                onBorderSizeChanged?.Invoke();
+				if (onBorderSizeChanged != null)
+                	onBorderSizeChanged.Invoke();
 
                 ResetBorders();
                 _prevBorderSize = borderSize;
@@ -114,7 +117,8 @@ namespace UnityHelpers
 
             if (dependant != _prevDependant)
             {
-                onDependantChanged?.Invoke();
+				if (onDependantChanged != null)
+                	onDependantChanged.Invoke();
 
                 if (dependant)
                     SetBorderSize(borderSize / Mathf.Min(rectTransform.rect.width, rectTransform.rect.height));
@@ -133,7 +137,8 @@ namespace UnityHelpers
 
             if (borderColor.r != _prevBorderColor.r || borderColor.g != _prevBorderColor.g || borderColor.b != _prevBorderColor.b || borderColor.a != _prevBorderColor.a)
             {
-                onBorderColorChanged?.Invoke();
+				if (onBorderColorChanged != null)
+                	onBorderColorChanged.Invoke();
 
                 _prevBorderColor = borderColor;
             }

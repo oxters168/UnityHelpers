@@ -175,8 +175,9 @@ namespace MIConvexHull
             // in this case just add
             if (cvxVNum == 2)
             {
+				List<int> newUsedIndices;
                 convexHullCCW = FindIntermediatePointsForLongSkinny(points, numPoints, indicesUsed[0], indicesUsed[1],
-                    out var newUsedIndices);
+                    out newUsedIndices);
                 if (!newUsedIndices.Any())
                     // looks like only two indices total! so all points are co-linear.
                     return new List<TVertex> { points[indicesUsed[0]], points[indicesUsed[1]] };
@@ -499,7 +500,7 @@ namespace MIConvexHull
         // if it errors - it is because there are two points at the same distance along. So, we then
         // check if the new point or the existing one on the list should stay. Simply keep the one that is
         // furthest from the edge vector.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AddToListAlong<TVertex>(TVertex[] sortedPoints, double[] sortedKeys, ref int size,
                 TVertex newPoint, double newPointX, double newPointY, double basePointX, double basePointY,
                 double edgeVectorX, double edgeVectorY, double tolerance) where TVertex : IVertex2D
@@ -570,7 +571,7 @@ namespace MIConvexHull
 
         // This binary search is modified/simplified from Array.BinarySearch
         // (https://referencesource.microsoft.com/mscorlib/a.html#b92d187c91d4c9a9)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int BinarySearch(double[] array, int length, double value)
         {
             var lo = 0;

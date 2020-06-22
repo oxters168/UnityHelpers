@@ -11,7 +11,7 @@ namespace UnityHelpers
     {
         public string emptyMessage = "Nothing to show";
 
-        private static Dictionary<string, (float, float, object)> debugValues = new Dictionary<string, (float, float, object)>();
+		private static Dictionary<string, DebugItem> debugValues = new Dictionary<string, DebugItem>();
         private static bool refreshed;
 
         public TMPro.TextMeshProUGUI output;
@@ -33,7 +33,7 @@ namespace UnityHelpers
                 List<string> toBeRemoved = new List<string>();
                 foreach (var debugValue in debugValues)
                 {
-                    if (Time.time - debugValue.Value.Item2 > debugValue.Value.Item1)
+					if (Time.time - debugValue.Value.startTime > debugValue.Value.duration)
                         toBeRemoved.Add(debugValue.Key);
                 }
                 foreach (var key in toBeRemoved)
@@ -52,10 +52,10 @@ namespace UnityHelpers
         
         public string GetOutput()
         {
-            builtOutput.Clear();
+			builtOutput.Remove(0, builtOutput.Length);
             foreach (var debugValue in debugValues)
                 if (!filterValues || IsFiltered(debugValue.Key))
-                    builtOutput.AppendLine(debugValue.Key + ": " + debugValue.Value.Item3);
+					builtOutput.AppendLine(debugValue.Key + ": " + debugValue.Value.outputValue);
             
             return builtOutput.ToString();
         }
@@ -73,7 +73,14 @@ namespace UnityHelpers
         }
         public static void Log(string name, object value, float showtime)
         {
-            debugValues[name] = (showtime, Time.time, value);
+			debugValues[name] = new DebugItem() { duration = showtime, startTime = Time.time, outputValue = value };
         }
+
+		public struct DebugItem
+		{
+			public float duration;
+			public float startTime;
+			public object outputValue;
+		}
     }
 }

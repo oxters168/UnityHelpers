@@ -352,13 +352,15 @@ namespace MIConvexHull
             else if ((NumOfDimensions + 1) < numBBPoints)
             {   //if there are more bounding box points than needed, call the following function to find a 
                 // random one that has a large volume.
-                bestVertexIndices = FindLargestRandomSimplex(boundingBoxPoints, boundingBoxPoints, out var volume);
+				double volume;
+                bestVertexIndices = FindLargestRandomSimplex(boundingBoxPoints, boundingBoxPoints, out volume);
                 degenerate = volume <= negligibleVolume;
             }
             if (degenerate)
             {   // if it turns out to still be degenerate, then increase the check to include all vertices.
                 // this is potentially expensive, but we don't have a choice.
-                bestVertexIndices = FindLargestRandomSimplex(boundingBoxPoints, Enumerable.Range(0, NumberOfVertices), out var volume);
+				double volume;
+                bestVertexIndices = FindLargestRandomSimplex(boundingBoxPoints, Enumerable.Range(0, NumberOfVertices), out volume);
                 degenerate = volume <= negligibleVolume;
             }
             if (degenerate) throw new ConvexHullGenerationException(ConvexHullCreationResultOutcome.DegenerateData,

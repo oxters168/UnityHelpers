@@ -26,7 +26,8 @@ namespace UnityHelpers
 
         private void Clicked()
         {
-            onKeyClicked?.Invoke(lowercaseValue);
+			if (onKeyClicked != null)
+            	onKeyClicked.Invoke(lowercaseValue);
         }
     }
 }

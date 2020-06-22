@@ -56,18 +56,22 @@ namespace UnityHelpers
             percent = Mathf.Clamp01(Mathf.Abs(percent));
             value = Mathf.Clamp01(value + percent);
 
-            onValueChanged?.Invoke(value);
-            onHealed?.Invoke(percent);
+			if (onValueChanged != null)
+            	onValueChanged.Invoke(value);
+			if (onHealed != null)
+            	onHealed.Invoke(percent);
         }
         private void Remove(float percent)
         {
             percent = Mathf.Clamp01(Mathf.Abs(percent));
             value = Mathf.Clamp01(value - percent);
 
-            onValueChanged?.Invoke(value);
-            onHurt?.Invoke(-percent);
-            if (value <= 0)
-                onDead?.Invoke(-percent);
+			if (onValueChanged != null)
+            	onValueChanged.Invoke(value);
+			if (onHurt != null)
+            	onHurt.Invoke(-percent);
+			if (value <= 0 && onDead != null)
+                onDead.Invoke(-percent);
         }
 
         [System.Serializable]

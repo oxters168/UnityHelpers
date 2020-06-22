@@ -49,7 +49,8 @@ namespace UnityHelpers
                 {
                     if (buffer == null || buffer.count != allSquares.Length)
                     {
-                        buffer?.Dispose();
+						if (buffer != null)
+                        	buffer.Dispose();
                         buffer = new ComputeBuffer(allSquares.Length, sizeof(float) * 3);
                     }
                     buffer.SetData(allSquares);

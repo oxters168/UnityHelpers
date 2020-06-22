@@ -72,12 +72,14 @@ namespace UnityHelpers
             SelfRectTransform.localPosition = ClampToContainer(nextPos.x, nextPos.y);
 
             isDragging = true;
-            onDrag?.Invoke();
+			if (onDrag != null)
+            	onDrag.Invoke();
         }
         private void EndDrag()
         {
             isDragging = false;
-            onEndDrag?.Invoke();
+			if (onEndDrag != null)
+            	onEndDrag.Invoke();
         }
 
         private Vector2 ClampToContainer(float x, float y)
