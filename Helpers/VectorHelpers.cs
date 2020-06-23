@@ -99,11 +99,14 @@ namespace UnityHelpers
 		/// <returns>The signed angle.</returns>
 		public static float SignedAngle(this Vector2 fromDirection, Vector2 toDirection)
 		{
-			//Source: https://answers.unity.com/questions/678732/vector2angle-how-do-i-get-if-its-cw-or-ccw-.html
 			fromDirection = fromDirection.normalized;
 			toDirection = toDirection.normalized;
-			var sign = Mathf.Sign(fromDirection.x * toDirection.x - fromDirection.y * toDirection.y);
-			return -sign * Vector2.Angle(fromDirection, toDirection);
+			float firstAngle = Mathf.Atan2(fromDirection.y, fromDirection.x) * Mathf.Rad2Deg;
+			float secondAngle = Mathf.Atan2(toDirection.y, toDirection.x) * Mathf.Rad2Deg;
+			float angle = firstAngle - secondAngle;
+			if (angle < 0)
+				angle += 360;
+			return angle;
 		}
 
         /// <summary>
