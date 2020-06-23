@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using System.Reflection;
@@ -5,7 +6,6 @@ using System.Linq;
 
 namespace UnityHelpers
 {
-    #if UNITY_EDITOR
     public static class EditorHelpers
     {
         /// <summary>
@@ -214,5 +214,5 @@ namespace UnityHelpers
             }
         }
     }
-    #endif
 }
+#endif

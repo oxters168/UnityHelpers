@@ -84,11 +84,12 @@ namespace UnityHelpers
 		/// <returns>The signed angle.</returns>
 		public static float SignedAngle(this Vector3 fromDirection, Vector3 toDirection, Vector3 axis)
 		{
-			var diffRot = Quaternion.Euler(axis) * Quaternion.Inverse(Quaternion.Euler(Vector3.forward));
-			var adjustedAxis = diffRot * axis;
-			Vector3 firstDir = Vector3.ProjectOnPlane(diffRot * fromDirection, adjustedAxis).normalized;
-			Vector3 secondDir = Vector3.ProjectOnPlane(diffRot * toDirection, adjustedAxis).normalized;
-			return Mathf.Atan2(Mathf.Abs(firstDir.y - secondDir.y), Mathf.Abs(firstDir.x - secondDir.x)) * Mathf.Rad2Deg;
+			var diffRot = Quaternion.Euler(Vector3.forward) * Quaternion.Inverse(Quaternion.Euler(axis));
+			Vector3 firstDir = Vector3.ProjectOnPlane(fromDirection, axis).normalized;
+			Vector3 secondDir = Vector3.ProjectOnPlane(toDirection, axis).normalized;
+			firstDir = diffRot * firstDir;
+			secondDir = diffRot * secondDir;
+			return firstDir.xz().SignedAngle(secondDir.xz());
 		}
 		/// <summary>
 		/// Gets the signed angle between fromDirection and toDirection.
@@ -98,9 +99,11 @@ namespace UnityHelpers
 		/// <returns>The signed angle.</returns>
 		public static float SignedAngle(this Vector2 fromDirection, Vector2 toDirection)
 		{
+			//Source: https://answers.unity.com/questions/678732/vector2angle-how-do-i-get-if-its-cw-or-ccw-.html
 			fromDirection = fromDirection.normalized;
 			toDirection = toDirection.normalized;
-			return Mathf.Atan2(Mathf.Abs(fromDirection.y - toDirection.y), Mathf.Abs(fromDirection.x - toDirection.x)) * Mathf.Rad2Deg;
+			var sign = Mathf.Sign(fromDirection.x * toDirection.x - fromDirection.y * toDirection.y);
+			return -sign * Vector2.Angle(fromDirection, toDirection);
 		}
 
         /// <summary>
