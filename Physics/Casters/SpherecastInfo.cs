@@ -5,6 +5,7 @@ namespace UnityHelpers
     [System.Serializable]
     public class SpherecastInfo : ICastable
     {
+        public Transform parent;
         public LayerMask castMask = ~0;
         public Vector3 position;
         public Vector3 direction;
@@ -14,11 +15,27 @@ namespace UnityHelpers
 
         public bool Cast(out RaycastHit hitInfo)
         {
-            return Physics.SphereCast(position, radius, direction, out hitInfo, distance, castMask, queryTriggerInteraction);
+            Vector3 castPosition = position;
+            Vector3 castDirection = direction;
+            if (parent != null)
+            {
+                castPosition = parent.TransformPoint(position);
+                castDirection = parent.TransformDirection(direction);
+            }
+
+            return Physics.SphereCast(castPosition, radius, castDirection, out hitInfo, distance, castMask, queryTriggerInteraction);
         }
         public RaycastHit[] CastAll()
         {
-            return Physics.SphereCastAll(position, radius, direction, distance, castMask, queryTriggerInteraction);
+            Vector3 castPosition = position;
+            Vector3 castDirection = direction;
+            if (parent != null)
+            {
+                castPosition = parent.TransformPoint(position);
+                castDirection = parent.TransformDirection(direction);
+            }
+
+            return Physics.SphereCastAll(castPosition, radius, castDirection, distance, castMask, queryTriggerInteraction);
         }
         public Vector3 GetPosition()
         {
@@ -31,6 +48,10 @@ namespace UnityHelpers
         public float GetSize()
         {
             return radius;
+        }
+        public Transform GetParent()
+        {
+            return parent;
         }
     }
 }

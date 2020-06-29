@@ -7,22 +7,57 @@ namespace UnityHelpers
     public class Grabber : MonoBehaviour
     {
         private Dictionary<string, GrabInfo> grabSpots = new Dictionary<string, GrabInfo>();
-        //public Transform parent;
+
+        /// <summary>
+        /// Will grab any object within any grab spot when set to true
+        /// </summary>
+        [Tooltip("Will grab any object within any grab spot when set to true")]
+        public bool grab;
+        /// <summary>
+        /// The max force the grabber can move the object with
+        /// </summary>
+        [Tooltip("The max force the grabber can move the object with")]
+        public float maxForce = float.MaxValue;
+
+        /// <summary>
+        /// If set to true, will grab an object based on the size comparison between the grab spot and the object within
+        /// </summary>
+        [Space(10), Tooltip("If set to true, will grab an object based on the size comparison between the grab spot and the object within")]
+        public bool grabBySpotSize;
         /// <summary>
         /// The item size multiplier to be compared to the grab size when grabbing (Larger value means more easily grabbed)
         /// </summary>
         [Tooltip("The item size multiplier to be compared to the grab size when grabbing (Larger value means more easily grabbed)")]
         public float itemGrabPercentSize = 1.25f;
-        public float maxForce;
         public bool debug;
 
+        [Space(10)]
+        public SpherecastInfo[] sphereGrabSpots;
+        public RaycastInfo[] rayGrabSpots;
+
+        void Start()
+        {
+            int currentIndex = 0;
+            if (sphereGrabSpots != null)
+                foreach (ICastable grabSpot in sphereGrabSpots)
+                {
+                    AddGrabSpot(currentIndex.ToString(), grabSpot.GetParent(), grabSpot);
+                    currentIndex++;
+                }
+            if (rayGrabSpots != null)
+                foreach (ICastable grabSpot in rayGrabSpots)
+                {
+                    AddGrabSpot(currentIndex.ToString(), grabSpot.GetParent(), grabSpot);
+                    currentIndex++;
+                }
+        }
         void Update()
         {
             //string debugOutput = "";
             foreach (var grabSpot in grabSpots)
             {
                 //debugOutput += "\n" + grabSpot.Key + "\nRadius: " + grabSpot.Value.spherecastInfo.radius;
-
+                
                 bool canGrab = false;
                 if (grabSpot.Value.grab && !grabSpot.Value.grabbed)
                 {
@@ -38,11 +73,18 @@ namespace UnityHelpers
                 grabSpot.Value.RefreshInRange(
                     (currentGrabbableItem) =>
                     {
-                        var currentItemBounds = currentGrabbableItem.GetTotalBounds(Space.World);
-                        var itemBoundsInDirection = currentItemBounds.size.Multiply(grabSpot.Value.physicsCaster.GetDirection());
-                        //float itemBoundsExtents = (itemBoundsInDirection.x + itemBoundsInDirection.y + itemBoundsInDirection.z) / 3;
-                        float itemBoundsSize = itemBoundsInDirection.magnitude * itemGrabPercentSize;
-                        grabSpot.Value.grab = itemBoundsSize >= grabSpot.Value.physicsCaster.GetSize();
+                        bool itemLargerThanSpot = false;
+
+                        if (grabBySpotSize && !grab)
+                        {
+                            var currentItemBounds = currentGrabbableItem.GetTotalBounds(Space.World);
+                            var itemBoundsInDirection = currentItemBounds.size.Multiply(grabSpot.Value.physicsCaster.GetDirection());
+                            //float itemBoundsExtents = (itemBoundsInDirection.x + itemBoundsInDirection.y + itemBoundsInDirection.z) / 3;
+                            float itemBoundsSize = itemBoundsInDirection.magnitude * itemGrabPercentSize;
+                            itemLargerThanSpot = itemBoundsSize >= grabSpot.Value.physicsCaster.GetSize();
+                        }
+
+                        grabSpot.Value.grab = grab || itemLargerThanSpot;
                         //debugOutput += "\n" + currentGrabbableItem.name + "\nExtents: " + itemBoundsExtents;
 
                         if (canGrab)
@@ -68,6 +110,27 @@ namespace UnityHelpers
             }
 
             //DebugPanel.Log(gameObject.name, debugOutput);
+        }
+
+        public void OnDrawGizmosSelected()
+        {
+            Gizmos.matrix = transform.localToWorldMatrix;
+
+            Gizmos.color = new Color(0, 1, 0, 0.5f);
+            if (sphereGrabSpots != null)
+            {
+                foreach (SpherecastInfo sphere in sphereGrabSpots)
+                {
+                    Gizmos.DrawSphere(sphere.GetPosition(), sphere.GetSize());
+                }
+            }
+            if (rayGrabSpots != null)
+            {
+                foreach (RaycastInfo ray in rayGrabSpots)
+                {
+                    Gizmos.DrawLine(ray.GetPosition(), ray.GetPosition() + ray.GetDirection() * ray.GetSize());
+                }
+            }
         }
 
         public void AddGrabSpot(string name, Transform grabbedParentedTo)
