@@ -19,9 +19,15 @@ namespace UnityHelpers
         }
 
         /// <summary>
+        /// Will attempt to position and orient self according to this transform if set, else will use given position and rotation
+        /// </summary>
+        [Tooltip("Will attempt to position and orient self according to this transform if set, else will use given position and rotation")]
+        public Transform follow;
+
+        /// <summary>
         /// Only used for local position and local rotation calculations, does not actively anchor self unless anchorPosition/anchorRotation is greater than 0. Inspector values are in world coordinates, use scripting to access local position and local rotation.
         /// </summary>
-        [Tooltip("Only used for local position and local rotation calculations, does not actively anchor self unless anchorPosition/anchorRotation is greater than 0. Inspector values are in world coordinates, use scripting to access local position and local rotation.")]
+        [Space(10), Tooltip("Only used for local position and local rotation calculations, does not actively anchor self unless anchorPosition/anchorRotation is greater than 0. Inspector values are in world coordinates, use scripting to access local position and local rotation.")]
         public Transform parent;
         [Range(0, 1), Tooltip("0 means don't anchor at all and 1 means anchor completely to the anchor position/rotation (by default is the starting position/rotation and local if there is parent)")]
         public float anchorPositionPercent, anchorRotationPercent;
@@ -29,7 +35,7 @@ namespace UnityHelpers
         private Quaternion worldAnchorRotation;
         private Vector3 localAnchorPosition;
         private Quaternion localAnchorRotation;
-        [Range(0, float.MaxValue), Tooltip("The max distance the object can be from original local position, or if there is no parent then world position")]
+        [Space(10), Range(0, float.MaxValue), Tooltip("The max distance the object can be from original local position, or if there is no parent then world position")]
         public float localLinearLimit = float.MaxValue;
 
         /// <summary>
@@ -162,7 +168,8 @@ namespace UnityHelpers
 
             if (striveForOrientation)
             {
-                Quaternion strivedOrientation = Quaternion.Lerp(rotation, parent != null ? parent.TransformRotation(localAnchorRotation) : rotation, anchorRotationPercent);
+                Quaternion nextOrientation = follow ? follow.rotation : rotation;
+                Quaternion strivedOrientation = Quaternion.Lerp(nextOrientation, parent != null ? parent.TransformRotation(localAnchorRotation) : rotation, anchorRotationPercent);
                 Vector3 rotationTorque = AffectedBody.CalculateRequiredTorque(strivedOrientation, frequency, damping);
                 AffectedBody.AddTorque(rotationTorque);
             }
@@ -227,7 +234,8 @@ namespace UnityHelpers
         public Vector3 GetStrivedPosition()
         {
             Vector3 local = GetAnchorPositionInWorldCoords(); //Get original local position or strive position if no parent
-            return Vector3.Lerp(position, local, anchorPositionPercent); //Get interpolated position
+            Vector3 nextPosition = follow ? follow.position : position;
+            return Vector3.Lerp(nextPosition, local, anchorPositionPercent); //Get interpolated position
         }
         public Vector3 CalculatePushForceVector()
         {
