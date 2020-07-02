@@ -173,7 +173,7 @@ namespace UnityHelpers
                     var inCast = physicsCaster.CastAll();
                     foreach (var itemInCast in inCast)
                     {
-                        var grabbableItem = itemInCast.rigidbody.GetComponent<IGrabbable>();
+                        var grabbableItem = itemInCast.transform.GetComponent<IGrabbable>();
                         if (grabbableItem != null)
                         {
                             inRange.Add(grabbableItem);

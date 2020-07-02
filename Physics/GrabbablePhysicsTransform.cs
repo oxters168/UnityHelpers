@@ -40,6 +40,16 @@ namespace UnityHelpers
         {
             if (!grabbers.Exists(grabber => grabber.info == grabberInfo))
             {
+                //Add physics transform if doesn't already exist and store it's values (important for when it does exist)
+                if (PhysicsObject == null)
+                {
+                    _physicsObject = gameObject.AddComponent<PhysicsTransform>();
+                    createdSelf = true;
+                }
+                //Only store values if this is the first time being grabbed
+                if (grabbers.Count <= 0)
+                    StoreValues();
+
                 //Add current grabber as parent
                 grabbers.Add(new LocalInfo()
                 {
@@ -47,14 +57,6 @@ namespace UnityHelpers
                     localPosition = grabberInfo.parent.InverseTransformPoint(transform.position),
                     localRotation = grabberInfo.parent.InverseTransformRotation(transform.rotation)
                 });
-
-                //Add physics transform if doesn't already exist and store it's values (important for when it does exist)
-                if (PhysicsObject == null)
-                {
-                    _physicsObject = gameObject.AddComponent<PhysicsTransform>();
-                    createdSelf = true;
-                }
-                StoreValues();
 
                 //Set the values of the physics transform so that it is ready for grabbage
                 PhysicsObject.follow = null;
