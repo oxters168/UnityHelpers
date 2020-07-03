@@ -38,7 +38,7 @@ namespace UnityHelpers
                 if (mimicZ)
                     mimickedPosition.z = otherPosition.z;
 
-                Vector3 nextPosition = mimickedPosition + other.right * offset.x + other.up * offset.y + other.forward * offset.z;
+                Vector3 nextPosition = mimickedPosition + Vector3.right * offset.x + Vector3.up * offset.y + Vector3.forward * offset.z;
                 if (lerpPosition)
                     nextPosition = Vector3.Lerp(transform.position, nextPosition, Time.deltaTime * lerpPositionAmount);
 
