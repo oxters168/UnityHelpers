@@ -89,17 +89,23 @@ namespace UnityHelpers
 
                         if (canGrab)
                         {
-                            currentGrabbableItem.GetComponent<IGrabbable>().Grab(grabSpot.Value, maxForce);
+                            var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
+                            grabbable.Grab(grabbable.CreateLocalInfo(grabSpot.Value, maxForce));
                         }
                         else if (!grabSpot.Value.grab)
                         {
-                            currentGrabbableItem.GetComponent<IGrabbable>().Ungrab(grabSpot.Value);
+                            var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
+                            LocalInfo localInfo;
+                            if (grabbable.GetLocalInfo(grabSpot.Value, out localInfo))
+                                grabbable.Ungrab(localInfo);
                         }
                     },
                     (lostItem) =>
                     {
                         //Stop grabbing any item that went out of range
-                        lostItem.Ungrab(grabSpot.Value);
+                        LocalInfo localInfo;
+                        if (lostItem.GetLocalInfo(grabSpot.Value, out localInfo))
+                            lostItem.Ungrab(localInfo);
                     }
                 );
 
