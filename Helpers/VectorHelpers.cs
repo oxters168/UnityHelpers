@@ -7,6 +7,38 @@ namespace UnityHelpers
     public static class VectorHelpers
     {
         /// <summary>
+        /// Calculates a point on the bezier curve based on the given control points and a percent value
+        /// </summary>
+        /// <param name="controlPoints">The points that shape the bezier curve</param>
+        /// <param name="t">A value between 0 and 1 representing the percent travelled along the bezier curve</param>
+        /// <returns>A point on the bezier curve</returns>
+        public static Vector3 Bezier(this IEnumerable<Vector3> controlPoints, float t)
+        {
+            IEnumerable<Vector3> decayingPoints = controlPoints;
+            //int initialCount = decayingPoints.Count();
+            //int secondCount 
+            while (decayingPoints.Count() > 1)
+                decayingPoints = decayingPoints.SelectEveryPair((first, second) =>
+                {
+                    var difference = second - first;
+                    var direction = difference.normalized;
+                    var distance = difference.magnitude;
+                    return first + direction * distance * t;
+                });
+                
+            return decayingPoints.First();
+        }
+        /// <summary>
+        /// Calculates a point on the bezier curve based on the given control points and a percent value
+        /// </summary>
+        /// <param name="controlPoints">The points that shape the bezier curve</param>
+        /// <param name="t">A value between 0 and 1 representing the percent travelled along the bezier curve</param>
+        /// <returns>A point on the bezier curve</returns>
+        public static Vector2 Bezier(this IEnumerable<Vector2> controlPoints, float t)
+        {
+            return controlPoints.Cast<Vector3>().Bezier(t).xy();
+        }
+        /// <summary>
         /// Transforms a point from a transform's local space to another transform's local space directly
         /// </summary>
         /// <param name="transform">The transform whose space the point is originally represented in</param>
