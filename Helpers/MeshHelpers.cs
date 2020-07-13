@@ -4,12 +4,247 @@ using System.Collections.Generic;
 using System.Linq;
 using g3;
 
+using TriangleNet.Geometry;
+
 namespace UnityHelpers
 {
     public static class MeshHelpers
     {
         public const int MAX_VERTICES = 65534;
         public enum TriangleSearchType { all, any, none, }
+        
+        /// <summary>
+        /// Triangulates a concave polygon using Triangle.Net
+        /// 
+        /// Source: https://forum.unity.com/threads/using-triangle-net-with-unity-5-triangulation-of-meshes-made-easy.442072/
+        /// </summary>
+        /// <param name="points">The points making up the polygon</param>
+        /// <param name="holes">Any holes within the polygon</param>
+        /// <param name="outIndices">The indices array making up the triangles</param>
+        /// <param name="outVertices">The new vertices array of the polygon</param>
+        public static void TriangulateConcavePolygon(this IEnumerable<Vector2> points, IEnumerable<IEnumerable<Vector2>> holes, out IEnumerable<int> outIndices, out IEnumerable<Vector2> outVertices)
+        {
+            var poly = new Polygon();
+
+            for (int i = 0; i < points.Count(); i++)
+            {
+                var currentPoint = points.ElementAt(i);
+                var nextPoint = points.ElementAt((i + 1) % points.Count());
+                poly.Add(new Vertex(currentPoint.x, currentPoint.y));
+                poly.Add(new Segment(new Vertex(currentPoint.x, currentPoint.y), new Vertex(nextPoint.x, nextPoint.y)));
+            }
+
+            if (holes != null)
+            {
+                var nestedVertices = holes.Select((subHole) => subHole.Select((point) => new Vertex(point.x, point.y)));
+                foreach (var vertices in nestedVertices)
+                    poly.Add(new Contour(vertices), true);
+            }
+
+            var mesh = poly.Triangulate();
+
+            List<Vector2> tempVertices = new List<Vector2>();
+            List<int> tempIndices = new List<int>();
+            foreach (var triangle in mesh.Triangles)
+            {
+                for (int j = 2; j >= 0; j--)
+                {
+                    bool found = false;
+                    for (int k = 0; k < tempVertices.Count; k++)
+                    {
+                        if (tempVertices[k].x == triangle.GetVertex(j).X && tempVertices[k].y == triangle.GetVertex(j).Y)
+                        {
+                            tempIndices.Add(k);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        tempVertices.Add(new Vector3((float)triangle.GetVertex(j).X, (float)triangle.GetVertex(j).Y));
+                        tempIndices.Add(tempVertices.Count - 1);
+                    }
+                }
+            }
+
+            outVertices = tempVertices;
+            outIndices = tempIndices;
+        }
+        /// <summary>
+        /// Triangulates a concave polygon using Triangle.Net
+        /// 
+        /// Source: https://forum.unity.com/threads/using-triangle-net-with-unity-5-triangulation-of-meshes-made-easy.442072/
+        /// </summary>
+        /// <param name="points">The points making up the polygon</param>
+        /// <param name="outIndices">The indices array making up the triangles</param>
+        /// <param name="outVertices">The new vertices array of the polygon</param>
+        public static void TriangulateConcavePolygon(this IEnumerable<Vector2> points, out IEnumerable<int> outIndices, out IEnumerable<Vector2> outVertices)
+        {
+            TriangulateConcavePolygon(points, null, out outIndices, out outVertices);
+        }
+
+        /// <summary>
+        /// Triangulates the given polygon using the ear clip method.
+        /// The algorithm supports concave polygons, but not polygons with holes, or multiple polygons at once.
+        /// The direction the face depends on the order of the given vertices.
+        /// Simply reversing the order will flip the direction.
+        /// 
+        /// Source: https://wiki.unity3d.com/index.php/Triangulator
+        /// </summary>
+        /// <param name="points">The points that make up the polygon</param>
+        /// <returns>The indices array making up the triangles</returns>
+        public static IEnumerable<int> TriangulatePolygonWithEarClipping(this IEnumerable<Vector2> points)
+        {
+            List<Vector2> m_points = points.ToList();
+            List<int> indices = new List<int>();
+
+            int n = m_points.Count;
+            if (n < 3)
+                return indices.ToArray();
+    
+            int[] V = new int[n];
+            if (Area(m_points) > 0)
+            {
+                for (int v = 0; v < n; v++)
+                    V[v] = v;
+            }
+            else
+            {
+                for (int v = 0; v < n; v++)
+                    V[v] = (n - 1) - v;
+            }
+    
+            int nv = n;
+            int count = 2 * nv;
+            for (int v = nv - 1; nv > 2; )
+            {
+                if ((count--) <= 0)
+                    return indices.ToArray();
+    
+                int u = v;
+                if (nv <= u)
+                    u = 0;
+                v = u + 1;
+                if (nv <= v)
+                    v = 0;
+                int w = v + 1;
+                if (nv <= w)
+                    w = 0;
+    
+                if (Snip(m_points, u, v, w, nv, V))
+                {
+                    int a, b, c, s, t;
+                    a = V[u];
+                    b = V[v];
+                    c = V[w];
+                    indices.Add(a);
+                    indices.Add(b);
+                    indices.Add(c);
+                    for (s = v, t = v + 1; t < nv; s++, t++)
+                        V[s] = V[t];
+                    nv--;
+                    count = 2 * nv;
+                }
+            }
+    
+            indices.Reverse();
+            return indices.ToArray();
+        }
+        private static float Area(List<Vector2> m_points)
+        {
+            int n = m_points.Count;
+            float A = 0.0f;
+            for (int p = n - 1, q = 0; q < n; p = q++)
+            {
+                Vector2 pval = m_points[p];
+                Vector2 qval = m_points[q];
+                A += pval.x * qval.y - qval.x * pval.y;
+            }
+            return (A * 0.5f);
+        }
+        private static bool Snip(List<Vector2> m_points, int u, int v, int w, int n, int[] V)
+        {
+            int p;
+            Vector2 A = m_points[V[u]];
+            Vector2 B = m_points[V[v]];
+            Vector2 C = m_points[V[w]];
+            if (Mathf.Epsilon > (((B.x - A.x) * (C.y - A.y)) - ((B.y - A.y) * (C.x - A.x))))
+                return false;
+            for (p = 0; p < n; p++)
+            {
+                if ((p == u) || (p == v) || (p == w))
+                    continue;
+                Vector2 P = m_points[V[p]];
+                if (P.IsPointInTriangle(A, B, C))
+                    return false;
+            }
+            return true;
+        }
+        /// <summary>
+        /// Checks to see if the given points lies inside the given triangle
+        /// </summary>
+        /// <param name="P">The point in question</param>
+        /// <param name="A">First corner of the triangle</param>
+        /// <param name="B">Second corner of the triangle</param>
+        /// <param name="C">Third corner of the triangle</param>
+        /// <returns>True if the point is inside the triangle, false otherwise</returns>
+        public static bool IsPointInTriangle (this Vector2 P, Vector2 A, Vector2 B, Vector2 C) {
+            float ax, ay, bx, by, cx, cy, apx, apy, bpx, bpy, cpx, cpy;
+            float cCROSSap, bCROSScp, aCROSSbp;
+    
+            ax = C.x - B.x; ay = C.y - B.y;
+            bx = A.x - C.x; by = A.y - C.y;
+            cx = B.x - A.x; cy = B.y - A.y;
+            apx = P.x - A.x; apy = P.y - A.y;
+            bpx = P.x - B.x; bpy = P.y - B.y;
+            cpx = P.x - C.x; cpy = P.y - C.y;
+    
+            aCROSSbp = ax * bpy - ay * bpx;
+            cCROSSap = cx * apy - cy * apx;
+            bCROSScp = bx * cpy - by * cpx;
+    
+            return ((aCROSSbp >= 0.0f) && (bCROSScp >= 0.0f) && (cCROSSap >= 0.0f));
+        }
+
+        /// <summary>
+        /// Checks if a triangle's points are in clockwise order
+        /// 
+        /// Sources: https://math.stackexchange.com/questions/1324179/how-to-tell-if-3-connected-points-are-connected-clockwise-or-counter-clockwise
+        ///          https://en.wikipedia.org/wiki/Determinant
+        /// </summary>
+        /// <param name="pointA">First point</param>
+        /// <param name="pointB">Second point</param>
+        /// <param name="pointC">Third point</param>
+        /// <returns>True if clockwise and false if not</returns>
+        public static bool IsTriangleOrientedClockwise(Vector2 pointA, Vector2 pointB, Vector2 pointC)
+        {
+            // | x1 y1 1 |
+            // | x2 y2 1 | = (x1 * y2 * 1) + (y1 * 1 * x3) + (1 * x2 * y3) - (1 * y2 * x3) - (y1 * x2 * 1) - (x1 * 1 * y3)
+            // | x3 y3 1 |
+
+            float determinant = (pointA.x * pointB.y * 1) + (pointA.y * 1 * pointC.x) + (1 * pointB.x * pointC.y) - (1 * pointB.y * pointC.x) - (pointA.y * pointB.x * 1) - (pointA.x * 1 * pointC.y);
+            return determinant < -float.Epsilon;
+        }
+        /// <summary>
+        /// Checks if a triangle's points are in clockwise order
+        /// 
+        /// Sources: https://math.stackexchange.com/questions/1324179/how-to-tell-if-3-connected-points-are-connected-clockwise-or-counter-clockwise
+        ///          https://en.wikipedia.org/wiki/Determinant
+        /// </summary>
+        /// <param name="pointA">First point</param>
+        /// <param name="pointB">Second point</param>
+        /// <param name="pointC">Third point</param>
+        /// <returns>True if clockwise and false if not</returns>
+        public static bool IsTriangleOrientedAntiClockwise(Vector2 pointA, Vector2 pointB, Vector2 pointC)
+        {
+            // | x1 y1 1 |
+            // | x2 y2 1 | = (x1 * y2 * 1) + (y1 * 1 * x3) + (1 * x2 * y3) - (1 * y2 * x3) - (y1 * x2 * 1) - (x1 * 1 * y3)
+            // | x3 y3 1 |
+
+            float determinant = (pointA.x * pointB.y * 1) + (pointA.y * 1 * pointC.x) + (1 * pointB.x * pointC.y) - (1 * pointB.y * pointC.x) - (pointA.y * pointB.x * 1) - (pointA.x * 1 * pointC.y);
+            return determinant > float.Epsilon;
+        }
 
         /// <summary>
         /// Appends the vertices, triangle, normals, uv, uv2, uv3, uv4 of the other mesh to the current mesh.
@@ -378,12 +613,12 @@ namespace UnityHelpers
         {
             convexMesh = new MeshData();
 
-            List<Vertex> vertices = original.Select(point => new Vertex(point)).ToList();
+            List<MIVertex> vertices = original.Select(point => new MIVertex(point)).ToList();
             var creation = ConvexHull.Create(vertices, PlaneDistanceTolerance);
             var result = creation.Result;
 
             List<int> triangles = new List<int>();
-            List<Vertex> resultVertices = result.Points.ToList();
+            List<MIVertex> resultVertices = result.Points.ToList();
             foreach (var face in result.Faces)
             {
                 triangles.Add(resultVertices.IndexOf(face.Vertices[0]));
@@ -400,16 +635,29 @@ namespace UnityHelpers
         }
 
         /// <summary>
+        /// For triangulation with the ear clipping function
+        /// </summary>
+        private class VertexEarInfo
+        {
+            public int originalIndex;
+            public Vector2 point;
+            public VertexEarInfo nextVertex;
+            public VertexEarInfo prevVertex;
+            public bool isReflex;
+            public bool isConvex;
+        }
+
+        /// <summary>
         /// The vertex proxy between MIConvexHull and Unity.
         /// </summary>
-        private class Vertex : IVertex
+        private class MIVertex : IVertex
         {
             public double[] Position { get; set; }
-            public Vertex(double x, double y, double z)
+            public MIVertex(double x, double y, double z)
             {
                 Position = new double[3] { x, y, z };
             }
-            public Vertex(Vector3 ver)
+            public MIVertex(Vector3 ver)
             {
                 Position = new double[3] { ver.x, ver.y, ver.z };
             }
