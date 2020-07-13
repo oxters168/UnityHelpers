@@ -15,8 +15,6 @@ namespace UnityHelpers
         public static Vector3 Bezier(this IEnumerable<Vector3> controlPoints, float t)
         {
             IEnumerable<Vector3> decayingPoints = controlPoints;
-            //int initialCount = decayingPoints.Count();
-            //int secondCount 
             while (decayingPoints.Count() > 1)
                 decayingPoints = decayingPoints.SelectEveryPair((first, second) =>
                 {
@@ -36,7 +34,7 @@ namespace UnityHelpers
         /// <returns>A point on the bezier curve</returns>
         public static Vector2 Bezier(this IEnumerable<Vector2> controlPoints, float t)
         {
-            return controlPoints.Cast<Vector3>().Bezier(t).xy();
+            return controlPoints.Select(point => new Vector3(point.x, point.y)).Bezier(t).xy();
         }
         /// <summary>
         /// Transforms a point from a transform's local space to another transform's local space directly
@@ -44,7 +42,7 @@ namespace UnityHelpers
         /// <param name="transform">The transform whose space the point is originally represented in</param>
         /// <param name="otherTransform">The transform whose space you'd like the point to be represented in</param>
         /// <param name="point">The point in terms of the original transform's space</param>
-        /// <returns></returns>
+        /// <returns>The transformed point</returns>
         public static Vector3 TransformPointToAnotherSpace(this Transform transform, Transform otherTransform, Vector3 point)
         {
             var localToLocalMatrix = otherTransform.worldToLocalMatrix * transform.localToWorldMatrix;
@@ -56,7 +54,7 @@ namespace UnityHelpers
         /// <param name="transform">The transform whose space the point is originally represented in</param>
         /// <param name="otherTransform">The transform whose space you'd like the point to be represented in</param>
         /// <param name="point">The point in terms of the original transform's space</param>
-        /// <returns></returns>
+        /// <returns>The transformed direction</returns>
         public static Vector3 TransformDirectionToAnotherSpace(this Transform transform, Transform otherTransform, Vector3 direction)
         {
             var localToLocalMatrix = otherTransform.worldToLocalMatrix * transform.localToWorldMatrix;
