@@ -7,6 +7,35 @@ namespace UnityHelpers
     public static class VectorHelpers
     {
         /// <summary>
+        /// Generates a vector3 whose x and z values equals the given vector2's x and y values.
+        /// </summary>
+        /// <param name="point">The original point</param>
+        /// <param name="yValue">The resulting vector3's y value</param>
+        /// <returns>A vector3 value</returns>
+        public static Vector3 ToXZVector3(this Vector2 point, float yValue = 0)
+        {
+            return new Vector3(point.x, yValue, point.y);
+        }
+
+        /// <summary>
+        /// Rotates the given vector clockwise on an orthogonal axis.
+        /// 
+        /// By: XenoRo
+        /// Source: https://answers.unity.com/questions/661383/whats-the-most-efficient-way-to-rotate-a-vector2-o.html
+        /// </summary>
+        /// <param name="vector">The original vector</param>
+        /// <param name="degrees">The angle amount to rotate</param>
+        /// <param name="pivot">A pivot to rotate about</param>
+        /// <returns>The rotated vector</returns>
+        public static Vector2 Rotate(this Vector2 vector, float degrees, Vector2 pivot = default(Vector2))
+        {
+            vector -= pivot;
+            vector = Quaternion.Euler(0, 0, -degrees) * vector;
+            vector += pivot;
+            return vector; 
+        }
+ 
+        /// <summary>
         /// Calculates a point on the bezier curve based on the given control points and a percent value
         /// </summary>
         /// <param name="controlPoints">The points that shape the bezier curve</param>
