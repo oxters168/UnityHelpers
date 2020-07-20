@@ -86,6 +86,7 @@ namespace UnityHelpers
 
         //Good Ranges dip[0.08, 0.5] girth[0.06, 0.3] growth[0.5, 1] length[0.3, 0.6] dipP[0.2, 1] growthP[0.88, 1]
         public static JigsawPiece GenerateRandom(float pieceWidth, float pieceHeight,
+            float seed = 1337, float posX = 0, float posY = 0,
             float dipRangeStart = 0.08f, float dipRangeEnd = 0.5f,
             float girthRangeStart = 0.06f, float girthRangeEnd = 0.3f,
             float growthRangeStart = 0.5f, float growthRangeEnd = 1,
@@ -95,14 +96,15 @@ namespace UnityHelpers
         )
         {
             JigsawPiece randomizedBizaz = new JigsawPiece();
-
-            var bizProtrude = Random.Range(0, 2) != 0;
-            var bizDip = Random.Range(dipRangeStart, dipRangeEnd);
-            var bizGirth = Random.Range(girthRangeStart, girthRangeEnd);
-            var bizGrowth = Random.Range(growthPRangeStart, growthPRangeEnd);
-            var bizLength = Random.Range(lenghRangeStart, lengthRangeEnd);
-            var bizDipP = Random.Range(dipPRangeStart, dipPRangeEnd);
-            var bizGrowthP = Random.Range(growthPRangeStart, growthPRangeEnd);
+            
+            var pieceNoise = Mathf.PerlinNoise(posX + pieceWidth * seed * 1879, posY + pieceHeight * seed * 1033);
+            var bizProtrude = Mathf.RoundToInt(pieceNoise * 10) % 2 == 0;
+            var bizDip = (dipRangeEnd - dipRangeStart) * pieceNoise + dipRangeStart;
+            var bizGirth = (girthRangeEnd - girthRangeStart) * pieceNoise + girthRangeStart;
+            var bizGrowth = (growthPRangeEnd - growthRangeStart) * pieceNoise + growthRangeStart;
+            var bizLength = (lengthRangeEnd - lenghRangeStart) * pieceNoise + lenghRangeStart;
+            var bizDipP = (dipPRangeEnd - dipPRangeStart) * pieceNoise + dipPRangeStart;
+            var bizGrowthP = (growthPRangeEnd - growthPRangeStart) * pieceNoise + growthPRangeStart;
             randomizedBizaz.left = JigsawSide.CreateGenitalia
             (
                 pieceHeight, pieceWidth,
@@ -115,13 +117,14 @@ namespace UnityHelpers
                 bizGrowthP
             );
 
-            bizProtrude = Random.Range(0, 2) != 0;
-            bizDip = Random.Range(dipRangeStart, dipRangeEnd);
-            bizGirth = Random.Range(girthRangeStart, girthRangeEnd);
-            bizGrowth = Random.Range(growthPRangeStart, growthPRangeEnd);
-            bizLength = Random.Range(lenghRangeStart, lengthRangeEnd);
-            bizDipP = Random.Range(dipPRangeStart, dipPRangeEnd);
-            bizGrowthP = Random.Range(growthPRangeStart, growthPRangeEnd);
+            pieceNoise = Mathf.PerlinNoise(posX + pieceWidth * seed * 1607, posY + pieceHeight * seed * 1571);
+            bizProtrude = Mathf.RoundToInt(pieceNoise * 10) % 2 == 0;
+            bizDip = (dipRangeEnd - dipRangeStart) * pieceNoise + dipRangeStart;
+            bizGirth = (girthRangeEnd - girthRangeStart) * pieceNoise + girthRangeStart;
+            bizGrowth = (growthPRangeEnd - growthRangeStart) * pieceNoise + growthRangeStart;
+            bizLength = (lengthRangeEnd - lenghRangeStart) * pieceNoise + lenghRangeStart;
+            bizDipP = (dipPRangeEnd - dipPRangeStart) * pieceNoise + dipPRangeStart;
+            bizGrowthP = (growthPRangeEnd - growthPRangeStart) * pieceNoise + growthPRangeStart;
             randomizedBizaz.right = JigsawSide.CreateGenitalia
             (
                 pieceHeight, pieceWidth,
@@ -134,13 +137,14 @@ namespace UnityHelpers
                 bizGrowthP
             );
 
-            bizProtrude = Random.Range(0, 2) != 0;
-            bizDip = Random.Range(dipRangeStart, dipRangeEnd);
-            bizGirth = Random.Range(girthRangeStart, girthRangeEnd);
-            bizGrowth = Random.Range(growthPRangeStart, growthPRangeEnd);
-            bizLength = Random.Range(lenghRangeStart, lengthRangeEnd);
-            bizDipP = Random.Range(dipPRangeStart, dipPRangeEnd);
-            bizGrowthP = Random.Range(growthPRangeStart, growthPRangeEnd);
+            pieceNoise = Mathf.PerlinNoise(posX + pieceWidth * seed * 2113, posY + pieceHeight * seed * 461);
+            bizProtrude = Mathf.RoundToInt(pieceNoise * 10) % 2 == 0;
+            bizDip = (dipRangeEnd - dipRangeStart) * pieceNoise + dipRangeStart;
+            bizGirth = (girthRangeEnd - girthRangeStart) * pieceNoise + girthRangeStart;
+            bizGrowth = (growthPRangeEnd - growthRangeStart) * pieceNoise + growthRangeStart;
+            bizLength = (lengthRangeEnd - lenghRangeStart) * pieceNoise + lenghRangeStart;
+            bizDipP = (dipPRangeEnd - dipPRangeStart) * pieceNoise + dipPRangeStart;
+            bizGrowthP = (growthPRangeEnd - growthPRangeStart) * pieceNoise + growthPRangeStart;
             randomizedBizaz.top = JigsawSide.CreateGenitalia
             (
                 pieceWidth, pieceHeight,
@@ -153,13 +157,14 @@ namespace UnityHelpers
                 bizGrowthP
             );
 
-            bizProtrude = Random.Range(0, 2) != 0;
-            bizDip = Random.Range(dipRangeStart, dipRangeEnd);
-            bizGirth = Random.Range(girthRangeStart, girthRangeEnd);
-            bizGrowth = Random.Range(growthPRangeStart, growthPRangeEnd);
-            bizLength = Random.Range(lenghRangeStart, lengthRangeEnd);
-            bizDipP = Random.Range(dipPRangeStart, dipPRangeEnd);
-            bizGrowthP = Random.Range(growthPRangeStart, growthPRangeEnd);
+            pieceNoise = Mathf.PerlinNoise(posX + pieceWidth * seed * 569, posY + pieceHeight * seed * 3209);
+            bizProtrude = Mathf.RoundToInt(pieceNoise * 10) % 2 == 0;
+            bizDip = (dipRangeEnd - dipRangeStart) * pieceNoise + dipRangeStart;
+            bizGirth = (girthRangeEnd - girthRangeStart) * pieceNoise + girthRangeStart;
+            bizGrowth = (growthPRangeEnd - growthRangeStart) * pieceNoise + growthRangeStart;
+            bizLength = (lengthRangeEnd - lenghRangeStart) * pieceNoise + lenghRangeStart;
+            bizDipP = (dipPRangeEnd - dipPRangeStart) * pieceNoise + dipPRangeStart;
+            bizGrowthP = (growthPRangeEnd - growthPRangeStart) * pieceNoise + growthPRangeStart;
             randomizedBizaz.bottom = JigsawSide.CreateGenitalia
             (
                 pieceWidth, pieceHeight,

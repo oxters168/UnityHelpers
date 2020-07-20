@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using System.Linq;
 
@@ -6,7 +7,7 @@ namespace UnityHelpers
 {
     public static class JigsawPuzzle
     {
-        public static void Generate(int columns, int rows, float puzzleWidth, float puzzleHeight, float puzzleDepth, int edgeSmoothness = 5, Transform parent = null, Material _faceMaterial = null, Material _sideMaterial = null, Material _bottomMaterial = null, bool addBoxCollider = false)
+        public static IEnumerator Generate(int columns, int rows, float puzzleWidth, float puzzleHeight, float puzzleDepth, int edgeSmoothness = 5, float seed = 1337, Transform parent = null, GameObject[] piecesOutput = null, Material _faceMaterial = null, Material _sideMaterial = null, Material _bottomMaterial = null, bool addBoxCollider = false)
         {
             float pieceWidth = puzzleWidth / columns;
             float pieceHeight = puzzleHeight / rows;
@@ -48,12 +49,27 @@ namespace UnityHelpers
             }
 
             JigsawPiece[,] piecesMap = new JigsawPiece[columns, rows];
+            GameObject[] pieces = null;
+            if (piecesOutput != null)
+            {
+                if (piecesOutput.Length == columns * rows)
+                    pieces = piecesOutput;
+                else
+                    Debug.LogError("Given pieces array is not large enough to store all the jigsaw pieces, must be of length equal to " + columns + " * " + rows);
+            }
 
+            Dictionary<int, Vector2[]> simpleUVs = new Dictionary<int, Vector2[]>();
+            Dictionary<int, List<int>> simpleTriangulations = new Dictionary<int, List<int>>();
             for (int row = 0; row < rows; row++)
             {
                 for (int col = 0; col < columns; col++)
                 {
-                    JigsawPiece currentPiece = JigsawPiece.GenerateRandom(pieceWidth, pieceHeight);
+                    float xOffset = (puzzleWidth / 2 - halfWidth);
+                    float zOffset = (puzzleHeight / 2 - halfHeight);
+                    float xPos = col * pieceWidth - xOffset;
+                    float zPos = row * pieceHeight - zOffset;
+                    
+                    JigsawPiece currentPiece = JigsawPiece.GenerateRandom(pieceWidth, pieceHeight, seed, xPos, zPos);
                     if (col > 0)
                         currentPiece.left = piecesMap[col - 1, row].right.CreateSpouse(pieceWidth);
                     if (row > 0)
@@ -62,20 +78,17 @@ namespace UnityHelpers
 
                     int pieceIndex = row * columns + col;
                     GameObject pieceObject = new GameObject("Piece#" + pieceIndex);
+                    pieceObject.transform.localPosition = new Vector3(xPos, halfDepth, zPos);
                     var meshPart = pieceObject.AddComponent<MeshPart>();
                     if (parent != null)
                         pieceObject.transform.SetParent(parent);
+                    if (pieces != null)
+                        pieces[pieceIndex] = pieceObject;
                     if (addBoxCollider)
                     {
                         var boxCollider = pieceObject.AddComponent<BoxCollider>();
                         boxCollider.size = new Vector3(pieceWidth, puzzleDepth, pieceHeight);
                     }
-
-                    float xOffset = (puzzleWidth / 2 - halfWidth);
-                    float zOffset = (puzzleHeight / 2 - halfHeight);
-                    float xPos = col * pieceWidth - xOffset;
-                    float zPos = row * pieceHeight - zOffset;
-                    pieceObject.transform.localPosition = new Vector3(xPos, halfDepth, zPos);
                                     
                     bool hasTop = row < rows - 1;
                     bool hasRight = col < columns - 1;
@@ -98,31 +111,23 @@ namespace UnityHelpers
 
                     //Back side
                     sideVertices = GetSide(hasBottom, (piece, smoothness) => piece.EvaluateBottom(smoothness), currentPiece, edgeSmoothness, halfDepth, backFlat);
-                    sideUVs = new Vector2[sideVertices.Count()];
-                    SimpleUVNation(sideUVs);
-                    sideTriangles = new List<int>();
-                    SimpleTriangulation(sideTriangles, sideUVs.Length / 2);
+                    sideUVs = GetSimpleUVNation(simpleUVs, sideVertices.Count());
+                    sideTriangles = GetSimpleTriangulation(simpleTriangulations, sideUVs.Length / 2);
                     meshPart.AddVertices(sideVertices, sideTriangles, sideUVs, 2);
                     //Front side
                     sideVertices = GetSide(hasTop, (piece, smoothness) => piece.EvaluateTop(smoothness), currentPiece, edgeSmoothness, halfDepth, frontFlat);
-                    sideUVs = new Vector2[sideVertices.Count()];
-                    SimpleUVNation(sideUVs);
-                    sideTriangles = new List<int>();
-                    SimpleTriangulation(sideTriangles, sideUVs.Length / 2);
+                    sideUVs = GetSimpleUVNation(simpleUVs, sideVertices.Count());
+                    sideTriangles = GetSimpleTriangulation(simpleTriangulations, sideUVs.Length / 2);
                     meshPart.AddVertices(sideVertices, sideTriangles, sideUVs, 2);
                     //Right side
                     sideVertices = GetSide(hasRight, (piece, smoothness) => piece.EvaluateRight(smoothness), currentPiece, edgeSmoothness, halfDepth, rightFlat);
-                    sideUVs = new Vector2[sideVertices.Count()];
-                    SimpleUVNation(sideUVs);
-                    sideTriangles = new List<int>();
-                    SimpleTriangulation(sideTriangles, sideUVs.Length / 2);
+                    sideUVs = GetSimpleUVNation(simpleUVs, sideVertices.Count());
+                    sideTriangles = GetSimpleTriangulation(simpleTriangulations, sideUVs.Length / 2);
                     meshPart.AddVertices(sideVertices, sideTriangles, sideUVs, 2);
                     //Left side
                     sideVertices = GetSide(hasLeft, (piece, smoothness) => piece.EvaluateLeft(smoothness), currentPiece, edgeSmoothness, halfDepth, leftFlat);
-                    sideUVs = new Vector2[sideVertices.Count()];
-                    SimpleUVNation(sideUVs);
-                    sideTriangles = new List<int>();
-                    SimpleTriangulation(sideTriangles, sideUVs.Length / 2);
+                    sideUVs = GetSimpleUVNation(simpleUVs, sideVertices.Count());
+                    sideTriangles = GetSimpleTriangulation(simpleTriangulations, sideUVs.Length / 2);
                     meshPart.AddVertices(sideVertices, sideTriangles, sideUVs, 2);
 
                     Dictionary<int, Material> matsDick = new Dictionary<int, Material>();
@@ -131,8 +136,24 @@ namespace UnityHelpers
                     matsDick[2] = thirdMaterial;
 
                     meshPart.SetMaterials(matsDick);
+
+                    yield return null;
                 }
             }
+        }
+        private static List<int> GetSimpleTriangulation(Dictionary<int, List<int>> cached, int halfVerticesLength)
+        {
+            List<int> sideTriangles;
+            if (!cached.ContainsKey(halfVerticesLength))
+            {
+                sideTriangles = new List<int>();
+                SimpleTriangulation(sideTriangles, halfVerticesLength);
+                cached[halfVerticesLength] = sideTriangles;
+            }
+            else
+                sideTriangles = cached[halfVerticesLength];
+            
+            return sideTriangles;
         }
         private static void SimpleTriangulation(List<int> trianglesList, int halfVerticesLength)
         {
@@ -145,6 +166,20 @@ namespace UnityHelpers
 
                 trianglesList.AddRange(new int[] { cornerA, cornerB, cornerC, cornerC, cornerB, cornerD });
             }
+        }
+        private static Vector2[] GetSimpleUVNation(Dictionary<int, Vector2[]> cached, int verticesLength)
+        {
+            Vector2[] sideUVs;
+            if (!cached.ContainsKey(verticesLength))
+            {
+                sideUVs = new Vector2[verticesLength];
+                SimpleUVNation(sideUVs);
+                cached[verticesLength] = sideUVs;
+            }
+            else
+                sideUVs = cached[verticesLength];
+            
+            return sideUVs;
         }
         private static void SimpleUVNation(Vector2[] uvArray)
         {

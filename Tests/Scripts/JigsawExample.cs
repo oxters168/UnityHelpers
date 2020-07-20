@@ -21,6 +21,7 @@ namespace UnityHelpers.Tests
         public int bezierSmoothness = 5;
 
         [Space(10)]
+        public int seed = 1337;
         public bool generate;
         [Range(0, 1)]
         public float percentDrawn;
@@ -28,7 +29,8 @@ namespace UnityHelpers.Tests
 
         void Start()
         {
-            JigsawPuzzle.Generate(columns, rows, width, height, depth, bezierSmoothness, transform, faceMaterial, sideMaterial, bottomMaterial, true);
+            StartCoroutine(JigsawPuzzle.Generate(columns, rows, width, height, depth, bezierSmoothness, seed, transform, null, faceMaterial, sideMaterial, bottomMaterial, true));
+            //JigsawPuzzle.Generate(columns, rows, width, height, depth, bezierSmoothness, transform, faceMaterial, sideMaterial, bottomMaterial, true);
         }
 
         void OnDrawGizmos()
@@ -38,7 +40,7 @@ namespace UnityHelpers.Tests
             {
                 float pieceWidth = width / columns;
                 float pieceHeight = height / rows;
-                JigsawPiece jigBiz = JigsawPiece.GenerateRandom(pieceWidth, pieceHeight);
+                JigsawPiece jigBiz = JigsawPiece.GenerateRandom(pieceWidth, pieceHeight, seed);
                 totalVerts = jigBiz.EvaluateAll(pieceWidth, pieceHeight, bezierSmoothness).Select(point => point.ToXZVector3());
             }
             if (totalVerts != null)
