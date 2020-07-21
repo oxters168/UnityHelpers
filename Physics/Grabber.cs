@@ -7,12 +7,23 @@ namespace UnityHelpers
     public class Grabber : MonoBehaviour
     {
         private Dictionary<string, GrabInfo> grabSpots = new Dictionary<string, GrabInfo>();
+        private List<IGrabbable> grabbedObjects = new List<IGrabbable>();
 
         /// <summary>
         /// Will grab any object within any grab spot when set to true
         /// </summary>
         [Tooltip("Will grab any object within any grab spot when set to true")]
         public bool grab;
+        /// <summary>
+        /// If an object is grabbed and it goes out of the range of the grabber, should it be ungrabbed?
+        /// </summary>
+        [Tooltip("If an object is grabbed and it goes out of the range of the grabber, should it be ungrabbed?")]
+        public bool ungrabWhenOutOfRange = true;
+        /// <summary>
+        /// Defines how many items this grabber can hold at once
+        /// </summary>
+        [Tooltip("Defines how many items this grabber can hold at once")]
+        public int maxCapacity = int.MaxValue;
         /// <summary>
         /// The max force the grabber can move the object with
         /// </summary>
@@ -89,23 +100,33 @@ namespace UnityHelpers
 
                         if (canGrab)
                         {
-                            var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
-                            grabbable.Grab(grabbable.CreateLocalInfo(grabSpot.Value, maxForce));
+                            if (grabbedObjects.Count < maxCapacity)
+                            {
+                                var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
+                                grabbable.Grab(grabbable.CreateLocalInfo(grabSpot.Value, maxForce));
+                                grabbedObjects.Add(grabbable);
+                            }
                         }
                         else if (!grabSpot.Value.grab)
                         {
                             var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
                             LocalInfo localInfo;
                             if (grabbable.GetLocalInfo(grabSpot.Value, out localInfo))
+                            {
                                 grabbable.Ungrab(localInfo);
+                                grabbedObjects.Remove(grabbable);
+                            }
                         }
                     },
                     (lostItem) =>
                     {
                         //Stop grabbing any item that went out of range
                         LocalInfo localInfo;
-                        if (lostItem.GetLocalInfo(grabSpot.Value, out localInfo))
+                        if (ungrabWhenOutOfRange && lostItem.GetLocalInfo(grabSpot.Value, out localInfo))
+                        {
                             lostItem.Ungrab(localInfo);
+                            grabbedObjects.Remove(lostItem);
+                        }
                     }
                 );
 

@@ -7,7 +7,7 @@ namespace UnityHelpers
 {
     public static class JigsawPuzzle
     {
-        public static IEnumerator Generate(int columns, int rows, float puzzleWidth, float puzzleHeight, float puzzleDepth, int edgeSmoothness = 5, float seed = 1337, Transform parent = null, GameObject[] piecesOutput = null, Material _faceMaterial = null, Material _sideMaterial = null, Material _bottomMaterial = null, bool addBoxCollider = false)
+        public static IEnumerator Generate(int columns, int rows, float puzzleWidth, float puzzleHeight, float puzzleDepth, int edgeSmoothness = 5, float seed = 1337, Transform parent = null, GameObject[] piecesOutput = null, Material _faceMaterial = null, Material _sideMaterial = null, Material _bottomMaterial = null, bool addBoxCollider = false, System.Action<float> puzzleLoadingPercent = null, System.Action onPuzzleCompleted = null)
         {
             float pieceWidth = puzzleWidth / columns;
             float pieceHeight = puzzleHeight / rows;
@@ -48,11 +48,12 @@ namespace UnityHelpers
                 thirdMaterial.color = Color.yellow;
             }
 
+            int totalPiecesCount = columns * rows;
             JigsawPiece[,] piecesMap = new JigsawPiece[columns, rows];
             GameObject[] pieces = null;
             if (piecesOutput != null)
             {
-                if (piecesOutput.Length == columns * rows)
+                if (piecesOutput.Length == totalPiecesCount)
                     pieces = piecesOutput;
                 else
                     Debug.LogError("Given pieces array is not large enough to store all the jigsaw pieces, must be of length equal to " + columns + " * " + rows);
@@ -137,9 +138,12 @@ namespace UnityHelpers
 
                     meshPart.SetMaterials(matsDick);
 
+                    puzzleLoadingPercent?.Invoke((pieceIndex + 1) / (float)totalPiecesCount);
                     yield return null;
                 }
             }
+
+            onPuzzleCompleted?.Invoke();
         }
         private static List<int> GetSimpleTriangulation(Dictionary<int, List<int>> cached, int halfVerticesLength)
         {
