@@ -8,19 +8,25 @@ namespace UnityHelpers
     /// </summary>
     public class CollisionListener : MonoBehaviour
     {
+        public delegate void CollisionEvent(TreeCollider.CollisionInfo info);
+        
         [SerializeField]
-        TreeCollider.UnifiedCollisionEvent onCollisionStay;
+        public TreeCollider.UnifiedCollisionEvent onCollisionStay;
+        public event CollisionEvent OnCollisionStayEvent; //Added these since unity events are null when the script was just added to an object
         [SerializeField]
-        TreeCollider.UnifiedCollisionEvent onTriggerStay;
+        public TreeCollider.UnifiedCollisionEvent onTriggerStay;
+        public event CollisionEvent OnTriggerStayEvent;
         [SerializeField]
-        TreeCollider.UnifiedCollisionEvent onTriggerEnter;
+        public TreeCollider.UnifiedCollisionEvent onTriggerEnter;
+        public event CollisionEvent OnTriggerEnterEvent;
         [SerializeField]
-        TreeCollider.UnifiedCollisionEvent onTriggerExit;
+        public TreeCollider.UnifiedCollisionEvent onTriggerExit;
+        public event CollisionEvent OnTriggerExitEvent;
 
 
         private void OnCollisionStay(Collision collision)
         {
-            onCollisionStay?.Invoke(new TreeCollider.CollisionInfo
+            var colInfo = new TreeCollider.CollisionInfo
             {
                 collidedWith = collision.gameObject,
                 collision = collision,
@@ -28,40 +34,48 @@ namespace UnityHelpers
                 isTrigger = false,
                 otherCollider = collision.collider,
                 sender = gameObject
-            });
+            };
+            onCollisionStay?.Invoke(colInfo);
+            OnCollisionStayEvent?.Invoke(colInfo);
         }
         private void OnTriggerStay(Collider other)
         {
-            onTriggerStay?.Invoke(new TreeCollider.CollisionInfo
+            var colInfo = new TreeCollider.CollisionInfo
             {
                 collidedWith = other.gameObject,
                 collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
                 isTrigger = true,
                 otherCollider = other,
                 sender = gameObject
-            });
+            };
+            onTriggerStay?.Invoke(colInfo);
+            OnTriggerStayEvent?.Invoke(colInfo);
         }
         private void OnTriggerEnter(Collider other)
         {
-            onTriggerEnter?.Invoke(new TreeCollider.CollisionInfo
+            var colInfo = new TreeCollider.CollisionInfo
             {
                 collidedWith = other.gameObject,
                 collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
                 isTrigger = true,
                 otherCollider = other,
                 sender = gameObject
-            });
+            };
+            onTriggerEnter?.Invoke(colInfo);
+            OnTriggerEnterEvent?.Invoke(colInfo);
         }
         private void OnTriggerExit(Collider other)
         {
-            onTriggerExit?.Invoke(new TreeCollider.CollisionInfo
+            var colInfo = new TreeCollider.CollisionInfo
             {
                 collidedWith = other.gameObject,
                 collisionState = TreeCollider.CollisionInfo.CollisionState.stay,
                 isTrigger = true,
                 otherCollider = other,
                 sender = gameObject
-            });
+            };
+            onTriggerExit?.Invoke(colInfo);
+            OnTriggerExitEvent?.Invoke(colInfo);
         }
     }
 }
