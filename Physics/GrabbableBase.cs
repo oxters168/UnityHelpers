@@ -22,6 +22,11 @@ namespace UnityHelpers
         protected List<LocalInfo> grabbers = new List<LocalInfo>();
 
         /// <summary>
+        /// The maximum number of grabbers at once
+        /// </summary>
+        protected int maxGrabbers = int.MaxValue;
+
+        /// <summary>
         /// The minimum amount of distance before squeeze or stretch is called
         /// </summary>
         [Tooltip("The minimum amount of distance before squeeze or stretch is called")]
@@ -187,6 +192,15 @@ namespace UnityHelpers
         public virtual int GetGrabCount()
         {
             return grabbers.Count;
+        }
+
+        public virtual void SetMaxGrabbers(int amount)
+        {
+            maxGrabbers = Mathf.Clamp(amount, 0, int.MaxValue);
+        }
+        public virtual int GetMaxGrabbers()
+        {
+            return maxGrabbers;
         }
     }
 }

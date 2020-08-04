@@ -7,6 +7,18 @@ namespace UnityHelpers
     public static class QuaternionHelpers
     {
         /// <summary>
+        /// Compares two quaternions value for value
+        /// </summary>
+        /// <param name="first">The first quaternion</param>
+        /// <param name="second">The second quaternion</param>
+        /// <param name="tolerance">The maximum amount of difference any given value can be (inclusive)</param>
+        /// <returns>True if all values are within the threshold, false otherwise</returns>
+        public static bool EqualTo(this Quaternion first, Quaternion second, float tolerance = float.Epsilon)
+        {
+            return Mathf.Abs(first.x - second.x) <= tolerance && Mathf.Abs(first.y - second.y) <= tolerance && Mathf.Abs(first.z - second.z) <= tolerance && Mathf.Abs(first.w - second.w) <= tolerance;
+        }
+        
+        /// <summary>
         /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
         /// Gets angle of quaternion only along the specified axis
         /// </summary>

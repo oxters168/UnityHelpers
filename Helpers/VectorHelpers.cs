@@ -7,7 +7,49 @@ namespace UnityHelpers
     public static class VectorHelpers
     {
         /// <summary>
-        /// Generates a vector3 whose x and z values equals the given vector2's x and y values.
+        /// Compares two vectors value for value
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <returns>True if all values are equal, false otherwise</returns>
+        public static bool EqualTo(this Vector2Int first, Vector2Int second)
+        {
+            return first.x == second.x && first.y == second.y;
+        }
+        /// <summary>
+        /// Compares two vectors value for value
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <returns>True if all values are equal, false otherwise</returns>
+        public static bool EqualTo(this Vector3Int first, Vector3Int second)
+        {
+            return first.x == second.x && first.y == second.y && first.z == second.z;
+        }
+        /// <summary>
+        /// Compares two vectors value for value
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <param name="tolerance">The maximum amount of difference any given value can be (inclusive)</param>
+        /// <returns>True if all values are within the threshold, false otherwise</returns>
+        public static bool EqualTo(this Vector2 first, Vector2 second, float tolerance = float.Epsilon)
+        {
+            return Mathf.Abs(first.x - second.x) <= tolerance && Mathf.Abs(first.y - second.y) <= tolerance;
+        }
+        /// <summary>
+        /// Compares two vectors value for value
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <param name="tolerance">The maximum amount of difference any given value can be (inclusive)</param>
+        /// <returns>True if all values are within the threshold, false otherwise</returns>
+        public static bool EqualTo(this Vector3 first, Vector3 second, float tolerance = float.Epsilon)
+        {
+            return Mathf.Abs(first.x - second.x) <= tolerance && Mathf.Abs(first.y - second.y) <= tolerance && Mathf.Abs(first.z - second.z) <= tolerance;
+        }
+        /// <summary>
+        /// /// Generates a vector3 whose x and z values equals the given vector2's x and y values.
         /// </summary>
         /// <param name="point">The original point</param>
         /// <param name="yValue">The resulting vector3's y value</param>
