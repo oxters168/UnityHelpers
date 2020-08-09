@@ -6,8 +6,8 @@ namespace UnityHelpers
     public class BezierCurveGizmoVisualizer : MonoBehaviour
     {
         public Transform[] bezierControlPoints;
-        [Tooltip("A smaller value will make the curve smoother but will also run slower")]
-        public float precision = 0.05f;
+        [Tooltip("Number of points to be drawn in the curve")]
+        public int numPoints = 10;
 
         [Space(10)]
         public bool displayCurves = true;
@@ -18,7 +18,8 @@ namespace UnityHelpers
             if (bezierControlPoints != null && !bezierControlPoints.Any((bezierControlPoint) => bezierControlPoint == null))
             {
                 var controlPoints = bezierControlPoints.Select((bezierControlPoint) => bezierControlPoint.position);
-                var tValues = ((float)0).Extend((currentValue) => currentValue += precision, precision != 0 ? ((int)(1 / precision) + 1) : 0);
+                var precision = (1f / (numPoints - 1));
+                var tValues = ((float)0).Extend((currentValue) => currentValue += precision, numPoints - 1);
                 var bezierPoints = tValues.Select((t) => controlPoints.Bezier(t));
 
                 if (displayControlPointConnections)

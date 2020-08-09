@@ -2,53 +2,77 @@
 using UnityEngine;
 using System.Linq;
 
-namespace UnityHelpers
+namespace UnityHelpers.Shapes
 {
-    public struct JigsawPiece
+    public class JigsawPiece : Shape2D
     {
         public JigsawSide left;
         public JigsawSide right;
         public JigsawSide top;
         public JigsawSide bottom;
 
-        public IEnumerable<Vector2> EvaluateTop(int bezierSmoothness = 5)
+        public float pieceWidth;
+        public float pieceHeight;
+
+        public override IEnumerable<Vector2> Evaluate(int numPoints)
+        {
+            return Evaluate(numPoints, true, true, true, true);
+        }
+        public override Vector2 Evaluate(float t)
+        {
+            t = Mathf.Clamp01(t);
+            float subT = (t % 0.25f) / 0.25f;
+            if (t <= 0.25f)
+                return top.Evaluate(subT);
+            else if (t <= 0.5f)
+                return right.Evaluate(subT).Rotate(90);
+            else if (t <= 0.75f)
+                return bottom.Evaluate(subT).Rotate(180);
+            else
+                return left.Evaluate(subT).Rotate(270);
+        }
+
+        public IEnumerable<Vector2> EvaluateTop(int numPoints = 5)
         {
             IEnumerable<Vector2> topSidePoints = null;
-            topSidePoints = top.EvaluateAll(bezierSmoothness);
+            topSidePoints = top.Evaluate(numPoints);
 
             return topSidePoints;
         }
-        public IEnumerable<Vector2> EvaluateRight(int bezierSmoothness = 5)
+        public IEnumerable<Vector2> EvaluateRight(int numPoints = 5)
         {
             IEnumerable<Vector2> rightSidePoints = null;
-            rightSidePoints = right.EvaluateAll(bezierSmoothness).Select((initial) => initial.Rotate(90));
+            rightSidePoints = right.Evaluate(numPoints).Select((initial) => initial.Rotate(90));
 
             return rightSidePoints;
         }
-        public IEnumerable<Vector2> EvaluateBottom(int bezierSmoothness = 5)
+        public IEnumerable<Vector2> EvaluateBottom(int numPoints = 5)
         {
             IEnumerable<Vector2> bottomSidePoints = null;
-            bottomSidePoints = bottom.EvaluateAll(bezierSmoothness).Select((initial) => initial.Rotate(180));
+            bottomSidePoints = bottom.Evaluate(numPoints).Select((initial) => initial.Rotate(180));
 
             return bottomSidePoints;
         }
-        public IEnumerable<Vector2> EvaluateLeft(int bezierSmoothness = 5)
+        public IEnumerable<Vector2> EvaluateLeft(int numPoints = 5)
         {
             IEnumerable<Vector2> leftSidePoints = null;
-            leftSidePoints = left.EvaluateAll(bezierSmoothness).Select((initial) => initial.Rotate(270));
+            leftSidePoints = left.Evaluate(numPoints).Select((initial) => initial.Rotate(270));
 
             return leftSidePoints;
         }
 
-        public IEnumerable<Vector2> EvaluateAll(float pieceWidth, float pieceHeight, int bezierSmoothness = 5, bool keepTop = true, bool keepRight = true, bool keepBottom = true, bool keepLeft = true)
+        public IEnumerable<Vector2> Evaluate(int numPoints = 20, bool keepTop = true, bool keepRight = true, bool keepBottom = true, bool keepLeft = true)
         {
+            int spreadPoints = numPoints / 4;
+            int leftoverPoints = numPoints % 4;
+
             float halfWidth = pieceWidth / 2;
             float halfHeight = pieceHeight / 2;
 
             IEnumerable<Vector2> topSidePoints = null;
             if (keepTop)
             {
-                topSidePoints = EvaluateTop(bezierSmoothness);
+                topSidePoints = EvaluateTop(spreadPoints + (leftoverPoints >= 1 ? 1 : 0));
                 topSidePoints = topSidePoints.Take(topSidePoints.Count() - 1);
             }
             else
@@ -57,7 +81,7 @@ namespace UnityHelpers
             IEnumerable<Vector2> rightSidePoints = null;
             if (keepRight)
             {
-                rightSidePoints = EvaluateRight(bezierSmoothness);
+                rightSidePoints = EvaluateRight(spreadPoints + (leftoverPoints >= 2 ? 1 : 0));
                 rightSidePoints = rightSidePoints.Take(rightSidePoints.Count() - 1);
             }
             else
@@ -66,7 +90,7 @@ namespace UnityHelpers
             IEnumerable<Vector2> bottomSidePoints = null;
             if (keepBottom)
             {
-                bottomSidePoints = EvaluateBottom(bezierSmoothness);
+                bottomSidePoints = EvaluateBottom(spreadPoints + (leftoverPoints >= 3 ? 1 : 0));
                 bottomSidePoints = bottomSidePoints.Take(bottomSidePoints.Count() - 1);
             }
             else
@@ -75,7 +99,7 @@ namespace UnityHelpers
             IEnumerable<Vector2> leftSidePoints = null;
             if (keepLeft)
             {
-                leftSidePoints = EvaluateLeft(bezierSmoothness);
+                leftSidePoints = EvaluateLeft(spreadPoints);
                 leftSidePoints = leftSidePoints.Take(leftSidePoints.Count() - 1);
             }
             else
@@ -96,6 +120,8 @@ namespace UnityHelpers
         )
         {
             JigsawPiece randomizedBizaz = new JigsawPiece();
+            randomizedBizaz.pieceWidth = pieceWidth;
+            randomizedBizaz.pieceHeight = pieceHeight;
             
             var pieceNoise = Mathf.PerlinNoise(posX + pieceWidth * seed * 1879, posY + pieceHeight * seed * 1033);
             var bizProtrude = Mathf.RoundToInt(pieceNoise * 10) % 2 == 0;

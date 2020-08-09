@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine;
 using System.Linq;
+using UnityHelpers.Shapes;
 
 namespace UnityHelpers
 {
@@ -95,7 +96,7 @@ namespace UnityHelpers
                     bool hasRight = col < columns - 1;
                     bool hasBottom = row > 0;
                     bool hasLeft = col > 0;
-                    var twoDeePoints = currentPiece.EvaluateAll(pieceWidth, pieceHeight, edgeSmoothness, hasTop, hasRight, hasBottom, hasLeft);
+                    var twoDeePoints = currentPiece.Evaluate(edgeSmoothness * 4, hasTop, hasRight, hasBottom, hasLeft);
                     IEnumerable<int> indices;
                     IEnumerable<Vector2> triangulatedVertices;
                     twoDeePoints.TriangulateConcavePolygon(out indices, out triangulatedVertices);

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityHelpers.Shapes;
 
 namespace UnityHelpers.Tests
 {
@@ -41,7 +42,7 @@ namespace UnityHelpers.Tests
                 float pieceWidth = width / columns;
                 float pieceHeight = height / rows;
                 JigsawPiece jigBiz = JigsawPiece.GenerateRandom(pieceWidth, pieceHeight, seed);
-                totalVerts = jigBiz.EvaluateAll(pieceWidth, pieceHeight, bezierSmoothness).Select(point => point.ToXZVector3());
+                totalVerts = jigBiz.Evaluate(bezierSmoothness * 4).Select(point => point.ToXZVector3());
             }
             if (totalVerts != null)
             {

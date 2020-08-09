@@ -2,22 +2,35 @@
 using UnityEngine;
 using System.Linq;
 
-namespace UnityHelpers
+namespace UnityHelpers.Shapes
 {
-    public struct JigsawSide
+    public class JigsawSide : Shape2D
     {
         public ThreePointBezier2D leftBiz;
         public ThreePointBezier2D middleLeftBiz;
         public ThreePointBezier2D middleRightBiz;
         public ThreePointBezier2D rightBiz;
 
-        public IEnumerable<Vector2> EvaluateAll(int smoothness)
+        public override Vector2 Evaluate(float t)
+        {
+            t = Mathf.Clamp01(t);
+            float subT = (t % 0.25f) / 0.25f;
+            if (t <= 0.25f)
+                return leftBiz.Evaluate(subT);
+            else if (t <= 0.5f)
+                return middleLeftBiz.Evaluate(subT);
+            else if (t <= 0.75f)
+                return middleRightBiz.Evaluate(subT);
+            else
+                return rightBiz.Evaluate(subT);
+        }
+        public override IEnumerable<Vector2> Evaluate(int numPoints)
         {
             IEnumerable<Vector2> bizPoints = new List<Vector2>();
-            bizPoints = bizPoints.Concat(leftBiz.EvaluateCurve(smoothness));
-            bizPoints = bizPoints.Concat(middleLeftBiz.EvaluateCurve(smoothness));
-            bizPoints = bizPoints.Concat(middleRightBiz.EvaluateCurve(smoothness));
-            bizPoints = bizPoints.Concat(rightBiz.EvaluateCurve(smoothness));
+            bizPoints = bizPoints.Concat(leftBiz.Evaluate(numPoints));
+            bizPoints = bizPoints.Concat(middleLeftBiz.Evaluate(numPoints));
+            bizPoints = bizPoints.Concat(middleRightBiz.Evaluate(numPoints));
+            bizPoints = bizPoints.Concat(rightBiz.Evaluate(numPoints));
             return bizPoints;
         }
         public static JigsawSide CreateGenitalia(float pieceWidth, float pieceHeight, bool protrude = true, float percentSideDip = 0.2f, float girthPercent = 0.3f, float growthPercent = 0.5f, float lengthPercent = 0.5f, float dipPlacement = 0.9f, float growthPlacement = 0.9f)

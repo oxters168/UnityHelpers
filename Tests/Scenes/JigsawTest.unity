@@ -242,6 +242,7 @@ MonoBehaviour:
   height: 2
   depth: 0.02
   bezierSmoothness: 5
+  seed: 1337
   generate: 0
   percentDrawn: 0
 --- !u!4 &1975605909
