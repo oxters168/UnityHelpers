@@ -69,66 +69,76 @@ namespace UnityHelpers
             {
                 //debugOutput += "\n" + grabSpot.Key + "\nRadius: " + grabSpot.Value.spherecastInfo.radius;
                 
-                bool canGrab = false;
-                if (grabSpot.Value.grab && !grabSpot.Value.grabbed)
+                // grabSpot.Value.grab = grab;
+                // bool attemptingToGrab = false;
+                // if (grabSpot.Value.grab && !grabSpot.Value.grabbed)
+                // {
+                //     attemptingToGrab = true;
+                //     grabSpot.Value.grabbed = true;
+                // }
+                // else if (!grabSpot.Value.grab)
+                // {
+                //     grabSpot.Value.grabbed = false;
+                // }
+
+                IList<Transform> enteredRange;
+                IList<IGrabbable> leftRange;
+                grabSpot.Value.RefreshInRange(out enteredRange, out leftRange);
+                var leftRangeWhileGrabbing = grabbedObjects.Except(enteredRange.Select(objectInRange => objectInRange.GetComponentInParent<IGrabbable>()));
+                //grabSpot.Value.grab = false;
+                //grabSpot.Value.RefreshInRange((currentGrabbableItem) =>
+                foreach (var currentGrabbableItem in enteredRange)
                 {
-                    canGrab = true;
-                    grabSpot.Value.grabbed = true;
-                }
-                else if (!grabSpot.Value.grab)
-                {
-                    grabSpot.Value.grabbed = false;
-                }
+                    bool itemLargerThanSpot = false;
 
-                grabSpot.Value.grab = false;
-                grabSpot.Value.RefreshInRange(
-                    (currentGrabbableItem) =>
+                    if (grabBySpotSize)
                     {
-                        bool itemLargerThanSpot = false;
+                        var currentItemBounds = currentGrabbableItem.GetTotalBounds(Space.World);
+                        var itemBoundsInDirection = currentItemBounds.size.Multiply(grabSpot.Value.physicsCaster.GetDirection());
+                        //float itemBoundsExtents = (itemBoundsInDirection.x + itemBoundsInDirection.y + itemBoundsInDirection.z) / 3;
+                        float itemBoundsSize = itemBoundsInDirection.magnitude * itemGrabPercentSize;
+                        itemLargerThanSpot = itemBoundsSize >= grabSpot.Value.physicsCaster.GetSize();
+                    }
 
-                        if (grabBySpotSize && !grab)
-                        {
-                            var currentItemBounds = currentGrabbableItem.GetTotalBounds(Space.World);
-                            var itemBoundsInDirection = currentItemBounds.size.Multiply(grabSpot.Value.physicsCaster.GetDirection());
-                            //float itemBoundsExtents = (itemBoundsInDirection.x + itemBoundsInDirection.y + itemBoundsInDirection.z) / 3;
-                            float itemBoundsSize = itemBoundsInDirection.magnitude * itemGrabPercentSize;
-                            itemLargerThanSpot = itemBoundsSize >= grabSpot.Value.physicsCaster.GetSize();
-                        }
+                    grabSpot.Value.grab = grab || itemLargerThanSpot;
+                    //debugOutput += "\n" + currentGrabbableItem.name + "\nExtents: " + itemBoundsExtents;
 
-                        grabSpot.Value.grab = grab || itemLargerThanSpot;
-                        //debugOutput += "\n" + currentGrabbableItem.name + "\nExtents: " + itemBoundsExtents;
-
-                        if (canGrab)
-                        {
-                            if (grabbedObjects.Count < maxCapacity)
-                            {
-                                var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
-                                grabbable.Grab(grabbable.CreateLocalInfo(grabSpot.Value, maxForce));
-                                grabbedObjects.Add(grabbable);
-                            }
-                        }
-                        else if (!grabSpot.Value.grab)
-                        {
-                            var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
-                            LocalInfo localInfo;
-                            if (grabbable.GetLocalInfo(grabSpot.Value, out localInfo))
-                            {
-                                grabbable.Ungrab(localInfo);
-                                grabbedObjects.Remove(grabbable);
-                            }
-                        }
-                    },
-                    (lostItem) =>
+                    var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
+                    if (grabSpot.Value.grab)
                     {
-                        //Stop grabbing any item that went out of range
-                        LocalInfo localInfo;
-                        if (ungrabWhenOutOfRange && lostItem.GetLocalInfo(grabSpot.Value, out localInfo))
+                        if (!grabbedObjects.Contains(grabbable) && grabbedObjects.Count < maxCapacity)
                         {
-                            lostItem.Ungrab(localInfo);
-                            grabbedObjects.Remove(lostItem);
+                            //var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
+                            grabbable.Grab(grabbable.CreateLocalInfo(grabSpot.Value, maxForce));
+                            grabbedObjects.Add(grabbable);
                         }
                     }
-                );
+                    else if (!grabSpot.Value.grab)
+                    {
+                        //var grabbable = currentGrabbableItem.GetComponent<IGrabbable>();
+                        LocalInfo localInfo;
+                        if (grabbable.GetLocalInfo(grabSpot.Value, out localInfo))
+                            grabbable.Ungrab(localInfo);
+
+                        if (grabbedObjects.Contains(grabbable))
+                            grabbedObjects.Remove(grabbable);
+                    }
+                };
+                    //(lostItem) =>
+                foreach (var lostItem in leftRange.Concat(leftRangeWhileGrabbing))
+                {
+                    //Stop grabbing any item that went out of range
+                    if (ungrabWhenOutOfRange || !grabSpot.Value.grab)
+                    {
+                        LocalInfo localInfo;
+                        if (lostItem.GetLocalInfo(grabSpot.Value, out localInfo))
+                            lostItem.Ungrab(localInfo);
+                            
+                        if (grabbedObjects.Contains(lostItem))
+                            grabbedObjects.Remove(lostItem);
+                    }
+                };
+                //);
 
                 if (debug)
                 {
@@ -191,10 +201,12 @@ namespace UnityHelpers
             private List<IGrabbable> inRange = new List<IGrabbable>();
             private LineRenderer debugLine;
 
-            public void RefreshInRange(System.Action<Transform> enteredRange, System.Action<IGrabbable> leftRange)
+            public void RefreshInRange(out IList<Transform> enteredRange, out IList<IGrabbable> leftRange)
             {
                 var oldInRange = inRange;
                 inRange = new List<IGrabbable>();
+                enteredRange = new List<Transform>();
+                leftRange = new List<IGrabbable>();
                 if (physicsCaster != null)
                 {
                     var inCast = physicsCaster.CastAll();
@@ -204,14 +216,16 @@ namespace UnityHelpers
                         if (grabbableItem != null)
                         {
                             inRange.Add(grabbableItem);
-                            enteredRange?.Invoke(itemInCast.transform);
+                            enteredRange.Add(itemInCast.transform);
+                            //enteredRange?.Invoke(itemInCast.transform);
                         }
                     }
                 }
 
                 foreach (var lostItem in oldInRange.Except(inRange))
                 {
-                    leftRange?.Invoke(lostItem);
+                    leftRange.Add(lostItem);
+                    //leftRange?.Invoke(lostItem);
                 }
             }
 
