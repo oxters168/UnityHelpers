@@ -7,77 +7,6 @@ namespace UnityHelpers
     public static class BoundsHelpers
     {
         /// <summary>
-        /// Gets all the renderers or colliders in the transform and gets their total bounds.
-        /// </summary>
-        /// <param name="transform">The root transform of the object</param>
-        /// <param name="worldSpace">An option to return the bounds' center to be relative or absolute</param>
-        /// <param name="fromColliders">If set to true, will get the total bounds from colliders rather than renderers</param>
-        /// <param name="includeDisabled">If set to true includes renderers or colliders that are on disabled gameobjects</param>
-        /// <returns>A bounds that encapsulates the entire model</returns>
-        [System.Obsolete("Please use the new GetTotalBounds functions which properly get local/world space bounds")]
-        public static Bounds GetTotalBounds(this Transform transform, bool worldSpace = true, bool fromColliders = false, bool includeDisabled = false)
-        {
-            return GetTotalBounds(transform, ~0, worldSpace, fromColliders, includeDisabled);
-        }
-        /// <summary>
-        /// Gets all the renderers or colliders in the transform and gets their total bounds.
-        /// </summary>
-        /// <param name="transform">The root transform of the object</param>
-        /// <param name="layer">The layers to include in bounds calculation</param>
-        /// <param name="worldSpace">An option to return the bounds' center to be relative or absolute</param>
-        /// <param name="fromColliders">If set to true, will get the total bounds from colliders rather than renderers</param>
-        /// <param name="includeDisabled">If set to true includes renderers or colliders that are on disabled gameobjects</param>
-        /// <returns>A bounds that encapsulates the entire model</returns>
-        [System.Obsolete("Please use the new GetTotalBounds functions which properly get local/world space bounds")]
-        public static Bounds GetTotalBounds(this Transform transform, LayerMask layer, bool worldSpace = true, bool fromColliders = false, bool includeDisabled = false)
-        {
-            Bounds totalBounds = new Bounds();
-
-            List<Bounds> innerBounds = new List<Bounds>();
-            if (fromColliders)
-            {
-                foreach (var collider in transform.GetComponentsInChildren<Collider>(true))
-                    if (((1 << collider.gameObject.layer) & layer.value) != 0 && (includeDisabled || collider.gameObject.activeSelf))
-                        innerBounds.Add(collider.bounds);
-            }
-            else
-            {
-                foreach (var renderer in transform.GetComponentsInChildren<Renderer>(true))
-                    if (((1 << renderer.gameObject.layer) & layer.value) != 0 && (includeDisabled || renderer.gameObject.activeSelf))
-                        innerBounds.Add(renderer.bounds);
-            }
-
-            if (innerBounds.Count > 0)
-                totalBounds = Combine(innerBounds.ToArray());
-            else
-                totalBounds = new Bounds(transform.position, Vector3.zero);
-
-            if (!worldSpace)
-                totalBounds.center = transform.InverseTransformPoint(totalBounds.center);
-
-            return totalBounds;
-        }
-        /// <summary>
-        /// Gets only the current transform's renderer's bounds.
-        /// </summary>
-        /// <param name="transform">The transform of the object</param>
-        /// <param name="worldSpace">An option to return the bounds' center to be relative or absolute</param>
-        /// <returns>A bounds that encapsulates only the given transform's model</returns>
-        [System.Obsolete("Please use the new GetBounds functions which properly gets local/world space bounds")]
-        public static Bounds GetBounds(this Transform transform, bool worldSpace = true)
-        {
-            Bounds singleBounds = new Bounds();
-
-            Renderer renderer = transform.GetComponent<Renderer>();
-            if (renderer != null)
-                singleBounds = renderer.bounds;
-            if (!worldSpace)
-                singleBounds.center = transform.InverseTransformPoint(singleBounds.center);
-
-            return singleBounds;
-        }
-
-        /// <summary>
         /// Gets the total bounds of an object including all it's children
         /// </summary>
         /// <param name="root">The root transform of the object</param>
@@ -100,11 +29,14 @@ namespace UnityHelpers
         /// <returns>A bounds that encapsulates the entire model</returns>
         public static Bounds GetTotalBounds(this Transform root, Space space, LayerMask layers, bool fromColliders = false, bool includeDisabled = false)
         {
-			Bounds totalBounds = new Bounds();
+            Bounds totalBounds = new Bounds();
 
             IEnumerable<GameObject> boundedObjects;
             if (fromColliders)
+            {
                 boundedObjects = root.GetComponentsInChildren<Collider>(true).Select(collider => collider.gameObject);
+                boundedObjects = boundedObjects.Concat(root.GetComponentsInChildren<Collider2D>(true).Select(collider => collider.gameObject));
+            }
             else
                 boundedObjects = root.GetComponentsInChildren<Renderer>(true).Select(renderer => renderer.gameObject);
                 
@@ -140,7 +72,7 @@ namespace UnityHelpers
         /// <returns>A bounds that encapsulates only the given transform's model</returns>
         public static Bounds GetBounds(this Transform transform, Space space, bool useCollider = false)
         {
-			Bounds singleBounds = new Bounds();
+            Bounds singleBounds = new Bounds();
 
             if (useCollider)
             {
@@ -151,6 +83,17 @@ namespace UnityHelpers
                     if (space == Space.World)
                         localBounds = transform.TransformBounds(localBounds);
                     singleBounds = localBounds;
+                }
+                else
+                {
+                    var collider2D = transform.GetComponent<Collider2D>();
+                    if (collider2D != null)
+                    {
+                        var localBounds = collider2D.GetLocalBounds();
+                        if (space == Space.World)
+                            localBounds = transform.TransformBounds(localBounds);
+                        singleBounds = localBounds;
+                    }
                 }
             }
             else
@@ -229,7 +172,61 @@ namespace UnityHelpers
             }
             else
             {
-                Debug.LogError("BoundsHelpers: Given collider was of an unsupported type");
+                Debug.LogError("BoundsHelpers: Given Collider was of an unsupported type");
+            }
+
+            return new Bounds(center, size);
+        }
+        /// <summary>
+        /// Gets the local bounds of the collider by figuring out which type it is (supported types: BoxCollider, SphereCollider, CapsuleCollider, and MeshCollider)
+        /// Courtesy of eisenpony from https://forum.unity.com/threads/how-do-you-find-the-size-of-a-local-bounding-box.341007/
+        /// </summary>
+        /// <param name="collider">The collider whose bounding box is being queried</param>
+        /// <returns>The bounding box</returns>
+        public static Bounds GetLocalBounds(this Collider2D collider)
+        {
+            Vector2 center = Vector2.zero;
+            Vector2 size = Vector2.zero;
+
+            if (collider is BoxCollider2D)
+            {
+                var box2D = ((BoxCollider2D)collider);
+                center = box2D.offset;
+                size = box2D.size;
+            }
+            else if (collider is CircleCollider2D)
+            {
+                var circle2D = ((CircleCollider2D)collider);
+                center = circle2D.offset;
+                size = Vector2.one * circle2D.radius * 2;
+            }
+            else if (collider is CapsuleCollider2D)
+            {
+                var capsule2D = ((CapsuleCollider2D)collider);
+                center = capsule2D.offset;
+                size = capsule2D.size;
+            }
+            else if (collider is CompositeCollider2D)
+            {
+                var comp2D = ((CompositeCollider2D)collider);
+                center = comp2D.offset;
+                size = comp2D.bounds.size;
+            }
+            else if (collider is EdgeCollider2D)
+            {
+                var edge2D = ((EdgeCollider2D)collider);
+                center = edge2D.offset;
+                size = edge2D.bounds.size;
+            }
+            else if (collider is PolygonCollider2D)
+            {
+                var poly2D = ((PolygonCollider2D)collider);
+                center = poly2D.offset;
+                size = poly2D.bounds.size;
+            }
+            else
+            {
+                Debug.LogError("BoundsHelpers: Given Collider2D was of an unsupported type");
             }
 
             return new Bounds(center, size);
