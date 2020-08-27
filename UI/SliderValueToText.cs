@@ -9,7 +9,11 @@ namespace UnityHelpers
         private Slider slider;
         private bool sliderErrored, labelErrored;
 
+        #if (TextMeshPro)
         public TMPro.TextMeshProUGUI targetLabel;
+        #else
+        public Text targetLabel;
+        #endif
 
         [Space(10)]
 

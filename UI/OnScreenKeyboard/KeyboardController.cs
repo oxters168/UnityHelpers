@@ -2,7 +2,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+#if (TextMeshPro)
 using TMPro;
+#endif
 using System.Collections;
 
 namespace UnityHelpers
@@ -12,8 +14,11 @@ namespace UnityHelpers
         private StringBuilder builtOutput = new StringBuilder();
 
         private GameObject currentlySelected;
+        #if (TextMeshPro)
+        private TMP_InputField inputField;
+        #else
         private InputField inputField;
-        private TMP_InputField tmpInputField;
+        #endif
         private int caretPosition, selectionAnchorPosition, selectionFocusPosition;
 
         private KeyController[] keyboardKeys;
@@ -39,12 +44,6 @@ namespace UnityHelpers
                 selectionAnchorPosition = inputField.selectionAnchorPosition;
                 selectionFocusPosition = inputField.selectionFocusPosition;
             }
-            else if (tmpInputField != null && eventSystemSelection == tmpInputField.gameObject)
-            {
-                caretPosition = tmpInputField.caretPosition;
-                selectionAnchorPosition = tmpInputField.selectionAnchorPosition;
-                selectionFocusPosition = tmpInputField.selectionFocusPosition;
-            }
 
             //Debug.Log("Caret Pos: " + caretPosition + " SAP: " + selectionAnchorPosition + " SFP: " + selectionFocusPosition);
         }
@@ -63,35 +62,28 @@ namespace UnityHelpers
 
 					if (inputField != null)
                     	inputField.onValueChanged.RemoveListener(InputFieldValueChanged);
-					if (tmpInputField != null)
-						tmpInputField.onValueChanged.RemoveListener(InputFieldValueChanged);
 
                     inputField = null;
-                    tmpInputField = null;
 
                     if (eventSystemSelection != null)
                     {
+                        #if (TextMeshPro)
+                        inputField = eventSystemSelection.GetComponent<TMP_InputField>();
+                        #else
                         inputField = eventSystemSelection.GetComponent<InputField>();
-                        if (inputField == null)
-                            tmpInputField = eventSystemSelection.GetComponent<TMP_InputField>();
+                        #endif
 
                         if (inputField != null)
                             SetText(inputField.text);
-                        else if (tmpInputField != null)
-                            SetText(tmpInputField.text);
 
 						if (inputField != null)
                         	inputField.onValueChanged.AddListener(InputFieldValueChanged);
-						if (tmpInputField != null)
-							tmpInputField.onValueChanged.AddListener(InputFieldValueChanged);
                     }
                 }
             }
 
             if (inputField != null)
                 inputField.text = builtOutput.ToString();
-            else if (tmpInputField != null)
-                tmpInputField.text = builtOutput.ToString();
         }
         private void InputFieldValueChanged(string value)
         {
@@ -125,13 +117,6 @@ namespace UnityHelpers
                 inputField.selectionAnchorPosition = index;
                 inputField.selectionFocusPosition = index;
                 inputField.ForceLabelUpdate();
-            }
-            else if (tmpInputField != null)
-            {
-                tmpInputField.caretPosition = index;
-                tmpInputField.selectionAnchorPosition = index;
-                tmpInputField.selectionFocusPosition = index;
-                tmpInputField.ForceLabelUpdate();
             }
         }
     }
