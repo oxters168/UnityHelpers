@@ -4,7 +4,11 @@ namespace UnityHelpers
 {
     public class FPSCounter : MonoBehaviour
     {
+        #if (TextMeshPro)
         public TMPro.TextMeshProUGUI fpsText;
+        #else
+        public UnityEngine.UI.Text fpsText;
+        #endif
         public int displayEveryNthFrame = 4;
         private int lastDisplayed = 0;
         private float sum = 0;
