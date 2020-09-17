@@ -6,6 +6,32 @@ namespace UnityHelpers
 {
     public static class VectorHelpers
     {
+        private static Matrix4x4 OrthoX = Matrix4x4.Rotate(Quaternion.Euler(90, 0, 0));
+        private static Matrix4x4 OrthoY = Matrix4x4.Rotate(Quaternion.Euler(0, 90, 0));
+
+        /// <summary>
+        /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
+        /// Retrieves the vectors orthogonal to the given direction vector in 3D space
+        /// </summary>
+        /// <param name="vector">The direction vector</param>
+        /// <param name="normal1">The first normal of the given vector</param>
+        /// <param name="normal2">The second normal of the given vector</param>
+        public static void FindOrthoNormals(this Vector3 vector, out Vector3 normal1, out Vector3 normal2)
+        {
+            Vector3 w = OrthoX.MultiplyPoint(vector);
+            float dot = Vector3.Dot(vector, w);
+            if (Mathf.Abs(dot) > 0.6)
+            {
+                w = OrthoY.MultiplyPoint(vector);
+            }
+            w.Normalize();
+
+            normal1 = Vector3.Cross(vector, w);
+            normal1.Normalize();
+            normal2 = Vector3.Cross(vector, normal1);
+            normal2.Normalize();
+        }
+
         /// <summary>
         /// Compares two vectors value for value
         /// </summary>

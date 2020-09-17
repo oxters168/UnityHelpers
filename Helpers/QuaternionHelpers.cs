@@ -20,7 +20,82 @@ namespace UnityHelpers
         
         /// <summary>
         /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
-        /// Gets angle of quaternion only along the specified axis
+        /// Gets the angle in radians of the quaternion only along the specified axis
+        /// </summary>
+        /// <param name="rot">The rotation quaternion</param>
+        /// <param name="axis">The axis to be polled</param>
+        /// <returns>The angle around the given axis</returns>
+        public static float PollAxisSignedAngle(this Quaternion rot, Vector3 axis)
+        {
+            axis.Normalize();
+
+            Vector3 normal1, normal2;
+            axis.FindOrthoNormals(out normal1, out normal2);
+            Vector3 transformed = rot * normal1;
+
+            // Project transformed vector onto plane
+            Vector3 flattened = transformed - (Vector3.Dot(transformed, axis) * axis);
+            flattened.Normalize();
+
+            var sign = Mathf.Sign(Vector3.Dot(Vector3.Cross(normal1, flattened), axis));
+
+            // Get angle between original vector and projected transform to get angle around normal
+            float a = sign * (float)Mathf.Acos(Vector3.Dot(normal1, flattened));
+
+            return a;
+        }
+        /// <summary>
+        /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
+        /// Gets the angle in radians of the quaternion only along the specified axis
+        /// </summary>
+        /// <param name="rot">The rotation quaternion</param>
+        /// <param name="axis">The axis to be polled</param>
+        /// <returns>The angle around the given axis</returns>
+        public static float PollAxisAngle(this Quaternion rot, Vector3 axis)
+        {
+            axis.Normalize();
+
+            Vector3 normal1, normal2;
+            axis.FindOrthoNormals(out normal1, out normal2);
+            Vector3 transformed = rot * normal1;
+
+            // Project transformed vector onto plane
+            Vector3 flattened = transformed - (Vector3.Dot(transformed, axis) * axis);
+            flattened.Normalize();
+
+            // Get angle between original vector and projected transform to get angle around normal
+            float a = (float)Mathf.Acos(Vector3.Dot(normal1, flattened));
+
+            return a;
+        }
+        /// <summary>
+        /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
+        /// Gets the angle in radians of the quaternion only along the specified axis
+        /// </summary>
+        /// <param name="rot">The rotation quaternion</param>
+        /// <param name="axis">The axis to be polled</param>
+        /// <param name="axisNormal">The orthogonal vector of the axis</param>
+        /// <returns>The angle around the given axis</returns>
+        public static float PollAxisSignedAngle(this Quaternion rot, Vector3 axis, Vector3 axisNormal)
+        {
+            axis.Normalize();
+
+            Vector3 transformed = rot * axisNormal;
+
+            // Project transformed vector onto plane
+            Vector3 flattened = transformed - (Vector3.Dot(transformed, axis) * axis);
+            flattened.Normalize();
+
+            var sign = Mathf.Sign(Vector3.Dot(Vector3.Cross(axisNormal, flattened), axis));
+
+            // Get angle between original vector and projected transform to get angle around normal
+            float a = sign * (float)Mathf.Acos(Vector3.Dot(axisNormal, flattened));
+
+            return a;
+        }
+        /// <summary>
+        /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
+        /// Gets the angle in radians of the quaternion only along the specified axis
         /// </summary>
         /// <param name="rot">The rotation quaternion</param>
         /// <param name="axis">The axis to be polled</param>
