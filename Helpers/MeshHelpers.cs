@@ -4,11 +4,247 @@ using System.Collections.Generic;
 using System.Linq;
 using g3;
 
+using TriangleNet.Geometry;
+
 namespace UnityHelpers
 {
     public static class MeshHelpers
     {
         public const int MAX_VERTICES = 65534;
+        public enum TriangleSearchType { all, any, none, }
+        
+        /// <summary>
+        /// Triangulates a concave polygon using Triangle.Net
+        /// 
+        /// Source: https://forum.unity.com/threads/using-triangle-net-with-unity-5-triangulation-of-meshes-made-easy.442072/
+        /// </summary>
+        /// <param name="points">The points making up the polygon</param>
+        /// <param name="holes">Any holes within the polygon</param>
+        /// <param name="outIndices">The indices array making up the triangles</param>
+        /// <param name="outVertices">The new vertices array of the polygon</param>
+        public static void TriangulateConcavePolygon(this IEnumerable<Vector2> points, IEnumerable<IEnumerable<Vector2>> holes, out IEnumerable<int> outIndices, out IEnumerable<Vector2> outVertices)
+        {
+            var poly = new Polygon();
+
+            for (int i = 0; i < points.Count(); i++)
+            {
+                var currentPoint = points.ElementAt(i);
+                var nextPoint = points.ElementAt((i + 1) % points.Count());
+                poly.Add(new Vertex(currentPoint.x, currentPoint.y));
+                poly.Add(new Segment(new Vertex(currentPoint.x, currentPoint.y), new Vertex(nextPoint.x, nextPoint.y)));
+            }
+
+            if (holes != null)
+            {
+                var nestedVertices = holes.Select((subHole) => subHole.Select((point) => new Vertex(point.x, point.y)));
+                foreach (var vertices in nestedVertices)
+                    poly.Add(new Contour(vertices), true);
+            }
+
+            var mesh = poly.Triangulate();
+
+            List<Vector2> tempVertices = new List<Vector2>();
+            List<int> tempIndices = new List<int>();
+            foreach (var triangle in mesh.Triangles)
+            {
+                for (int j = 2; j >= 0; j--)
+                {
+                    bool found = false;
+                    for (int k = 0; k < tempVertices.Count; k++)
+                    {
+                        if (tempVertices[k].x == triangle.GetVertex(j).X && tempVertices[k].y == triangle.GetVertex(j).Y)
+                        {
+                            tempIndices.Add(k);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        tempVertices.Add(new Vector3((float)triangle.GetVertex(j).X, (float)triangle.GetVertex(j).Y));
+                        tempIndices.Add(tempVertices.Count - 1);
+                    }
+                }
+            }
+
+            outVertices = tempVertices;
+            outIndices = tempIndices;
+        }
+        /// <summary>
+        /// Triangulates a concave polygon using Triangle.Net
+        /// 
+        /// Source: https://forum.unity.com/threads/using-triangle-net-with-unity-5-triangulation-of-meshes-made-easy.442072/
+        /// </summary>
+        /// <param name="points">The points making up the polygon</param>
+        /// <param name="outIndices">The indices array making up the triangles</param>
+        /// <param name="outVertices">The new vertices array of the polygon</param>
+        public static void TriangulateConcavePolygon(this IEnumerable<Vector2> points, out IEnumerable<int> outIndices, out IEnumerable<Vector2> outVertices)
+        {
+            TriangulateConcavePolygon(points, null, out outIndices, out outVertices);
+        }
+
+        /// <summary>
+        /// Triangulates the given polygon using the ear clip method.
+        /// The algorithm supports concave polygons, but not polygons with holes, or multiple polygons at once.
+        /// The direction the face depends on the order of the given vertices.
+        /// Simply reversing the order will flip the direction.
+        /// 
+        /// Source: https://wiki.unity3d.com/index.php/Triangulator
+        /// </summary>
+        /// <param name="points">The points that make up the polygon</param>
+        /// <returns>The indices array making up the triangles</returns>
+        public static IEnumerable<int> TriangulatePolygonWithEarClipping(this IEnumerable<Vector2> points)
+        {
+            List<Vector2> m_points = points.ToList();
+            List<int> indices = new List<int>();
+
+            int n = m_points.Count;
+            if (n < 3)
+                return indices.ToArray();
+    
+            int[] V = new int[n];
+            if (Area(m_points) > 0)
+            {
+                for (int v = 0; v < n; v++)
+                    V[v] = v;
+            }
+            else
+            {
+                for (int v = 0; v < n; v++)
+                    V[v] = (n - 1) - v;
+            }
+    
+            int nv = n;
+            int count = 2 * nv;
+            for (int v = nv - 1; nv > 2; )
+            {
+                if ((count--) <= 0)
+                    return indices.ToArray();
+    
+                int u = v;
+                if (nv <= u)
+                    u = 0;
+                v = u + 1;
+                if (nv <= v)
+                    v = 0;
+                int w = v + 1;
+                if (nv <= w)
+                    w = 0;
+    
+                if (Snip(m_points, u, v, w, nv, V))
+                {
+                    int a, b, c, s, t;
+                    a = V[u];
+                    b = V[v];
+                    c = V[w];
+                    indices.Add(a);
+                    indices.Add(b);
+                    indices.Add(c);
+                    for (s = v, t = v + 1; t < nv; s++, t++)
+                        V[s] = V[t];
+                    nv--;
+                    count = 2 * nv;
+                }
+            }
+    
+            indices.Reverse();
+            return indices.ToArray();
+        }
+        private static float Area(List<Vector2> m_points)
+        {
+            int n = m_points.Count;
+            float A = 0.0f;
+            for (int p = n - 1, q = 0; q < n; p = q++)
+            {
+                Vector2 pval = m_points[p];
+                Vector2 qval = m_points[q];
+                A += pval.x * qval.y - qval.x * pval.y;
+            }
+            return (A * 0.5f);
+        }
+        private static bool Snip(List<Vector2> m_points, int u, int v, int w, int n, int[] V)
+        {
+            int p;
+            Vector2 A = m_points[V[u]];
+            Vector2 B = m_points[V[v]];
+            Vector2 C = m_points[V[w]];
+            if (Mathf.Epsilon > (((B.x - A.x) * (C.y - A.y)) - ((B.y - A.y) * (C.x - A.x))))
+                return false;
+            for (p = 0; p < n; p++)
+            {
+                if ((p == u) || (p == v) || (p == w))
+                    continue;
+                Vector2 P = m_points[V[p]];
+                if (P.IsPointInTriangle(A, B, C))
+                    return false;
+            }
+            return true;
+        }
+        /// <summary>
+        /// Checks to see if the given points lies inside the given triangle
+        /// </summary>
+        /// <param name="P">The point in question</param>
+        /// <param name="A">First corner of the triangle</param>
+        /// <param name="B">Second corner of the triangle</param>
+        /// <param name="C">Third corner of the triangle</param>
+        /// <returns>True if the point is inside the triangle, false otherwise</returns>
+        public static bool IsPointInTriangle (this Vector2 P, Vector2 A, Vector2 B, Vector2 C) {
+            float ax, ay, bx, by, cx, cy, apx, apy, bpx, bpy, cpx, cpy;
+            float cCROSSap, bCROSScp, aCROSSbp;
+    
+            ax = C.x - B.x; ay = C.y - B.y;
+            bx = A.x - C.x; by = A.y - C.y;
+            cx = B.x - A.x; cy = B.y - A.y;
+            apx = P.x - A.x; apy = P.y - A.y;
+            bpx = P.x - B.x; bpy = P.y - B.y;
+            cpx = P.x - C.x; cpy = P.y - C.y;
+    
+            aCROSSbp = ax * bpy - ay * bpx;
+            cCROSSap = cx * apy - cy * apx;
+            bCROSScp = bx * cpy - by * cpx;
+    
+            return ((aCROSSbp >= 0.0f) && (bCROSScp >= 0.0f) && (cCROSSap >= 0.0f));
+        }
+
+        /// <summary>
+        /// Checks if a triangle's points are in clockwise order
+        /// 
+        /// Sources: https://math.stackexchange.com/questions/1324179/how-to-tell-if-3-connected-points-are-connected-clockwise-or-counter-clockwise
+        ///          https://en.wikipedia.org/wiki/Determinant
+        /// </summary>
+        /// <param name="pointA">First point</param>
+        /// <param name="pointB">Second point</param>
+        /// <param name="pointC">Third point</param>
+        /// <returns>True if clockwise and false if not</returns>
+        public static bool IsTriangleOrientedClockwise(Vector2 pointA, Vector2 pointB, Vector2 pointC)
+        {
+            // | x1 y1 1 |
+            // | x2 y2 1 | = (x1 * y2 * 1) + (y1 * 1 * x3) + (1 * x2 * y3) - (1 * y2 * x3) - (y1 * x2 * 1) - (x1 * 1 * y3)
+            // | x3 y3 1 |
+
+            float determinant = (pointA.x * pointB.y * 1) + (pointA.y * 1 * pointC.x) + (1 * pointB.x * pointC.y) - (1 * pointB.y * pointC.x) - (pointA.y * pointB.x * 1) - (pointA.x * 1 * pointC.y);
+            return determinant < -float.Epsilon;
+        }
+        /// <summary>
+        /// Checks if a triangle's points are in clockwise order
+        /// 
+        /// Sources: https://math.stackexchange.com/questions/1324179/how-to-tell-if-3-connected-points-are-connected-clockwise-or-counter-clockwise
+        ///          https://en.wikipedia.org/wiki/Determinant
+        /// </summary>
+        /// <param name="pointA">First point</param>
+        /// <param name="pointB">Second point</param>
+        /// <param name="pointC">Third point</param>
+        /// <returns>True if clockwise and false if not</returns>
+        public static bool IsTriangleOrientedAntiClockwise(Vector2 pointA, Vector2 pointB, Vector2 pointC)
+        {
+            // | x1 y1 1 |
+            // | x2 y2 1 | = (x1 * y2 * 1) + (y1 * 1 * x3) + (1 * x2 * y3) - (1 * y2 * x3) - (y1 * x2 * 1) - (x1 * 1 * y3)
+            // | x3 y3 1 |
+
+            float determinant = (pointA.x * pointB.y * 1) + (pointA.y * 1 * pointC.x) + (1 * pointB.x * pointC.y) - (1 * pointB.y * pointC.x) - (pointA.y * pointB.x * 1) - (pointA.x * 1 * pointC.y);
+            return determinant > float.Epsilon;
+        }
 
         /// <summary>
         /// Appends the vertices, triangle, normals, uv, uv2, uv3, uv4 of the other mesh to the current mesh.
@@ -19,9 +255,9 @@ namespace UnityHelpers
         /// <param name="rotation">Rotation of TRS matrix</param>
         /// <param name="scale">Scale of TRS matrix</param>
         /// <returns>False if the mesh being appended to cannot fit what is being appended</returns>
-        public static bool Append(this Mesh current, Mesh other, Vector3 position, Quaternion rotation, Vector3 scale)
+        public static bool Append(this MeshData current, MeshData other, Vector3 position, Quaternion rotation, Vector3 scale)
         {
-            if (other != null && current.vertices.Length + other.vertices.Length < MAX_VERTICES)
+            if (current.vertices.Length + other.vertices.Length < MAX_VERTICES)
             {
                 Vector3[] manipulatedVertices = ManipulateVertices(other.vertices, position, rotation, scale);
 
@@ -36,15 +272,44 @@ namespace UnityHelpers
                 current.uv2 = current.uv2.Concat(other.uv2).ToArray();
                 current.uv3 = current.uv3.Concat(other.uv3).ToArray();
                 current.uv4 = current.uv4.Concat(other.uv4).ToArray();
-                //current.vertices = Merge(current.vertices, manipulatedVertices);
-                //current.triangles = Merge(current.triangles, correctedTriangles);
-                //current.normals = Merge(current.normals, other.normals);
-                //current.uv = Merge(current.uv, other.uv);
-                //current.uv2 = Merge(current.uv2, other.uv2);
-                //current.uv3 = Merge(current.uv3, other.uv3);
-                //current.uv4 = Merge(current.uv4, other.uv4);
                 return true;
             }
+            else
+                Debug.LogWarning("MeshHelpers: Could not append mesh to other mesh");
+
+            return false;
+        }
+        /// <summary>
+        /// Appends the vertices, triangle, normals, uv, uv2, uv3, uv4 of the other mesh to the current mesh.
+        /// </summary>
+        /// <param name="current">The mesh to append to</param>
+        /// <param name="other">The mesh that will be appended</param>
+        /// <param name="position">Position of TRS matrix</param>
+        /// <param name="rotation">Rotation of TRS matrix</param>
+        /// <param name="scale">Scale of TRS matrix</param>
+        /// <returns>False if the mesh being appended to cannot fit what is being appended</returns>
+        public static bool Append(this Mesh current, Mesh other, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            if (current.vertices.Length + other.vertices.Length < MAX_VERTICES)
+            {
+                Vector3[] manipulatedVertices = ManipulateVertices(other.vertices, position, rotation, scale);
+
+                int[] correctedTriangles = new int[other.triangles.Length];
+                for (int i = 0; i < correctedTriangles.Length; i++)
+                    correctedTriangles[i] = other.triangles[i] + current.vertices.Length;
+
+                current.vertices = current.vertices.Concat(manipulatedVertices).ToArray();
+                current.triangles = current.triangles.Concat(correctedTriangles).ToArray();
+                current.normals = current.normals.Concat(other.normals).ToArray();
+                current.uv = current.uv.Concat(other.uv).ToArray();
+                current.uv2 = current.uv2.Concat(other.uv2).ToArray();
+                current.uv3 = current.uv3.Concat(other.uv3).ToArray();
+                current.uv4 = current.uv4.Concat(other.uv4).ToArray();
+                return true;
+            }
+            else
+                Debug.LogWarning("MeshHelpers: Could not append mesh to other mesh");
+
             return false;
         }
         /// <summary>
@@ -71,6 +336,60 @@ namespace UnityHelpers
             }
             return manipulated;
         }
+
+        /// <summary>
+        /// Shifts all the indices within the enumerable by the given amount
+        /// </summary>
+        /// <param name="triangles">The triangles sequence</param>
+        /// <param name="shiftAmount">The amount to shift by</param>
+        /// <returns>A shifted triangle sequence</returns>
+        public static IEnumerable<int> ShiftTriangleIndices(this IEnumerable<int> triangles, int shiftAmount)
+        {
+            return triangles.Select((index) => index + shiftAmount);
+        }
+        /// <summary>
+        /// Finds all triangles with values within the given range
+        /// </summary>
+        /// <param name="triangles">The triangles sequence</param>
+        /// <param name="startIndex">The beginning of the range [inclusive]</param>
+        /// <param name="endIndex">The end of the range [inclusive]</param>
+        /// <param name="searchType">If set to all then all three of the triangle values must be within the range. If set to any then only one has to comply for the triangle to make the cut. If set to none then none of the triangle values have to be within the range to be added.</param>
+        /// <returns>A subset of the original triangles sequence</returns>
+        public static IEnumerable<int> FindTriangles(this IEnumerable<int> triangles, int startIndex, int endIndex, TriangleSearchType searchType = TriangleSearchType.all)
+        {
+            int[] currentTriangle = new int[3];
+            List<int> containedTriangles = new List<int>();
+            int currentIndex = 0;
+            bool hadGoodIndex = false;
+            bool hadBadIndex = false;
+            bool toBeAdded = false;
+            var enumerator = triangles.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                int subIndex = currentIndex % 3;
+                if (currentIndex > 0 && subIndex == 0 && toBeAdded)
+                {
+                    containedTriangles.AddRange(currentTriangle);
+                    hadGoodIndex = false;
+                    hadBadIndex = false;
+                }
+
+                if (enumerator.Current >= startIndex && enumerator.Current <= endIndex)
+                    hadGoodIndex = true;
+                else
+                    hadBadIndex = true;
+                
+                currentTriangle[subIndex] = enumerator.Current;
+                currentIndex++;
+                toBeAdded = ((searchType == TriangleSearchType.all && !hadBadIndex) || (searchType == TriangleSearchType.any && hadGoodIndex) || (searchType == TriangleSearchType.none && !hadGoodIndex));
+            }
+            //The while loop misses the last triangle, so we add it as long as there actually were triangles to begin with
+            if (triangles.Count() > 0 && toBeAdded)
+                containedTriangles.AddRange(currentTriangle);
+
+            return containedTriangles;
+        }
+
         /// <summary>
         /// Checks if a point is on the surface of the object's mesh. This method goes through all the triangles of the mesh.
         /// This variant is faster, but it is less accurate. Works better with meshes that have triangles with consistently small areas around the size of the given range.
@@ -294,12 +613,12 @@ namespace UnityHelpers
         {
             convexMesh = new MeshData();
 
-            List<Vertex> vertices = original.Select(point => new Vertex(point)).ToList();
+            List<MIVertex> vertices = original.Select(point => new MIVertex(point)).ToList();
             var creation = ConvexHull.Create(vertices, PlaneDistanceTolerance);
             var result = creation.Result;
 
             List<int> triangles = new List<int>();
-            List<Vertex> resultVertices = result.Points.ToList();
+            List<MIVertex> resultVertices = result.Points.ToList();
             foreach (var face in result.Faces)
             {
                 triangles.Add(resultVertices.IndexOf(face.Vertices[0]));
@@ -316,16 +635,29 @@ namespace UnityHelpers
         }
 
         /// <summary>
+        /// For triangulation with the ear clipping function
+        /// </summary>
+        private class VertexEarInfo
+        {
+            public int originalIndex;
+            public Vector2 point;
+            public VertexEarInfo nextVertex;
+            public VertexEarInfo prevVertex;
+            public bool isReflex;
+            public bool isConvex;
+        }
+
+        /// <summary>
         /// The vertex proxy between MIConvexHull and Unity.
         /// </summary>
-        private class Vertex : IVertex
+        private class MIVertex : IVertex
         {
             public double[] Position { get; set; }
-            public Vertex(double x, double y, double z)
+            public MIVertex(double x, double y, double z)
             {
                 Position = new double[3] { x, y, z };
             }
-            public Vertex(Vector3 ver)
+            public MIVertex(Vector3 ver)
             {
                 Position = new double[3] { ver.x, ver.y, ver.z };
             }
@@ -342,35 +674,54 @@ namespace UnityHelpers
         /// </summary>
         public class MeshData
         {
-            public static readonly int MAX_VERTICES = 65534;
-
-            private Mesh mesh;
-            public Vector3[] vertices = new Vector3[0];
-            public int[] triangles = new int[0];
-            public Vector3[] normals = new Vector3[0];
-            public Color[] colors = new Color[0];
-            public Vector2[] uv = new Vector2[0];
-            public Vector2[] uv2 = new Vector2[0];
-            public Vector2[] uv3 = new Vector2[0];
-            public Vector2[] uv4 = new Vector2[0];
+            public Vector3[] vertices;
+            public int[] triangles;
+            public Vector3[] normals;
+            public Color[] colors;
+            public Vector2[] uv;
+            public Vector2[] uv2;
+            public Vector2[] uv3;
+            public Vector2[] uv4;
 
             public MeshData()
             {
-
+                vertices = new Vector3[0];
+                triangles = new int[0];
+                normals = new Vector3[0];
+                colors = new Color[0];
+                uv = new Vector2[0];
+                uv2 = new Vector2[0];
+                uv3 = new Vector2[0];
+                uv4 = new Vector2[0];
             }
-            public MeshData(Mesh _mesh)
+            public MeshData(Mesh _mesh) : this(_mesh.vertices, _mesh.triangles, _mesh.normals, _mesh.colors, _mesh.uv)
             {
-                mesh = _mesh;
-                vertices = mesh.vertices;
-                triangles = mesh.triangles;
-                normals = mesh.normals;
-                colors = mesh.colors;
-                uv = mesh.uv;
-                uv2 = mesh.uv2;
-                uv3 = mesh.uv3;
-                uv4 = mesh.uv4;
+                uv2 = _mesh.uv2;
+                uv3 = _mesh.uv3;
+                uv4 = _mesh.uv4;
             }
-            public MeshData(DMesh3 _mesh)
+            public MeshData(IEnumerable<Vector3> _vertices, IEnumerable<int> _triangles) : this()
+            {
+                vertices = _vertices.ToArray();
+                triangles = _triangles.ToArray();
+            }
+            public MeshData(IEnumerable<Vector3> _vertices, IEnumerable<int> _triangles, IEnumerable<Vector3> _normals) : this(_vertices, _triangles)
+            {
+                normals = _normals.ToArray();
+            }
+            public MeshData(IEnumerable<Vector3> _vertices, IEnumerable<int> _triangles, IEnumerable<Vector3> _normals, IEnumerable<Color> _colors) : this(_vertices, _triangles, _normals)
+            {
+                colors = _colors.ToArray();
+            }
+            public MeshData(IEnumerable<Vector3> _vertices, IEnumerable<int> _triangles, IEnumerable<Vector3> _normals, IEnumerable<Vector2> _uv) : this(_vertices, _triangles, _normals)
+            {
+                uv = _uv.ToArray();
+            }
+            public MeshData(IEnumerable<Vector3> _vertices, IEnumerable<int> _triangles, IEnumerable<Vector3> _normals, IEnumerable<Color> _colors, IEnumerable<Vector2> _uv) : this(_vertices, _triangles, _normals, _colors)
+            {
+                uv = _uv.ToArray();
+            }
+            public MeshData(DMesh3 _mesh) : this()
             {
                 _mesh = new DMesh3(_mesh, true);
                 vertices = _mesh.VertexIndices().Select(vID => { var vertex = _mesh.GetVertexf(vID); return new Vector3(vertex.x, vertex.y, vertex.z); }).ToArray();
@@ -378,10 +729,6 @@ namespace UnityHelpers
             }
             public void Dispose()
             {
-                if (mesh != null)
-                    Object.Destroy(mesh);
-                mesh = null;
-
                 vertices = null;
                 triangles = null;
                 normals = null;
@@ -391,42 +738,10 @@ namespace UnityHelpers
                 uv4 = null;
             }
 
-            public bool Append(MeshData other, Vector3 position, Quaternion rotation, Vector3 scale)
+            public Mesh GenerateMesh()
             {
-                if (other != null && vertices.Length + other.vertices.Length < MAX_VERTICES)
-                {
-                    Vector3[] manipulatedVertices = other.vertices.ManipulateVertices(position, rotation, scale);
-
-                    int[] correctedTriangles = new int[other.triangles.Length];
-                    for (int i = 0; i < correctedTriangles.Length; i++)
-                        correctedTriangles[i] = other.triangles[i] + vertices.Length;
-
-                    vertices = vertices.ToArray().Concat(manipulatedVertices).ToArray();
-                    triangles = triangles.ToArray().Concat(correctedTriangles).ToArray();
-                    normals = normals.ToArray().Concat(other.normals).ToArray();
-                    uv = uv.ToArray().Concat(other.uv).ToArray();
-                    uv2 = uv2.ToArray().Concat(other.uv2).ToArray();
-                    uv3 = uv3.ToArray().Concat(other.uv3).ToArray();
-                    uv4 = uv4.ToArray().Concat(other.uv4).ToArray();
-                    //vertices = DataParser.Merge(vertices, manipulatedVertices);
-                    //triangles = DataParser.Merge(triangles, correctedTriangles);
-                    //normals = DataParser.Merge(normals, other.normals);
-                    //uv = DataParser.Merge(uv, other.uv);
-                    //uv2 = DataParser.Merge(uv2, other.uv2);
-                    //uv3 = DataParser.Merge(uv3, other.uv3);
-                    //uv4 = DataParser.Merge(uv4, other.uv4);
-                    return true;
-                }
-                return false;
-            }
-
-            public Mesh GetMesh()
-            {
-                if (mesh == null)
-                {
-                    mesh = new Mesh();
-                    mesh.name = "Custom Mesh";
-                }
+                Mesh mesh = new Mesh();
+                mesh.name = "Custom Mesh";
 
                 mesh.Clear();
                 mesh.vertices = vertices;
@@ -443,7 +758,10 @@ namespace UnityHelpers
                 if (normals.Length == vertices.Length)
                     mesh.normals = normals;
                 else
+                {
+                    Debug.LogWarning("MeshData: Normals not same length as vertices, recalculating normals");
                     mesh.RecalculateNormals();
+                }
 
                 return mesh;
             }

@@ -6,13 +6,140 @@ namespace UnityHelpers
 {
     public static class VectorHelpers
     {
+        private static Matrix4x4 OrthoX = Matrix4x4.Rotate(Quaternion.Euler(90, 0, 0));
+        private static Matrix4x4 OrthoY = Matrix4x4.Rotate(Quaternion.Euler(0, 90, 0));
+
+        /// <summary>
+        /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
+        /// Retrieves the vectors orthogonal to the given direction vector in 3D space
+        /// </summary>
+        /// <param name="vector">The direction vector</param>
+        /// <param name="normal1">The first normal of the given vector</param>
+        /// <param name="normal2">The second normal of the given vector</param>
+        public static void FindOrthoNormals(this Vector3 vector, out Vector3 normal1, out Vector3 normal2)
+        {
+            Vector3 w = OrthoX.MultiplyPoint(vector);
+            float dot = Vector3.Dot(vector, w);
+            if (Mathf.Abs(dot) > 0.6)
+            {
+                w = OrthoY.MultiplyPoint(vector);
+            }
+            w.Normalize();
+
+            normal1 = Vector3.Cross(vector, w);
+            normal1.Normalize();
+            normal2 = Vector3.Cross(vector, normal1);
+            normal2.Normalize();
+        }
+
+        /// <summary>
+        /// Compares two vectors value for value
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <returns>True if all values are equal, false otherwise</returns>
+        public static bool EqualTo(this Vector2Int first, Vector2Int second)
+        {
+            return first.x == second.x && first.y == second.y;
+        }
+        /// <summary>
+        /// Compares two vectors value for value
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <returns>True if all values are equal, false otherwise</returns>
+        public static bool EqualTo(this Vector3Int first, Vector3Int second)
+        {
+            return first.x == second.x && first.y == second.y && first.z == second.z;
+        }
+        /// <summary>
+        /// Compares two vectors value for value
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <param name="tolerance">The maximum amount of difference any given value can be (inclusive)</param>
+        /// <returns>True if all values are within the threshold, false otherwise</returns>
+        public static bool EqualTo(this Vector2 first, Vector2 second, float tolerance = float.Epsilon)
+        {
+            return Mathf.Abs(first.x - second.x) <= tolerance && Mathf.Abs(first.y - second.y) <= tolerance;
+        }
+        /// <summary>
+        /// Compares two vectors value for value
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <param name="tolerance">The maximum amount of difference any given value can be (inclusive)</param>
+        /// <returns>True if all values are within the threshold, false otherwise</returns>
+        public static bool EqualTo(this Vector3 first, Vector3 second, float tolerance = float.Epsilon)
+        {
+            return Mathf.Abs(first.x - second.x) <= tolerance && Mathf.Abs(first.y - second.y) <= tolerance && Mathf.Abs(first.z - second.z) <= tolerance;
+        }
+        /// <summary>
+        /// /// Generates a vector3 whose x and z values equals the given vector2's x and y values.
+        /// </summary>
+        /// <param name="point">The original point</param>
+        /// <param name="yValue">The resulting vector3's y value</param>
+        /// <returns>A vector3 value</returns>
+        public static Vector3 ToXZVector3(this Vector2 point, float yValue = 0)
+        {
+            return new Vector3(point.x, yValue, point.y);
+        }
+
+        /// <summary>
+        /// Rotates the given vector clockwise on an orthogonal axis.
+        /// 
+        /// By: XenoRo
+        /// Source: https://answers.unity.com/questions/661383/whats-the-most-efficient-way-to-rotate-a-vector2-o.html
+        /// </summary>
+        /// <param name="vector">The original vector</param>
+        /// <param name="degrees">The angle amount to rotate</param>
+        /// <param name="pivot">A pivot to rotate about</param>
+        /// <returns>The rotated vector</returns>
+        public static Vector2 Rotate(this Vector2 vector, float degrees, Vector2 pivot = default(Vector2))
+        {
+            vector -= pivot;
+            vector = Quaternion.Euler(0, 0, -degrees) * vector;
+            vector += pivot;
+            return vector; 
+        }
+ 
+        /// <summary>
+        /// Calculates a point on the bezier curve based on the given control points and a percent value
+        /// </summary>
+        /// <param name="controlPoints">The points that shape the bezier curve</param>
+        /// <param name="t">A value between 0 and 1 representing the percent travelled along the bezier curve</param>
+        /// <returns>A point on the bezier curve</returns>
+        public static Vector3 Bezier(this IEnumerable<Vector3> controlPoints, float t)
+        {
+            IEnumerable<Vector3> decayingPoints = controlPoints;
+            while (decayingPoints.Count() > 1)
+                decayingPoints = decayingPoints.SelectEveryPair((first, second) =>
+                {
+                    var difference = second - first;
+                    var direction = difference.normalized;
+                    var distance = difference.magnitude;
+                    return first + direction * distance * t;
+                });
+                
+            return decayingPoints.First();
+        }
+        /// <summary>
+        /// Calculates a point on the bezier curve based on the given control points and a percent value
+        /// </summary>
+        /// <param name="controlPoints">The points that shape the bezier curve</param>
+        /// <param name="t">A value between 0 and 1 representing the percent travelled along the bezier curve</param>
+        /// <returns>A point on the bezier curve</returns>
+        public static Vector2 Bezier(this IEnumerable<Vector2> controlPoints, float t)
+        {
+            return controlPoints.Select(point => new Vector3(point.x, point.y)).Bezier(t).xy();
+        }
         /// <summary>
         /// Transforms a point from a transform's local space to another transform's local space directly
         /// </summary>
         /// <param name="transform">The transform whose space the point is originally represented in</param>
         /// <param name="otherTransform">The transform whose space you'd like the point to be represented in</param>
         /// <param name="point">The point in terms of the original transform's space</param>
-        /// <returns></returns>
+        /// <returns>The transformed point</returns>
         public static Vector3 TransformPointToAnotherSpace(this Transform transform, Transform otherTransform, Vector3 point)
         {
             var localToLocalMatrix = otherTransform.worldToLocalMatrix * transform.localToWorldMatrix;
@@ -24,7 +151,7 @@ namespace UnityHelpers
         /// <param name="transform">The transform whose space the point is originally represented in</param>
         /// <param name="otherTransform">The transform whose space you'd like the point to be represented in</param>
         /// <param name="point">The point in terms of the original transform's space</param>
-        /// <returns></returns>
+        /// <returns>The transformed direction</returns>
         public static Vector3 TransformDirectionToAnotherSpace(this Transform transform, Transform otherTransform, Vector3 direction)
         {
             var localToLocalMatrix = otherTransform.worldToLocalMatrix * transform.localToWorldMatrix;

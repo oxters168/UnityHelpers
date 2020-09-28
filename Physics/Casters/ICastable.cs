@@ -9,5 +9,6 @@ namespace UnityHelpers
         Vector3 GetPosition();
         Vector3 GetDirection();
         float GetSize();
+        Transform GetParent();
     }
 }

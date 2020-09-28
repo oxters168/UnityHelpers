@@ -14,7 +14,11 @@ namespace UnityHelpers
         private static Dictionary<string, (float, float, object)> debugValues = new Dictionary<string, (float, float, object)>();
         private static bool refreshed;
 
+        #if (TextMeshPro)
         public TMPro.TextMeshProUGUI output;
+        #else
+        public UnityEngine.UI.Text output;
+        #endif
         private System.Text.StringBuilder builtOutput = new System.Text.StringBuilder();
 
         [Space(10), Tooltip("If set to true, will only output from filtered values")]
