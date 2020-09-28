@@ -7,6 +7,17 @@ namespace UnityHelpers
     public static class QuaternionHelpers
     {
         /// <summary>
+        /// Corrects the raw input gyro attitude value to be compatible with Unity.
+        /// Source: https://gamedev.stackexchange.com/questions/174107/unity-gyroscope-orientation-attitude-wrong
+        /// </summary>
+        /// <param name="attitude">The raw input value</param>
+        /// <returns>The 'correct' value</returns>
+        public static Quaternion AdjustAttitude(this Quaternion attitude)
+        {
+            return new Quaternion(attitude.x, attitude.y, -attitude.z, -attitude.w);
+        }
+
+        /// <summary>
         /// Compares two quaternions value for value
         /// </summary>
         /// <param name="first">The first quaternion</param>

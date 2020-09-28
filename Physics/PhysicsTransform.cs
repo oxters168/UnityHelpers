@@ -169,9 +169,14 @@ namespace UnityHelpers
             if (striveForOrientation)
             {
                 Quaternion nextOrientation = follow ? follow.rotation : rotation;
-                Quaternion strivedOrientation = Quaternion.Lerp(nextOrientation, parent != null ? parent.TransformRotation(localAnchorRotation) : rotation, anchorRotationPercent);
-                Vector3 rotationTorque = AffectedBody.CalculateRequiredTorque(strivedOrientation, frequency, damping);
-                AffectedBody.AddTorque(rotationTorque);
+                //Apparently continuing with a non valid quaternion can cause
+                //the rigidbody's position, rotation, and velocity to go NaN
+                if (nextOrientation.IsValid())
+                {
+                    Quaternion strivedOrientation = Quaternion.Lerp(nextOrientation, parent != null ? parent.TransformRotation(localAnchorRotation) : rotation, anchorRotationPercent);
+                    Vector3 rotationTorque = AffectedBody.CalculateRequiredTorque(strivedOrientation, frequency, damping);
+                    AffectedBody.AddTorque(rotationTorque);
+                }
             }
 
             if (counteractGravity && AffectedBody.useGravity && !AffectedBody.isKinematic)
@@ -249,7 +254,7 @@ namespace UnityHelpers
             {
                 float currentDistance = (strivedPosition - AffectedBody.position).magnitude;
                 strength = currentDistance;
-                if (distanceDivisor != 0)
+                if (Mathf.Abs(distanceDivisor) > float.Epsilon)
                     strength /= distanceDivisor;
 
                 strength = strengthGraph.Evaluate(strength);
