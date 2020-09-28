@@ -1,9 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace UnityHelpers
 {
     /// <summary>
-    /// Source: https://www.patreon.com/posts/18245226
+    /// Modified liquid shader
+    /// Original source: https://www.patreon.com/posts/18245226
     /// </summary>
     public class Liquid : MonoBehaviour
     {
@@ -39,7 +40,12 @@ namespace UnityHelpers
             wobbleAmountX = wobbleAmountToAddX * Mathf.Sin(pulse * time);
             wobbleAmountZ = wobbleAmountToAddZ * Mathf.Sin(pulse * time);
 
-            // send it to the shader
+            // calculate the size on the world y
+            var worldBounds = transform.GetBounds(Space.World);
+            float sizeY = worldBounds.size.y;
+
+            // send values to the shader
+            rend.material.SetFloat("_SizeY", sizeY);
             rend.material.SetFloat("_WobbleX", wobbleAmountX);
             rend.material.SetFloat("_WobbleZ", wobbleAmountZ);
 
