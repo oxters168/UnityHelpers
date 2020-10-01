@@ -28,10 +28,19 @@ namespace UnityHelpers
 
         public override void Grab(LocalInfo grabberInfo)
         {
-            base.Grab(grabberInfo);
+            //base.Grab(grabberInfo);
 
             if (!grabbers.Exists(grabber => grabber.info == grabberInfo.info))
             {                
+                //Only store values if this is the first time being grabbed
+                if (grabbers.Count <= 0)
+                    OnFirstGrab?.Invoke(this, grabberInfo);
+                    
+                //Add current grabber as parent
+                grabbers.Add(grabberInfo);
+
+                OnGrabbed?.Invoke(this, grabberInfo);
+
                 //Add physics transform if doesn't already exist and store it's values (important for when it does exist)
                 if (PhysicsObject == null)
                 {
