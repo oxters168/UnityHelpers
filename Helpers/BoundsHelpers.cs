@@ -82,6 +82,8 @@ namespace UnityHelpers
                     var localBounds = collider.GetLocalBounds();
                     if (space == Space.World)
                         localBounds = transform.TransformBounds(localBounds);
+                    else
+                        localBounds = new Bounds(localBounds.center, localBounds.size.Multiply(transform.localScale));
                     singleBounds = localBounds;
                 }
                 else
@@ -92,6 +94,8 @@ namespace UnityHelpers
                         var localBounds = collider2D.GetLocalBounds();
                         if (space == Space.World)
                             localBounds = transform.TransformBounds(localBounds);
+                        else
+                            localBounds = new Bounds(localBounds.center, localBounds.size.Multiply(transform.localScale));
                         singleBounds = localBounds;
                     }
                 }
@@ -115,6 +119,8 @@ namespace UnityHelpers
                             if (meshFilter != null)
                                 singleBounds = meshFilter.sharedMesh.bounds;
                         }
+
+                        singleBounds = new Bounds(singleBounds.center, singleBounds.size.Multiply(transform.localScale));
                     }
                 }
             }
