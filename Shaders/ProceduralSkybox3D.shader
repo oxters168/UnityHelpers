@@ -3,7 +3,7 @@
 //Modified procedural skybox
 //Original source: https://github.com/keijiro/UnitySkyboxShaders/blob/master/Assets/Skybox%20Shaders/Horizontal%20Skybox.shader
 
-Shader "UnityHelpers/Skybox/Procedural Skybox"
+Shader "UnityHelpers/Skybox/Procedural Skybox 3D"
 {
 	Properties
 	{
@@ -18,6 +18,8 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 
         _StarSpread("Star Spread", Range(0, 1)) = 0.1
         _StarMoveMultiplier("Star Follow Camera", Float) = 0
+		_StarNoiseMult1("Star Noise 1", Float) = 1
+		_StarNoiseMult2("Star Noise 2", Float) = 1
 
         _NebulaColor("Nebula Color", Color) = (1, 1, 1, 1)
         _NebulaMoveMultiplier("Nebula Follow Camera", Float) = 0
@@ -69,6 +71,9 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
             float _StarMoveMultiplier;
             float _SkyboxRadius;
 
+			float _StarNoiseMult1;
+			float _StarNoiseMult2;
+
             half4 _NebulaColor;
             float _NebulaMoveMultiplier;
 			float _NebulaNoiseValue;
@@ -82,7 +87,9 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
 				o.texcoord = v.texcoord;
 
 				o.worldPos = mul(unity_ObjectToWorld, v.position);
-                o.viewDir = normalize(WorldSpaceViewDir(v.position));
+                //o.viewDir = normalize(WorldSpaceViewDir(v.position));
+				//o.viewDir = normalize(v.position);
+				o.viewDir = v.position;
 
 				return o;
 			}
@@ -105,25 +112,59 @@ Shader "UnityHelpers/Skybox/Procedural Skybox"
                     nebulaValue = 0;
                 }
 
-				//Calculate star value
-                float starNoiseValue = 40 / _SkyboxRadius; //0.004 goodrange=>(0.001 - 0.008)
-                float starValue = (snoise((pointDirection * _SkyboxRadius) * starNoiseValue + (_WorldSpaceCameraPos * _StarMoveMultiplier)) + 1) / 2;
-                if (starValue > (1 - _StarSpread))
-                {
-                    finalColor = 1;
-				}
-				else
-                {
-                    //Calculate sky color
-					float p = normalize(i.texcoord).y;
-					float p1 = 1.0f - pow(min(1.0f, 1.0f - p), _Exponent1);
-					float p3 = 1.0f - pow(min(1.0f, 1.0f + p), _Exponent2);
-					float p2 = 1.0f - p1 - p3;
-					half4 skyColor = (_Color1 * p1 + _Color2 * p2 + _Color3 * p3) * _Intensity;
+				//Calculate sky color
+				float p = normalize(i.texcoord).y;
+				float p1 = 1.0f - pow(min(1.0f, 1.0f - p), _Exponent1);
+				float p3 = 1.0f - pow(min(1.0f, 1.0f + p), _Exponent2);
+				float p2 = 1.0f - p1 - p3;
+				half4 skyColor = (_Color1 * p1 + _Color2 * p2 + _Color3 * p3) * _Intensity;
+				//Overlay nebula on top of sky
+				finalColor = lerp(skyColor, _NebulaColor * nebulaValue, nebulaValue);
 
-                    //Overlay nebula on top of sky
-                    finalColor = lerp(skyColor, _NebulaColor * nebulaValue, nebulaValue);
+				//Calculate star value
+				float2 pixel = (2.0 * i.position - _ScreenParams.xy) / _ScreenParams.y;
+				float t = 0;
+				float3 rayDir = normalize(float3(pixel, -1.5));
+				for (int i = 0; i < 100; i++)
+				{
+					float pos = _WorldSpaceCameraPos + t * rayDir;
+					float d = length(pos) - _StarNoiseMult1;
+					if (d < _StarNoiseMult2)
+					{
+						finalColor = 1;
+						break;
+					}
+					t += d;
+					if (t > 20)
+					{
+						break;
+					}
+					/*float result = snoise(pos * _StarNoiseMult1) * _StarNoiseMult2;
+					if (result > 0.5)
+					{
+						finalColor = 1;
+						break;
+					}*/
 				}
+				//finalColor = half4(i.viewDir, 1);
+                // float starNoiseValue = 40 / _SkyboxRadius; //0.004 goodrange=>(0.001 - 0.008)
+                // float starValue = (snoise((pointDirection * _SkyboxRadius) * starNoiseValue + (_WorldSpaceCameraPos * _StarMoveMultiplier)) + 1) / 2;
+                // if (starValue > (1 - _StarSpread))
+                // {
+                //     finalColor = 1;
+				// }
+				// else
+                // {
+                //     //Calculate sky color
+				// 	float p = normalize(i.texcoord).y;
+				// 	float p1 = 1.0f - pow(min(1.0f, 1.0f - p), _Exponent1);
+				// 	float p3 = 1.0f - pow(min(1.0f, 1.0f + p), _Exponent2);
+				// 	float p2 = 1.0f - p1 - p3;
+				// 	half4 skyColor = (_Color1 * p1 + _Color2 * p2 + _Color3 * p3) * _Intensity;
+
+                //     //Overlay nebula on top of sky
+                //     finalColor = lerp(skyColor, _NebulaColor * nebulaValue, nebulaValue);
+				// }
 
                 return finalColor;
 			}
