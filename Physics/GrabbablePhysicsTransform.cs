@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityHelpers
 {
@@ -19,6 +17,8 @@ namespace UnityHelpers
         private Vector3 previousPos;
         private Quaternion previousRot;
         private float previousMaxForce;
+        private bool previousStrivePos;
+        private bool previousStriveRot;
 
         protected override void ApplyPositionAndRotation(Vector3 position, Quaternion rotation)
         {
@@ -28,7 +28,7 @@ namespace UnityHelpers
 
         public override void Grab(LocalInfo grabberInfo)
         {
-            base.Grab(grabberInfo);
+            //base.Grab(grabberInfo);
 
             if (!grabbers.Exists(grabber => grabber.info == grabberInfo.info))
             {                
@@ -43,6 +43,7 @@ namespace UnityHelpers
                 if (grabbers.Count <= 0)
                 {
                     StoreValues();
+                    OnFirstGrab?.Invoke(this, grabberInfo);
                 }
 
                 //Set the values of the physics transform so that it is ready for grabbage
@@ -54,16 +55,30 @@ namespace UnityHelpers
                 PhysicsObject.maxForce = grabberInfo.maxForce;
                 PhysicsObject.position = transform.position;
                 PhysicsObject.rotation = transform.rotation;
+                PhysicsObject.striveForPosition = true;
+                PhysicsObject.striveForOrientation = true;
                 PhysicsObject.enabled = true;
+                    
+                //Add current grabber as parent
+                grabbers.Add(grabberInfo);
+
+                OnGrabbed?.Invoke(this, grabberInfo);
             }
         }
         public override void Ungrab(LocalInfo grabberInfo)
         {
-            base.Ungrab(grabberInfo);
+            // base.Ungrab(grabberInfo);
 
             //Only if the grabber was grabbing this object
             if (grabbers.Contains(grabberInfo))
             {
+                grabbers.Remove(grabberInfo);
+
+                //If there are no more objects grabbing, then restore the PhysicsTransform script and possibly destroy
+                if (grabbers.Count <= 0)
+                    OnCompletelyUngrabbed?.Invoke(this, grabberInfo);
+
+                OnUngrabbed?.Invoke(this, grabberInfo);                
                 //If there are no more objects grabbing, then restore the PhysicsTransform script and possibly destroy
                 if (grabbers.Count <= 0)
                 {
@@ -90,6 +105,8 @@ namespace UnityHelpers
             previouslyCounteractingGravity = PhysicsObject.counteractGravity;
             previousPos = PhysicsObject.position;
             previousRot = PhysicsObject.rotation;
+            previousStrivePos = PhysicsObject.striveForPosition;
+            previousStriveRot = PhysicsObject.striveForOrientation;
             previousPosAnchoring = PhysicsObject.anchorPositionPercent;
             previousRotAnchoring = PhysicsObject.anchorRotationPercent;
             previousMaxForce = PhysicsObject.maxForce;
@@ -103,6 +120,8 @@ namespace UnityHelpers
                 PhysicsObject.parent = previousParent;
                 PhysicsObject.position = previousPos;
                 PhysicsObject.rotation = previousRot;
+                PhysicsObject.striveForPosition = previousStrivePos;
+                PhysicsObject.striveForOrientation = previousStriveRot;
                 PhysicsObject.counteractGravity = previouslyCounteractingGravity;
                 PhysicsObject.anchorPositionPercent = previousPosAnchoring;
                 PhysicsObject.anchorRotationPercent = previousRotAnchoring;
