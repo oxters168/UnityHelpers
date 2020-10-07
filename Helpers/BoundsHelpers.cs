@@ -26,8 +26,9 @@ namespace UnityHelpers
         /// <param name="layers">The layers to include in bounds calculation</param>
         /// <param name="fromColliders">If set to true, will get the total bounds from colliders rather than renderers</param>
         /// <param name="includeDisabled">Includes disabled gameobjects if set to true</param>
+        /// <param name="applyScale">For every inner bounds, multiplies the transform's scale to the size</param>
         /// <returns>A bounds that encapsulates the entire model</returns>
-        public static Bounds GetTotalBounds(this Transform root, Space space, LayerMask layers, bool fromColliders = false, bool includeDisabled = false)
+        public static Bounds GetTotalBounds(this Transform root, Space space, LayerMask layers, bool fromColliders = false, bool includeDisabled = false, bool applyScale = false)
         {
             Bounds totalBounds = default;
 
@@ -44,7 +45,7 @@ namespace UnityHelpers
             foreach (var boundedObject in boundedObjects)
                 if (((1 << boundedObject.layer) & layers.value) != 0 && (includeDisabled || boundedObject.activeSelf))
                 {
-                    var currentBounds = boundedObject.transform.GetBounds(space, fromColliders);
+                    var currentBounds = boundedObject.transform.GetBounds(space, fromColliders, applyScale);
                     if (space == Space.Self && boundedObject.transform != root)
                     {
                         var adjustedMin = boundedObject.transform.TransformPointToAnotherSpace(root, currentBounds.min);
@@ -69,8 +70,9 @@ namespace UnityHelpers
         /// <param name="transform">The transform of the object</param>
         /// <param name="space">An option to return the bounds based on local or world space</param>
         /// <param name="useCollider">Uses the collider instead of the renderer to calculate the bounds of the object</param>
+        /// <param name="applyScale">Multiplies the bounds size by the transform's local scale</param>
         /// <returns>A bounds that encapsulates only the given transform's model</returns>
-        public static Bounds GetBounds(this Transform transform, Space space, bool useCollider = false)
+        public static Bounds GetBounds(this Transform transform, Space space, bool useCollider = false, bool applyScale = false)
         {
             Bounds singleBounds = default;
 
@@ -82,7 +84,7 @@ namespace UnityHelpers
                     var localBounds = collider.GetLocalBounds();
                     if (space == Space.World)
                         localBounds = transform.TransformBounds(localBounds);
-                    else
+                    else if (applyScale)
                         localBounds = new Bounds(localBounds.center, localBounds.size.Multiply(transform.localScale));
                     singleBounds = localBounds;
                 }
@@ -94,7 +96,7 @@ namespace UnityHelpers
                         var localBounds = collider2D.GetLocalBounds();
                         if (space == Space.World)
                             localBounds = transform.TransformBounds(localBounds);
-                        else
+                        else if (applyScale)
                             localBounds = new Bounds(localBounds.center, localBounds.size.Multiply(transform.localScale));
                         singleBounds = localBounds;
                     }
@@ -120,7 +122,8 @@ namespace UnityHelpers
                                 singleBounds = meshFilter.sharedMesh.bounds;
                         }
 
-                        singleBounds = new Bounds(singleBounds.center, singleBounds.size.Multiply(transform.localScale));
+                        if (applyScale)
+                            singleBounds = new Bounds(singleBounds.center, singleBounds.size.Multiply(transform.localScale));
                     }
                 }
             }

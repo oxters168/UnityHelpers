@@ -10,6 +10,34 @@ namespace UnityHelpers
         private static Matrix4x4 OrthoY = Matrix4x4.Rotate(Quaternion.Euler(0, 90, 0));
 
         /// <summary>
+        /// Get the axis of the given transform that is most aligned
+        /// with the provided direction in world space
+        /// </summary>
+        /// <param name="orientedObject">The object in question</param>
+        /// <param name="direction">The direction to compare to</param>
+        /// <returns>An axis belonging to the object</returns>
+        public static Vector3 GetAxisAlignedTo(this Transform orientedObject, Vector3 direction)
+        {
+            Vector3 alignedAxis = orientedObject.up;
+            float closestDot = Vector3.Dot(alignedAxis, direction);
+            float otherDot = Vector3.Dot(orientedObject.right, direction);
+            if (Mathf.Abs(otherDot) > Mathf.Abs(closestDot))
+            {
+                alignedAxis = orientedObject.right;
+                closestDot = otherDot;
+            }
+            otherDot = Vector3.Dot(orientedObject.forward, direction);
+            if (Mathf.Abs(otherDot) > Mathf.Abs(closestDot))
+            {
+                alignedAxis = orientedObject.forward;
+                closestDot = otherDot;
+            }
+            alignedAxis *= Mathf.Sign(closestDot);
+
+            return alignedAxis;
+        }
+
+        /// <summary>
         /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
         /// Retrieves the vectors orthogonal to the given direction vector in 3D space
         /// </summary>
