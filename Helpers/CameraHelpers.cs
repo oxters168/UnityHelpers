@@ -14,8 +14,11 @@ namespace UnityHelpers
         /// <returns>Camera forward distance</returns>
         public static float PerspectiveDistanceFromWidth(this Camera camera, float worldWidth)
         {
-            Vector2 dimensions = PerspectiveFrustumAtNear(camera);
-            return (worldWidth / dimensions.x) * camera.nearClipPlane;
+            Vector2 nearDimensions = camera.PerspectiveFrustumAtNear();
+            Vector2 farDimensions = camera.PerspectiveFrustumAtFar();
+            float slope = ((camera.farClipPlane - camera.nearClipPlane) / (farDimensions.x - nearDimensions.x));
+            float intercept = camera.nearClipPlane - slope * nearDimensions.x;
+            return slope * worldWidth + intercept + camera.nearClipPlane;
         }
         /// <summary>
         /// Returns the forward distance needed to place the camera to fit a
@@ -26,15 +29,18 @@ namespace UnityHelpers
         /// <returns>Camera forward distance</returns>
         public static float PerspectiveDistanceFromHeight(this Camera camera, float worldHeight)
         {
-            Vector2 dimensions = PerspectiveFrustumAtNear(camera);
-            return (worldHeight / dimensions.y) * camera.nearClipPlane;
+            Vector2 nearDimensions = camera.PerspectiveFrustumAtNear();
+            Vector2 farDimensions = camera.PerspectiveFrustumAtFar();
+            float slope = ((camera.farClipPlane - camera.nearClipPlane) / (farDimensions.y - nearDimensions.y));
+            float intercept = camera.nearClipPlane - slope * nearDimensions.y;
+            return slope * worldHeight + intercept + camera.nearClipPlane;
         }
         /// <summary>
         /// Gets the world plane width and height of the camera's perpective
         /// at a specified distance.
         /// </summary>
         /// <param name="fieldOfView">The camera's field of view</param>
-        /// <param name="frustumDistanceDistance">Distance of the plane from the camera</param>
+        /// <param name="frustumDistance">Distance of the plane from the camera</param>
         /// <param name="aspect">The camera's aspect ratio</param>
         /// <returns>Perspective plane dimensions</returns>
         public static Vector2 PerspectiveFrustum(float fieldOfView, float frustumDistance, float aspect)
@@ -45,13 +51,41 @@ namespace UnityHelpers
         }
         /// <summary>
         /// Gets the world plane width and height of the camera's perpective
+        /// at a specified distance.
+        /// </summary>
+        /// <param name="distance">Distance of the plane from the camera</param>
+        /// <returns>Perspective plane dimensions</returns>
+        public static Vector2 PerspectiveFrustum(this Camera camera, float distance)
+        {
+            return PerspectiveFrustum(camera.fieldOfView, distance, camera.aspect);
+        }
+        /// <summary>
+        /// Gets the world plane width and height of the camera's perpective
+        /// at the far clipping plane.
+        /// </summary>
+        /// <param name="camera">The camera to calculate the dimensions for</param>
+        /// <returns>Perspective plane dimensions</returns>
+        public static Vector2 PerspectiveFrustumAtFar(this Camera camera)
+        {
+            Vector2 frustumDimensions = camera.PerspectiveFrustum(camera.farClipPlane);
+
+            Vector3 farClipCenter = camera.transform.position + camera.farClipPlane * camera.transform.forward;
+            Vector3 halfHeight = camera.transform.up * frustumDimensions.y / 2f;
+            Vector3 halfWidth = camera.transform.right * frustumDimensions.x / 2f;
+            Debug.DrawLine(farClipCenter + halfHeight - halfWidth, farClipCenter + halfHeight + halfWidth, Color.red, 1);
+            Debug.DrawLine(farClipCenter + halfWidth - halfHeight, farClipCenter + halfWidth + halfHeight, Color.green, 1);
+
+            return frustumDimensions;
+        }
+        /// <summary>
+        /// Gets the world plane width and height of the camera's perpective
         /// at the near clipping plane.
         /// </summary>
         /// <param name="camera">The camera to calculate the dimensions for</param>
         /// <returns>Perspective plane dimensions</returns>
         public static Vector2 PerspectiveFrustumAtNear(this Camera camera)
         {
-            Vector2 frustumDimensions = PerspectiveFrustum(camera.fieldOfView, camera.nearClipPlane, camera.aspect);
+            Vector2 frustumDimensions = camera.PerspectiveFrustum(camera.nearClipPlane);
 
             Vector3 nearClipCenter = camera.transform.position + camera.nearClipPlane * camera.transform.forward;
             Vector3 halfHeight = camera.transform.up * frustumDimensions.y / 2f;

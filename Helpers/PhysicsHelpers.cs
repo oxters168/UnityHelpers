@@ -38,6 +38,26 @@ namespace UnityHelpers
             return pidv;
         }
         /// <summary>
+        /// Calculates the force that needs to be applied to an object with the given mass
+        /// to counteract gravity's effect on it.
+        /// </summary>
+        /// <param name="mass">The mass of the object</param>
+        /// <returns>The force value to be applied</returns>
+        public static Vector3 CalculateAntiGravityForce(float mass)
+        {
+                return -Physics.gravity * mass;
+        }
+        /// <summary>
+        /// Calculates the force that needs to be applied to a rigidbody to counteract
+        /// gravity's effect on it.
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody that the force will be applied to</param>
+        /// <returns>The force value to be applied</returns>
+        public static Vector3 CalculateAntiGravityForce(this Rigidbody rigidbody)
+        {
+                return CalculateAntiGravityForce(rigidbody.mass);
+        }
+        /// <summary>
         /// Calculates the velocity vector required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the VelocityChange ForceMode.
         /// </summary>
         /// <param name="rigidbody">The rigidbody that the velocity will be applied to.</param>
@@ -54,7 +74,7 @@ namespace UnityHelpers
 
             Vector3 gravityVelocity = Vector3.zero;
             if (accountForGravity)
-                gravityVelocity = Physics.gravity * timestep;
+                gravityVelocity = CalculateAntiGravityForce(rigidbody.mass);
 
             Vector3 deltaVelocity = nakedVelocity - (rigidbody.velocity + gravityVelocity);
 
@@ -112,7 +132,7 @@ namespace UnityHelpers
 
             Vector3 gravityForce = Vector3.zero;
             if (accountForGravity)
-                gravityForce = Physics.gravity * mass;
+                gravityForce = CalculateAntiGravityForce(mass);
 
             Vector3 deltaForce = nakedForce - (currentForce + gravityForce);
             return deltaForce;
