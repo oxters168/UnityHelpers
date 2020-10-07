@@ -28,6 +28,18 @@ namespace UnityHelpers
         {
             return Mathf.Abs(first.x - second.x) <= tolerance && Mathf.Abs(first.y - second.y) <= tolerance && Mathf.Abs(first.z - second.z) <= tolerance && Mathf.Abs(first.w - second.w) <= tolerance;
         }
+
+        /// <summary>
+        /// Compares two quaternions' rotations
+        /// </summary>
+        /// <param name="first">The first quaternion</param>
+        /// <param name="second">The second quaternion</param>
+        /// <param name="tolerance">The maximum amount of difference the rotation can be</param>
+        /// <returns>True if the rotations are within the tolerance margin</returns>
+        public static bool SameOrientationAs(this Quaternion first, Quaternion second, float tolerance = float.Epsilon)
+        {
+            return Mathf.Abs(Quaternion.Angle(first, second)) <= tolerance;
+        }
         
         /// <summary>
         /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
