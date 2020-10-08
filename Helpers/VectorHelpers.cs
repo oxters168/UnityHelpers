@@ -16,23 +16,36 @@ namespace UnityHelpers
         /// <param name="orientedObject">The object in question</param>
         /// <param name="direction">The direction to compare to</param>
         /// <returns>An axis belonging to the object</returns>
-        public static Vector3 GetAxisAlignedTo(this Transform orientedObject, Vector3 direction)
+        public static Vector3 GetAxisAlignedTo(this Vector3 direction, Transform orientedObject)
         {
-            Vector3 alignedAxis = orientedObject.up;
-            float closestDot = Vector3.Dot(alignedAxis, direction);
-            float otherDot = Vector3.Dot(orientedObject.right, direction);
-            if (Mathf.Abs(otherDot) > Mathf.Abs(closestDot))
+            Vector3[] objectAxes = new Vector3[] { orientedObject.forward, orientedObject.right, orientedObject.up, -orientedObject.forward, -orientedObject.right, -orientedObject.up };
+            return direction.GetDirectionMostAlignedTo(objectAxes);
+        }
+        /// <summary>
+        /// Get the direction that is most aligned
+        /// with the provided direction
+        /// </summary>
+        /// <param name="direction">The direction to compare to</param>
+        /// <returns>A world axis</returns>
+        public static Vector3 GetDirectionMostAlignedTo(this Vector3 direction, params Vector3[] directions)
+        {
+            Vector3 alignedAxis = Vector3.zero;
+
+            if (directions.Length > 0)
             {
-                alignedAxis = orientedObject.right;
-                closestDot = otherDot;
+                alignedAxis = directions[0];
+                float closestDot = Vector3.Dot(alignedAxis, direction);
+                for (int i = 1; i < directions.Length; i++)
+                {
+                    var currentAxis = directions[i];
+                    float otherDot = Vector3.Dot(currentAxis, direction);
+                    if (otherDot > closestDot)
+                    {
+                        alignedAxis = currentAxis;
+                        closestDot = otherDot;
+                    }
+                }
             }
-            otherDot = Vector3.Dot(orientedObject.forward, direction);
-            if (Mathf.Abs(otherDot) > Mathf.Abs(closestDot))
-            {
-                alignedAxis = orientedObject.forward;
-                closestDot = otherDot;
-            }
-            alignedAxis *= Mathf.Sign(closestDot);
 
             return alignedAxis;
         }
