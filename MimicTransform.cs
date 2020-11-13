@@ -29,6 +29,8 @@ namespace UnityHelpers
         public float lerpPositionAmount = 5;
         public bool lerpRotation;
         public float lerpRotationAmount = 5;
+        [Space(10), Tooltip("Will move the position on the axis in a discrete way (in increments) based on the given value")]
+        public Vector3 positionalGrid;
         private bool errored;
 
         void Update()
@@ -54,6 +56,13 @@ namespace UnityHelpers
 
                     if (mimicLocalPosition)
                         nextPosition = LocalPositionToWorld(nextPosition);
+
+                    if (Mathf.Abs(positionalGrid.x) > float.Epsilon)
+                        nextPosition = new Vector3(Mathf.RoundToInt(nextPosition.x / Mathf.Abs(positionalGrid.x)) * positionalGrid.x, nextPosition.y, nextPosition.z);
+                    if (Mathf.Abs(positionalGrid.y) > float.Epsilon)
+                        nextPosition = new Vector3(nextPosition.x, Mathf.RoundToInt(nextPosition.y / Mathf.Abs(positionalGrid.y)) * positionalGrid.y, nextPosition.z);
+                    if (Mathf.Abs(positionalGrid.z) > float.Epsilon)
+                        nextPosition = new Vector3(nextPosition.x, nextPosition.y, Mathf.RoundToInt(nextPosition.z / Mathf.Abs(positionalGrid.z)) * positionalGrid.z);
 
                     if (!physicsBased)
                         transform.position = nextPosition;
