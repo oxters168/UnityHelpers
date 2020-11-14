@@ -4,6 +4,8 @@ namespace UnityHelpers
 {
     public class OrbitCameraController : BaseCameraController
     {
+        private Camera _attachedCamera;
+        private Camera AttachedCamera { get { if (_attachedCamera == null) _attachedCamera = GetComponent<Camera>(); return _attachedCamera; } }
         public Transform target;
         [Tooltip("If set to true will use the target's local axes to offset")]
         public bool localOffset;
@@ -57,10 +59,16 @@ namespace UnityHelpers
             Quaternion verticalRot = Quaternion.AngleAxis(rightAngle, Vector3.right);
             Quaternion extraRot = Quaternion.AngleAxis(forwardAngle, Vector3.forward);
             transform.rotation = (horizontalRot * (verticalRot * Quaternion.identity)) * extraRot;
-
+            
             distance -= push * moveSensitivity;
             distance = Mathf.Clamp(distance, minDistance, maxDistance);
-            transform.position -= transform.forward * distance;
+            float cameraPhysicalDistance = distance;
+            if (AttachedCamera.orthographic)
+            {
+                AttachedCamera.orthographicSize = distance;
+                cameraPhysicalDistance = AttachedCamera.PerspectiveDistanceFromHeight(distance) * 10f;
+            }
+            transform.position -= transform.forward * cameraPhysicalDistance;
 
             if (strafe >= shiftMinimum)
                 shiftRight?.Invoke();

@@ -605,16 +605,18 @@ namespace UnityHelpers
         /// <summary>
         /// Creates a convex hull given the original vertices of a mesh.
         /// </summary>
-        /// <param name="original">The original vertices of a mesh</param>
-        /// <param name="convexMesh">The output mesh data of the convex hull</param>
+        /// <param name="vertices">The original vertices of a mesh</param>
+        /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
-        /// <returns>The outcome of the process (successfull or unsuccessful)</returns>
-        public static ConvexHullCreationResultOutcome GenerateConvexHull(Vector3[] original, out MeshData convexMesh, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        /// <returns>The output mesh data of the convex hull</returns>
+        public static MeshData GenerateConvexHull(this Vector3[] vertices, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
         {
-            convexMesh = new MeshData();
+            MeshData convexMesh = new MeshData();
 
-            List<MIVertex> vertices = original.Select(point => new MIVertex(point)).ToList();
-            var creation = ConvexHull.Create(vertices, PlaneDistanceTolerance);
+            List<MIVertex> convexVertices = vertices.Select(point => new MIVertex(point)).ToList();
+            var creation = ConvexHull.Create(convexVertices, PlaneDistanceTolerance);
+            resultOutcome = creation.Outcome;
+
             var result = creation.Result;
 
             List<int> triangles = new List<int>();
@@ -631,7 +633,114 @@ namespace UnityHelpers
             //convexMesh.RecalculateNormals();
             //convexMesh.RecalculateBounds();
 
-            return creation.Outcome;
+            return convexMesh;
+        }
+        /// <summary>
+        /// Creates a convex hull given the original vertices of a mesh.
+        /// </summary>
+        /// <param name="original">The original mesh</param>
+        /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
+        /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
+        /// <returns>The output mesh data of the convex hull</returns>
+        public static MeshData GenerateConvexHull(this Mesh original, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        {
+            return original.vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
+        }
+        /// <summary>
+        /// Creates a convex hull given the original vertices of a mesh.
+        /// </summary>
+        /// <param name="vertices">The original vertices of a mesh</param>
+        /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
+        /// <returns>The output mesh data of the convex hull</returns>
+        public static MeshData GenerateConvexHull(this Vector3[] vertices, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        {
+            ConvexHullCreationResultOutcome resultOutcome;
+            return vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
+        }
+        /// <summary>
+        /// Creates a convex hull given the original vertices of a mesh.
+        /// </summary>
+        /// <param name="original">The original mesh</param>
+        /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
+        /// <returns>The output mesh data of the convex hull</returns>
+        public static MeshData GenerateConvexHull(this Mesh original, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        {
+            ConvexHullCreationResultOutcome resultOutcome;
+            return original.vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
+        }
+        /// <summary>
+        /// Creates a convex hull given the original vertices of a mesh.
+        /// </summary>
+        /// <param name="original">The original mesh</param>
+        /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
+        /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
+        /// <returns>A mesh that represents the convex hull of the original mesh</returns>
+        public static Mesh ToConvexHull(this Mesh original, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        {
+            Mesh convexMesh = new Mesh();
+            var meshData = original.vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
+            convexMesh.vertices = meshData.vertices;
+            convexMesh.triangles = meshData.triangles;
+            convexMesh.RecalculateNormals();
+            convexMesh.RecalculateBounds();
+
+            return convexMesh;
+        }
+        /// <summary>
+        /// Creates a convex hull given the original vertices of a mesh.
+        /// </summary>
+        /// <param name="original">The original mesh</param>
+        /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
+        /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
+        /// <returns>A mesh that represents the convex hull of the original mesh</returns>
+        public static Mesh ToConvexHull(this Mesh original, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        {
+            Mesh convexMesh = new Mesh();
+            ConvexHullCreationResultOutcome resultOutcome;
+            var meshData = original.vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
+            convexMesh.vertices = meshData.vertices;
+            convexMesh.triangles = meshData.triangles;
+            convexMesh.RecalculateNormals();
+            convexMesh.RecalculateBounds();
+
+            return convexMesh;
+        }
+        /// <summary>
+        /// Creates a convex hull given the original vertices of a mesh.
+        /// </summary>
+        /// <param name="vertices">The original vertices of a mesh</param>
+        /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
+        /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
+        /// <returns>A mesh that represents the convex hull of the original mesh</returns>
+        public static Mesh ToConvexHull(this Vector3[] vertices, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        {
+            Mesh convexMesh = new Mesh();
+            var meshData = vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
+            convexMesh.vertices = meshData.vertices;
+            convexMesh.triangles = meshData.triangles;
+            convexMesh.RecalculateNormals();
+            convexMesh.RecalculateBounds();
+
+            return convexMesh;
+        }
+        /// <summary>
+        /// Creates a convex hull given the original vertices of a mesh.
+        /// </summary>
+        /// <param name="vertices">The original vertices of a mesh</param>
+        /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
+        /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
+        /// <returns>A mesh that represents the convex hull of the original mesh</returns>
+        public static Mesh ToConvexHull(this Vector3[] vertices, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        {
+            Mesh convexMesh = new Mesh();
+            ConvexHullCreationResultOutcome resultOutcome;
+            var meshData = vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
+            convexMesh.vertices = meshData.vertices;
+            convexMesh.triangles = meshData.triangles;
+            convexMesh.RecalculateNormals();
+            convexMesh.RecalculateBounds();
+
+            return convexMesh;
         }
 
         /// <summary>
