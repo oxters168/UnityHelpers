@@ -13,7 +13,7 @@ namespace UnityHelpers
         /// <param name="frequency">Frequency is the speed of convergence. If damping is 1, frequency is the 1/time taken to reach ~95% of the target value. i.e. a frequency of 6 will bring you very close to your target within 1/6 seconds.</param>
         /// <param name="damping"><para>damping = 1, the system is critically damped</para><para>damping is greater than 1 the system is over damped(sluggish)</para><para>damping is less than 1 the system is under damped(it will oscillate a little)</para></param>
         /// <returns>The torque value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredTorque(this Rigidbody rigidbody, Quaternion desiredRotation, float frequency = 6, float damping = 1)
+        public static Vector3 CalculateRequiredTorque(this Rigidbody rigidbody, Quaternion desiredRotation, float frequency, float damping)
         {
             float kp = (6f * frequency) * (6f * frequency) * 0.25f;
             float kd = 4.5f * frequency * damping;
@@ -36,6 +36,37 @@ namespace UnityHelpers
             pidv.Scale(rigidbody.inertiaTensor);
             pidv = rotInertia2World * pidv;
             return pidv;
+        }
+        /// <summary>
+        /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
+        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation. Works with Force ForceMode.</para>
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody that the torque will be applied to</param>
+        /// <param name="desiredRotation">The rotation that you'd like the rigidbody to have</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="maxTorque">The max torque the result can have.</param>
+        /// <returns>The torque value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateRequiredTorqueForRotation(this Rigidbody rigidbody, Quaternion desiredRotation, float timestep = 0.02f, float maxTorque = float.MaxValue)
+        {
+            Vector3 axis;
+            float angle;
+            Quaternion rotDiff = desiredRotation * Quaternion.Inverse(rigidbody.transform.rotation);
+            rotDiff = rotDiff.Shorten();
+            rotDiff.ToAngleAxis(out angle, out axis);
+            axis.Normalize();
+
+            angle *= Mathf.Deg2Rad;
+            Vector3 desiredAngularAcceleration = (axis * angle) / (timestep * timestep);
+            
+            Quaternion q = rigidbody.rotation * rigidbody.inertiaTensorRotation;
+            Vector3 T = q * Vector3.Scale(rigidbody.inertiaTensor, (Quaternion.Inverse(q) * desiredAngularAcceleration));
+            Vector3 prevT = q * Vector3.Scale(rigidbody.inertiaTensor, (Quaternion.Inverse(q) * (rigidbody.angularVelocity / timestep)));
+
+            var deltaT = T - prevT;
+            if (deltaT.sqrMagnitude > maxTorque * maxTorque)
+                deltaT = deltaT.normalized * maxTorque;
+
+            return deltaT;
         }
         /// <summary>
         /// Calculates the force that needs to be applied to an object with the given mass
@@ -69,14 +100,15 @@ namespace UnityHelpers
         public static Vector3 CalculateRequiredVelocityForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, bool accountForGravity = false, float maxSpeed = float.MaxValue)
         {
             Vector3 nakedVelocity = (desiredPosition - rigidbody.position) / timestep;
-            if (nakedVelocity.sqrMagnitude > maxSpeed * maxSpeed)
-                nakedVelocity = nakedVelocity.normalized * maxSpeed;
 
             Vector3 gravityVelocity = Vector3.zero;
             if (accountForGravity)
                 gravityVelocity = CalculateAntiGravityForce(rigidbody.mass);
 
             Vector3 deltaVelocity = nakedVelocity - (rigidbody.velocity + gravityVelocity);
+
+            if (deltaVelocity.sqrMagnitude > maxSpeed * maxSpeed)
+                deltaVelocity = deltaVelocity.normalized * maxSpeed;
 
             return deltaVelocity;
         }
@@ -92,10 +124,12 @@ namespace UnityHelpers
         {
             Vector3 nakedForce = (desiredPosition - rigidbody.position) / (timestep * timestep);
             nakedForce *= rigidbody.mass;
-            if (nakedForce.sqrMagnitude > maxForce * maxForce)
-                nakedForce = nakedForce.normalized * maxForce;
 
             Vector3 deltaForce = nakedForce - (rigidbody.velocity / timestep * rigidbody.mass);
+
+            if (deltaForce.sqrMagnitude > maxForce * maxForce)
+                deltaForce = deltaForce.normalized * maxForce;
+
             return deltaForce;
         }
         /// <summary>
@@ -125,8 +159,6 @@ namespace UnityHelpers
         {
             Vector3 nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
-            if (nakedForce.sqrMagnitude > maxForce * maxForce)
-                nakedForce = nakedForce.normalized * maxForce;
 
             Vector3 currentForce = (velocity / timestep * mass);
 
@@ -135,6 +167,10 @@ namespace UnityHelpers
                 gravityForce = CalculateAntiGravityForce(mass);
 
             Vector3 deltaForce = nakedForce - (currentForce + gravityForce);
+
+            if (deltaForce.sqrMagnitude > maxForce * maxForce)
+                deltaForce = deltaForce.normalized * maxForce;
+
             return deltaForce;
         }
         /// <summary>
@@ -164,8 +200,6 @@ namespace UnityHelpers
         {
             Vector2 nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
-            if (nakedForce.sqrMagnitude > maxForce * maxForce)
-                nakedForce = nakedForce.normalized * maxForce;
 
             Vector2 currentForce = (velocity / timestep * mass);
 
@@ -174,6 +208,10 @@ namespace UnityHelpers
                 gravityForce = Physics.gravity * mass;
 
             Vector2 deltaForce = nakedForce - (currentForce + gravityForce);
+
+            if (deltaForce.sqrMagnitude > maxForce * maxForce)
+                deltaForce = deltaForce.normalized * maxForce;
+
             return deltaForce;
         }
 
@@ -191,8 +229,6 @@ namespace UnityHelpers
         {
             float nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
-            if (nakedForce > maxForce)
-                nakedForce = maxForce;
 
             float currentForce = (velocity / timestep * mass);
 
@@ -201,6 +237,10 @@ namespace UnityHelpers
                 gravityForce = -Physics.gravity.magnitude * mass;
 
             float deltaForce = nakedForce - (currentForce + gravityForce);
+
+            if (deltaForce > maxForce)
+                deltaForce = maxForce;
+
             return deltaForce;
         }
         /// <summary>
@@ -214,14 +254,15 @@ namespace UnityHelpers
         public static float CalculateRequiredVelocityForPosition(float changeInPosition, float currentVelocity, float timestep = 0.02f, bool accountForGravity = false, float maxSpeed = float.MaxValue)
         {
             float nakedVelocity = changeInPosition / timestep;
-            if (nakedVelocity > maxSpeed)
-                nakedVelocity = maxSpeed;
 
             float gravityVelocity = 0;
             if (accountForGravity)
                 gravityVelocity = -Physics.gravity.magnitude * timestep;
 
             float deltaVelocity = nakedVelocity - (currentVelocity + gravityVelocity);
+
+            if (deltaVelocity > maxSpeed)
+                deltaVelocity = maxSpeed;
 
             return deltaVelocity;
         }
