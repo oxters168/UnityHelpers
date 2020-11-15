@@ -2,16 +2,16 @@
 
 namespace UnityHelpers
 {
-    public class SeaVesselPhysics : MonoBehaviour, IValueManager
+    public class SeaVesselPhysics : ValuedObject
     {
         public Rigidbody vesselBody;
 
         [Space(10), Tooltip("The maximum speed the ship can reach (meters per second)")]
-        public float maxSpeed = 5;
+        public float maxSpeed = 10;
         [Tooltip("How fast to reach the max speed (meters per second squared)")]
-        public float acceleration = 0.3f;
+        public float acceleration = 1f;
         [Tooltip("The maximum force that can be applied to the ship to achieve its strived speed")]
-        public float maxForce = 120f;
+        public float maxForce = 140f;
         [Tooltip("How fast to reach the max rotation speed (degrees per second squared)")]
         public float rotAcceleration = 0.01f;
         [Tooltip("The maximum speed the ship can rotate (degrees per second)")]
@@ -23,8 +23,8 @@ namespace UnityHelpers
         private Vector2 dpad;
         private bool crossBtn;
 
-        [Space(10)]
-        public ValuesVault values;
+        // [Space(10)]
+        // public ValuesVault values;
 
         void Update()
         {
@@ -43,8 +43,7 @@ namespace UnityHelpers
                 Vector3 pushForce = vesselBody.CalculateRequiredForceForSpeed(currentSpeed * planarForward, Time.fixedDeltaTime, false, maxForce);
                 Debug.DrawRay(vesselBody.position + Vector3.up * 20, planarForward * 10, Color.blue);
                 Debug.DrawRay(vesselBody.position + Vector3.up * 20, currentVelocity, Color.green);
-                Debug.Log(currentSpeed);
-                // Debug.Log(pushForce.magnitude);
+                Debug.Log(pushForce.magnitude + " => " + currentSpeed);
                 vesselBody.AddForce(pushForce, ForceMode.Force);
             }
 
@@ -88,47 +87,6 @@ namespace UnityHelpers
                 // Debug.Log(torque.magnitude);
                 vesselBody.AddTorque(torque, ForceMode.Force);
             }
-        }
-
-        public void SetAxis(string name, float value)
-        {
-            values.GetValue(name).SetAxis(value);
-        }
-        public float GetAxis(string name)
-        {
-            return values.GetValue(name).GetAxis();
-        }
-        public void SetToggle(string name, bool value)
-        {
-            values.GetValue(name).SetToggle(value);
-        }
-        public bool GetToggle(string name)
-        {
-            return values.GetValue(name).GetToggle();
-        }
-        public void SetDirection(string name, Vector3 value)
-        {
-            values.GetValue(name).SetDirection(value);
-        }
-        public Vector3 GetDirection(string name)
-        {
-            return values.GetValue(name).GetDirection();
-        }
-        public void SetPoint(string name, Vector3 value)
-        {
-            values.GetValue(name).SetPoint(value);
-        }
-        public Vector3 GetPoint(string name)
-        {
-            return values.GetValue(name).GetPoint();
-        }
-        public void SetOrientation(string name, Quaternion value)
-        {
-            values.GetValue(name).SetOrientation(value);
-        }
-        public Quaternion GetOrientation(string name)
-        {
-            return values.GetValue(name).GetOrientation();
         }
     }
 }

@@ -5,7 +5,7 @@ namespace UnityHelpers
     /// <summary>
     /// A ball that can be rolled around using torque
     /// </summary>
-    public class BallPhysics : MonoBehaviour, IValueManager
+    public class BallPhysics : ValuedObject
     {
         public Rigidbody ballBody;
 
@@ -30,8 +30,6 @@ namespace UnityHelpers
         /// </summary>
         [Tooltip("The world space up of the ball (used to calculate the torque direction)")]
         public Vector3 up = Vector3.up;
-
-        public ValuesVault valuesVault;
 
         void FixedUpdate()
         {
@@ -79,47 +77,6 @@ namespace UnityHelpers
             }
 
             ballBody.AddTorque(angularAcceleration, ForceMode.Acceleration);
-        }
-
-        public void SetAxis(string name, float value)
-        {
-            valuesVault.GetValue(name).SetAxis(value);
-        }
-        public float GetAxis(string name)
-        {
-            return valuesVault.GetValue(name).GetAxis();
-        }
-        public void SetToggle(string name, bool value)
-        {
-            valuesVault.GetValue(name).SetToggle(value);
-        }
-        public bool GetToggle(string name)
-        {
-            return valuesVault.GetValue(name).GetToggle();
-        }
-        public void SetDirection(string name, Vector3 value)
-        {
-            valuesVault.GetValue(name).SetDirection(value);
-        }
-        public Vector3 GetDirection(string name)
-        {
-            return valuesVault.GetValue(name).GetDirection();
-        }
-        public void SetPoint(string name, Vector3 value)
-        {
-            valuesVault.GetValue(name).SetPoint(value);
-        }
-        public Vector3 GetPoint(string name)
-        {
-            return valuesVault.GetValue(name).GetPoint();
-        }
-        public void SetOrientation(string name, Quaternion value)
-        {
-            valuesVault.GetValue(name).SetOrientation(value);
-        }
-        public Quaternion GetOrientation(string name)
-        {
-            return valuesVault.GetValue(name).GetOrientation();
         }
     }
 }
