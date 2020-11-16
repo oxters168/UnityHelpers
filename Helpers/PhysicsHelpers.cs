@@ -160,7 +160,7 @@ namespace UnityHelpers
             Vector3 nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
 
-            Vector3 currentForce = (velocity / timestep * mass);
+            Vector3 currentForce = (velocity / timestep) * mass;
 
             Vector3 gravityForce = Vector3.zero;
             if (accountForGravity)
@@ -201,7 +201,7 @@ namespace UnityHelpers
             Vector2 nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
 
-            Vector2 currentForce = (velocity / timestep * mass);
+            Vector2 currentForce = (velocity / timestep) * mass;
 
             Vector2 gravityForce = Vector3.zero;
             if (accountForGravity)
@@ -230,7 +230,7 @@ namespace UnityHelpers
             float nakedForce = desiredVelocity / timestep;
             nakedForce *= mass;
 
-            float currentForce = (velocity / timestep * mass);
+            float currentForce = (velocity / timestep) * mass;
 
             float gravityForce = 0;
             if (accountForGravity)

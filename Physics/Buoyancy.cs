@@ -81,14 +81,7 @@ namespace UnityHelpers
             foreach (TriangleData triangle in triangleData)
             {
                 Vector3 force;
-                // if (SettingsController.applyWavePhysics)
-                //     force = triangle.normal * rho * -Physics.gravity.y * LPWAsset.Displacement.Get(triangle.center, lpwMaterial) * triangle.area;
-                // else
-                // We multiply by (Time.fixedDeltaTime * Time.fixedDeltaTime (s^2/f^2)) to switch from m/s^2 to m/f^2 (meters per frame squared) since the time passed per frame is not necessarily a second and we are applying force per frame
-                    force = rho * -triangle.normal.Multiply(Physics.gravity) * (Time.fixedDeltaTime * Time.fixedDeltaTime) * GetWaterDisplacementAt(triangle.center) * triangle.area;
-
-                // force.x = 0;
-                // force.z = 0;
+                force = rho * -triangle.normal.Multiply(Physics.gravity) * GetWaterDisplacementAt(triangle.center) * triangle.area;
 
                 MainBody.AddForceAtPosition(-Physics.gravity.normalized * force.y, triangle.center);
             }
@@ -105,10 +98,7 @@ namespace UnityHelpers
                 {
                     Vector3 currentVertex = allGlobalVertices[allTriangles[i + j]];
 
-                    // if (SettingsController.applyWavePhysics)
-                    //     currentTrio.Add(new VertexData(j, currentVertex, LPWAsset.Displacement.Get(currentVertex, lpwMaterial)));
-                    // else
-                        currentTrio.Add(new VertexData(j, currentVertex, GetWaterDisplacementAt(currentVertex)));
+                    currentTrio.Add(new VertexData(j, currentVertex, GetWaterDisplacementAt(currentVertex)));
                 }
 
                 if (currentTrio[0].distance > 0 && currentTrio[1].distance > 0 && currentTrio[2].distance > 0)

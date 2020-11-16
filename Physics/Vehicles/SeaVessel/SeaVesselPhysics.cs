@@ -9,15 +9,16 @@ namespace UnityHelpers
         [Space(10), Tooltip("The maximum speed the ship can reach (meters per second)")]
         public float maxSpeed = 10;
         [Tooltip("How fast to reach the max speed (meters per second squared)")]
-        public float acceleration = 1f;
+        public float acceleration = 5f;
+        private float currentSpeed;
         [Tooltip("The maximum force that can be applied to the ship to achieve its strived speed")]
-        public float maxForce = 140f;
+        public float maxForce = 280000f;
         [Tooltip("How fast to reach the max rotation speed (degrees per second squared)")]
-        public float rotAcceleration = 0.01f;
+        public float rotAcceleration = 50f;
         [Tooltip("The maximum speed the ship can rotate (degrees per second)")]
-        public float maxRotSpeed = 0.5f;
+        public float maxRotSpeed = 100f;
         [Tooltip("The maximum torque that can be applied to the ship to achieve its strived orientation")]
-        public float maxTorque = 120f;
+        public float maxTorque = 280000f;
         private float currentRotSpeed = 0;
 
         private Vector2 dpad;
@@ -34,22 +35,32 @@ namespace UnityHelpers
             #region Position stuff
             if (crossBtn)
             {
-                Vector3 planarForward = vesselBody.transform.forward.Planar(Vector3.up);
-                Vector3 currentVelocity = vesselBody.velocity.Planar(Vector3.up);
-                float currentSpeed = currentVelocity.magnitude * Vector3.Dot(currentVelocity.normalized, planarForward);
-                currentSpeed = Mathf.Clamp(currentSpeed + acceleration, -maxSpeed, maxSpeed);
+                currentSpeed = Mathf.Clamp(currentSpeed + acceleration * Time.fixedDeltaTime, -maxSpeed, maxSpeed);
+            }
+            else if (currentSpeed > float.Epsilon)
+            {
+                if (currentSpeed > acceleration * Time.fixedDeltaTime)
+                    currentSpeed -= acceleration * Time.fixedDeltaTime;
+                else
+                    currentSpeed = 0;
+            }
+
+            if (currentSpeed > float.Epsilon)
+            {
+                Vector3 planarForward = Vector3.ProjectOnPlane(vesselBody.transform.forward, Vector3.up);
                 Vector3 pushForce = vesselBody.CalculateRequiredForceForSpeed(currentSpeed * planarForward, Time.fixedDeltaTime, false, maxForce);
                 vesselBody.AddForce(pushForce, ForceMode.Force);
             }
             #endregion
 
             #region Rotation stuff
+            float rotSpeedOffset = rotAcceleration * Time.fixedDeltaTime; //The amount of rotational speed change in one frame
             if (Mathf.Abs(dpad.x) > float.Epsilon || Mathf.Abs(dpad.y) > float.Epsilon)
             {
                 float requestedAngle = Vector2.SignedAngle(dpad.ToCircle(), Vector2.up);
                 float currentAngle = Vector2.SignedAngle(vesselBody.transform.forward.Planar(Vector3.up).xz(), Vector2.up);
                 Quaternion nextUpOrientation = Quaternion.AngleAxis(currentAngle, Vector3.up);
-                nextUpOrientation *= Quaternion.AngleAxis(currentRotSpeed, Vector3.up);
+                nextUpOrientation *= Quaternion.AngleAxis(currentRotSpeed * Time.fixedDeltaTime, Vector3.up);
                 Quaternion requestedUpOrientation = Quaternion.AngleAxis(requestedAngle, Vector3.up);
                 Quaternion orientationDiff = requestedUpOrientation * Quaternion.Inverse(nextUpOrientation);
                 orientationDiff = orientationDiff.Shorten();
@@ -58,6 +69,7 @@ namespace UnityHelpers
                 orientationDiff.ToAngleAxis(out nextAngleDiff, out axis);
                 float requestedRotDirection = Mathf.Sign(Vector3.Dot(Vector3.up, axis));
 
+
                 //Given our current rotational speed, how far would we rotate if we started decelerating now?
                 float decelerationTime = Mathf.Abs(currentRotSpeed) / rotAcceleration;
                 float decelerationDistance = Mathf.Abs((currentRotSpeed + rotAcceleration * decelerationTime * Mathf.Sign(currentRotSpeed)) * decelerationTime);
@@ -65,20 +77,20 @@ namespace UnityHelpers
                 //If we're rotating towards our target and we're going to overshoot then start decelerating
                 if (requestedRotDirection == Mathf.Sign(currentRotSpeed) && decelerationDistance > nextAngleDiff)
                 {
-                    if (Mathf.Abs(currentRotSpeed) < rotAcceleration)
+                    if (Mathf.Abs(currentRotSpeed) < rotSpeedOffset)
                         currentRotSpeed = 0;
                     else
-                        currentRotSpeed = Mathf.Clamp(currentRotSpeed - rotAcceleration * requestedRotDirection, -maxRotSpeed, maxRotSpeed);
+                        currentRotSpeed = Mathf.Clamp(currentRotSpeed - rotSpeedOffset * requestedRotDirection, -maxRotSpeed, maxRotSpeed);
                 }
                 else
-                    currentRotSpeed = Mathf.Clamp(currentRotSpeed + rotAcceleration * requestedRotDirection, -maxRotSpeed, maxRotSpeed);
+                    currentRotSpeed = Mathf.Clamp(currentRotSpeed + rotSpeedOffset * requestedRotDirection, -maxRotSpeed, maxRotSpeed);
             }
             else if (Mathf.Abs(currentRotSpeed) > float.Epsilon)
             {
                 //If there is no input but there is still some rotational speed, then decelerate to zero speed
                 float rotDirection = Mathf.Sign(currentRotSpeed);
-                if (Mathf.Abs(currentRotSpeed) > rotAcceleration)
-                    currentRotSpeed += rotAcceleration * -rotDirection;
+                if (Mathf.Abs(currentRotSpeed) > rotSpeedOffset)
+                    currentRotSpeed += rotSpeedOffset * -rotDirection;
                 else
                     currentRotSpeed = 0;
             }
@@ -86,7 +98,7 @@ namespace UnityHelpers
             //If the current rot speed is not zero then apply torque on the ship
             if (Mathf.Abs(currentRotSpeed) > float.Epsilon)
             {
-                Quaternion shipOrientation = vesselBody.rotation * Quaternion.AngleAxis(currentRotSpeed, Vector3.up);
+                Quaternion shipOrientation = vesselBody.rotation * Quaternion.AngleAxis(currentRotSpeed * Time.fixedDeltaTime, Vector3.up);
                 Vector3 torque = vesselBody.CalculateRequiredTorqueForRotation(shipOrientation, Time.fixedDeltaTime, maxTorque);
                 vesselBody.AddTorque(torque, ForceMode.Force);
             }
