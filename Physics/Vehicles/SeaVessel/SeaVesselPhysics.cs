@@ -23,9 +23,6 @@ namespace UnityHelpers
         private Vector2 dpad;
         private bool crossBtn;
 
-        // [Space(10)]
-        // public ValuesVault values;
-
         void Update()
         {
             //Retrieve input
@@ -34,6 +31,7 @@ namespace UnityHelpers
         }
         void FixedUpdate()
         {
+            #region Position stuff
             if (crossBtn)
             {
                 Vector3 planarForward = vesselBody.transform.forward.Planar(Vector3.up);
@@ -41,38 +39,43 @@ namespace UnityHelpers
                 float currentSpeed = currentVelocity.magnitude * Vector3.Dot(currentVelocity.normalized, planarForward);
                 currentSpeed = Mathf.Clamp(currentSpeed + acceleration, -maxSpeed, maxSpeed);
                 Vector3 pushForce = vesselBody.CalculateRequiredForceForSpeed(currentSpeed * planarForward, Time.fixedDeltaTime, false, maxForce);
-                Debug.DrawRay(vesselBody.position + Vector3.up * 20, planarForward * 10, Color.blue);
-                Debug.DrawRay(vesselBody.position + Vector3.up * 20, currentVelocity, Color.green);
-                Debug.Log(pushForce.magnitude + " => " + currentSpeed);
                 vesselBody.AddForce(pushForce, ForceMode.Force);
             }
+            #endregion
 
-
-            Vector3 torque = Vector3.zero;
+            #region Rotation stuff
             if (Mathf.Abs(dpad.x) > float.Epsilon || Mathf.Abs(dpad.y) > float.Epsilon)
             {
                 float requestedAngle = Vector2.SignedAngle(dpad.ToCircle(), Vector2.up);
-
                 float currentAngle = Vector2.SignedAngle(vesselBody.transform.forward.Planar(Vector3.up).xz(), Vector2.up);
-                Quaternion currentUpOrientation = Quaternion.AngleAxis(currentAngle, Vector3.up);
+                Quaternion nextUpOrientation = Quaternion.AngleAxis(currentAngle, Vector3.up);
+                nextUpOrientation *= Quaternion.AngleAxis(currentRotSpeed, Vector3.up);
                 Quaternion requestedUpOrientation = Quaternion.AngleAxis(requestedAngle, Vector3.up);
-                Quaternion orientationDiff = requestedUpOrientation * Quaternion.Inverse(currentUpOrientation);
+                Quaternion orientationDiff = requestedUpOrientation * Quaternion.Inverse(nextUpOrientation);
                 orientationDiff = orientationDiff.Shorten();
-                float angleDiff;
+                float nextAngleDiff;
                 Vector3 axis;
-                orientationDiff.ToAngleAxis(out angleDiff, out axis);
+                orientationDiff.ToAngleAxis(out nextAngleDiff, out axis);
+                float requestedRotDirection = Mathf.Sign(Vector3.Dot(Vector3.up, axis));
 
-                // float expectedAcc = angleDiff / (Time.fixedDeltaTime * Time.fixedDeltaTime);
-                float rotDirection = Mathf.Sign(Vector3.Dot(Vector3.up, axis));
-                if (Mathf.Abs(currentRotSpeed) > angleDiff)
-                    currentRotSpeed = angleDiff;
-                // if (rotAcceleration > expectedAcc)
-                //     currentRotSpeed = Mathf.Clamp(currentRotSpeed - rotAcceleration * rotDirection, -maxRotSpeed, maxRotSpeed);
+                //Given our current rotational speed, how far would we rotate if we started decelerating now?
+                float decelerationTime = Mathf.Abs(currentRotSpeed) / rotAcceleration;
+                float decelerationDistance = Mathf.Abs((currentRotSpeed + rotAcceleration * decelerationTime * Mathf.Sign(currentRotSpeed)) * decelerationTime);
+                
+                //If we're rotating towards our target and we're going to overshoot then start decelerating
+                if (requestedRotDirection == Mathf.Sign(currentRotSpeed) && decelerationDistance > nextAngleDiff)
+                {
+                    if (Mathf.Abs(currentRotSpeed) < rotAcceleration)
+                        currentRotSpeed = 0;
+                    else
+                        currentRotSpeed = Mathf.Clamp(currentRotSpeed - rotAcceleration * requestedRotDirection, -maxRotSpeed, maxRotSpeed);
+                }
                 else
-                    currentRotSpeed = Mathf.Clamp(currentRotSpeed + rotAcceleration * rotDirection, -maxRotSpeed, maxRotSpeed);
+                    currentRotSpeed = Mathf.Clamp(currentRotSpeed + rotAcceleration * requestedRotDirection, -maxRotSpeed, maxRotSpeed);
             }
             else if (Mathf.Abs(currentRotSpeed) > float.Epsilon)
             {
+                //If there is no input but there is still some rotational speed, then decelerate to zero speed
                 float rotDirection = Mathf.Sign(currentRotSpeed);
                 if (Mathf.Abs(currentRotSpeed) > rotAcceleration)
                     currentRotSpeed += rotAcceleration * -rotDirection;
@@ -80,13 +83,14 @@ namespace UnityHelpers
                     currentRotSpeed = 0;
             }
 
+            //If the current rot speed is not zero then apply torque on the ship
             if (Mathf.Abs(currentRotSpeed) > float.Epsilon)
             {
                 Quaternion shipOrientation = vesselBody.rotation * Quaternion.AngleAxis(currentRotSpeed, Vector3.up);
-                torque = vesselBody.CalculateRequiredTorqueForRotation(shipOrientation, Time.fixedDeltaTime, maxTorque);
-                // Debug.Log(torque.magnitude);
+                Vector3 torque = vesselBody.CalculateRequiredTorqueForRotation(shipOrientation, Time.fixedDeltaTime, maxTorque);
                 vesselBody.AddTorque(torque, ForceMode.Force);
             }
+            #endregion
         }
     }
 }
