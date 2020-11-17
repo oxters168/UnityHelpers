@@ -57,25 +57,15 @@ namespace UnityHelpers
             float rotSpeedOffset = rotAcceleration * Time.fixedDeltaTime; //The amount of rotational speed change in one frame
             if (Mathf.Abs(dpad.x) > float.Epsilon || Mathf.Abs(dpad.y) > float.Epsilon)
             {
-                float requestedAngle = Vector2.SignedAngle(dpad.ToCircle(), Vector2.up);
-                float currentAngle = Vector2.SignedAngle(vesselBody.transform.forward.Planar(Vector3.up).xz(), Vector2.up);
-                Quaternion nextUpOrientation = Quaternion.AngleAxis(currentAngle, Vector3.up);
-                nextUpOrientation *= Quaternion.AngleAxis(currentRotSpeed * Time.fixedDeltaTime, Vector3.up);
-                Quaternion requestedUpOrientation = Quaternion.AngleAxis(requestedAngle, Vector3.up);
-                Quaternion orientationDiff = requestedUpOrientation * Quaternion.Inverse(nextUpOrientation);
-                orientationDiff = orientationDiff.Shorten();
-                float nextAngleDiff;
-                Vector3 axis;
-                orientationDiff.ToAngleAxis(out nextAngleDiff, out axis);
-                float requestedRotDirection = Mathf.Sign(Vector3.Dot(Vector3.up, axis));
-
+                float angleDiff = vesselBody.transform.forward.Planar(Vector3.up).xz().GetShortestSignedAngle(dpad.ToCircle());
+                float requestedRotDirection = Mathf.Sign(angleDiff);
 
                 //Given our current rotational speed, how far would we rotate if we started decelerating now?
                 float decelerationTime = Mathf.Abs(currentRotSpeed) / rotAcceleration;
                 float decelerationDistance = Mathf.Abs((currentRotSpeed + rotAcceleration * decelerationTime * Mathf.Sign(currentRotSpeed)) * decelerationTime);
                 
                 //If we're rotating towards our target and we're going to overshoot then start decelerating
-                if (requestedRotDirection == Mathf.Sign(currentRotSpeed) && decelerationDistance > nextAngleDiff)
+                if (requestedRotDirection == Mathf.Sign(currentRotSpeed) && decelerationDistance > Mathf.Abs(angleDiff))
                 {
                     if (Mathf.Abs(currentRotSpeed) < rotSpeedOffset)
                         currentRotSpeed = 0;

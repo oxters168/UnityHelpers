@@ -242,6 +242,43 @@ namespace UnityHelpers
             Vector3 obstacleOffset = otherPoint - point;
             return Vector3.SignedAngle(fromDirection, obstacleOffset.normalized, axis);
         }
+        /// <summary>
+        /// Calculates the shortest signed angle to reach a direction from another direction
+        /// </summary>
+        /// <param name="from">The start direction</param>
+        /// <param name="to">The end direction</param>
+        /// <returns>The shortest signed angle between the directions</returns>
+        public static float GetShortestSignedAngle(this Vector2 from, Vector2 to)
+        {
+            float requestedAngle = Vector2.SignedAngle(to, Vector2.up);
+            float currentAngle = Vector2.SignedAngle(from, Vector2.up);
+            Quaternion currentUpOrientation = Quaternion.AngleAxis(currentAngle, Vector3.up);
+            Quaternion requestedUpOrientation = Quaternion.AngleAxis(requestedAngle, Vector3.up);
+            Quaternion orientationDiff = requestedUpOrientation * Quaternion.Inverse(currentUpOrientation);
+            orientationDiff = orientationDiff.Shorten();
+            float angleDiff;
+            Vector3 axis;
+            orientationDiff.ToAngleAxis(out angleDiff, out axis);
+            return angleDiff * Mathf.Sign(Vector3.Dot(axis, Vector3.up));
+        }
+        /// <summary>
+        /// Calculates the shortest signed angle to reach a direction from another direction where both directions lie on the same plane
+        /// </summary>
+        /// <param name="from">The start direction</param>
+        /// <param name="to">The end direction</param>
+        /// <param name="planeNormal">The normal of the plane the two directions lie on</param>
+        /// <returns>The shortest signed angle between the directions</returns>
+        public static float GetShortestSignedAngle(this Vector3 from, Vector3 to, Vector3 planeNormal)
+        {
+            Quaternion currentOrientation = Quaternion.LookRotation(from, planeNormal);
+            Quaternion requestedOrientation = Quaternion.LookRotation(from, planeNormal);
+            Quaternion orientationDiff = requestedOrientation * Quaternion.Inverse(currentOrientation);
+            orientationDiff = orientationDiff.Shorten();
+            float angleDiff;
+            Vector3 axis;
+            orientationDiff.ToAngleAxis(out angleDiff, out axis);
+            return angleDiff * Mathf.Sign(Vector3.Dot(axis, planeNormal));
+        }
 
         /// <summary>
         /// Gets just the x and y values of the vector
