@@ -57,7 +57,7 @@ namespace UnityHelpers
             float rotSpeedOffset = rotAcceleration * Time.fixedDeltaTime; //The amount of rotational speed change in one frame
             if (Mathf.Abs(dpad.x) > float.Epsilon || Mathf.Abs(dpad.y) > float.Epsilon)
             {
-                float angleDiff = vesselBody.transform.forward.Planar(Vector3.up).xz().GetShortestSignedAngle(dpad.ToCircle());
+                float angleDiff = vesselBody.transform.forward.Planar(Vector3.up).xz().normalized.GetShortestSignedAngle(dpad.normalized);
                 float requestedRotDirection = Mathf.Sign(angleDiff);
 
                 //Given our current rotational speed, how far would we rotate if we started decelerating now?
