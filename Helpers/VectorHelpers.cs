@@ -10,6 +10,25 @@ namespace UnityHelpers
         private static Matrix4x4 OrthoY = Matrix4x4.Rotate(Quaternion.Euler(0, 90, 0));
 
         /// <summary>
+        /// Checks if all values are equal to zero
+        /// </summary>
+        /// <param name="vec">The vector in question</param>
+        /// <returns>True if all values are zero</returns>
+        public static bool IsZero(this Vector2 vec)
+        {
+            return Mathf.Abs(vec.x) <= float.Epsilon && Mathf.Abs(vec.y) <= float.Epsilon;
+        }
+        /// <summary>
+        /// Checks if all values are equal to zero
+        /// </summary>
+        /// <param name="vec">The vector in question</param>
+        /// <returns>True if all values are zero</returns>
+        public static bool IsZero(this Vector3 vec)
+        {
+            return Mathf.Abs(vec.x) <= float.Epsilon && Mathf.Abs(vec.y) <= float.Epsilon && Mathf.Abs(vec.z) <= float.Epsilon;
+        }
+
+        /// <summary>
         /// Get the axis of the given transform that is most aligned
         /// with the provided direction in world space
         /// </summary>
