@@ -6,23 +6,34 @@ namespace UnityHelpers
     {
         private Camera _attachedCamera;
         private Camera AttachedCamera { get { if (_attachedCamera == null) _attachedCamera = GetComponent<Camera>(); return _attachedCamera; } }
+
+        [Space(10)]
         public Transform target;
-        [Tooltip("If set to true will use the target's local axes to offset")]
+
+        [Space(10), Tooltip("If set to true will use the target's local axes to offset")]
         public bool localOffset;
         public Vector3 offset;
+
+        [Space(10)]
         public float distance = 10;
         public float minDistance = 0, maxDistance = 100;
+        [Tooltip("The camera position lerp multiplier, the higher the number the faster the speed of the camera. Set to 0 to disable lerping.")]
+        public float positionLerp;
+
         /// <summary>
         /// The angle on the world y axis
         /// </summary>
+        [Space(10), Tooltip("The angle on the world y axis")]
         public float upAngle;
         /// <summary>
         /// The angle on the world x axis
         /// </summary>
+        [Tooltip("The angle on the world x axis")]
         public float rightAngle;
         /// <summary>
         /// The angle on the local z axis
         /// </summary>
+        [Tooltip("The angle on the local z axis")]
         public float forwardAngle;
 
         public float moveSensitivity = 1, lookSensitivity = 1;
@@ -42,16 +53,18 @@ namespace UnityHelpers
                 asserted = true;
             }
 
+            Vector3 targetPosition = transform.position;
+
             if (target != null)
             {
                 Vector3 offsetPosition = target.position + offset;
                 if (localOffset)
                     offsetPosition = target.TransformPoint(offset);
-                transform.position = offsetPosition;
+                targetPosition = offsetPosition;
                 asserted = false;
             }
             else
-                transform.position = Vector3.zero;
+                targetPosition = Vector3.zero;
 
             upAngle += lookHorizontal * lookSensitivity;
             Quaternion horizontalRot = Quaternion.AngleAxis(upAngle, Vector3.up);
@@ -65,10 +78,19 @@ namespace UnityHelpers
             float cameraPhysicalDistance = distance;
             if (AttachedCamera.orthographic)
             {
-                AttachedCamera.orthographicSize = distance;
+                float nextOrtho = AttachedCamera.orthographicSize;
+                if (positionLerp > float.Epsilon)
+                    nextOrtho = Mathf.Lerp(nextOrtho, distance, positionLerp * Time.deltaTime);
+                else
+                    nextOrtho = distance;
+
+                AttachedCamera.orthographicSize = nextOrtho;
                 cameraPhysicalDistance = AttachedCamera.PerspectiveDistanceFromHeight(distance) * 10f;
             }
-            transform.position -= transform.forward * cameraPhysicalDistance;
+            targetPosition -= transform.forward * cameraPhysicalDistance;
+            if (positionLerp > float.Epsilon)
+                targetPosition = Vector3.Lerp(transform.position, targetPosition, positionLerp * Time.deltaTime);
+            transform.position = targetPosition;
 
             if (strafe >= shiftMinimum)
                 shiftRight?.Invoke();
