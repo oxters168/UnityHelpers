@@ -298,6 +298,32 @@ namespace UnityHelpers
             orientationDiff.ToAngleAxis(out angleDiff, out axis);
             return angleDiff * Mathf.Sign(Vector3.Dot(axis, planeNormal));
         }
+        /// <summary>
+        /// Gets the angle in degrees between from and to in the clockwise direction
+        /// </summary>
+        /// <param name="from">The start direction</param>
+        /// <param name="to">The end direction</param>
+        /// <returns>The angle in degrees between from and to</returns>
+        public static float GetClockwiseAngle(this Vector2 from, Vector2 to)
+        {
+            float angleOffset = from.GetShortestSignedAngle(to);
+            if (angleOffset < 0)
+                angleOffset += 360;
+            return angleOffset;
+        }
+        /// <summary>
+        /// Gets the angle in degrees between from and to in the clockwise direction
+        /// </summary>
+        /// <param name="from">The start direction</param>
+        /// <param name="to">The end direction</param>
+        /// <returns>The angle in degrees between from and to</returns>
+        public static float GetClockwiseAngle(this Vector3 from, Vector3 to, Vector3 planeNormal)
+        {
+            float angleOffset = from.GetShortestSignedAngle(to, planeNormal);
+            if (angleOffset < 0)
+                angleOffset += 360;
+            return angleOffset;
+        }
 
         /// <summary>
         /// Gets just the x and y values of the vector
