@@ -11,11 +11,12 @@ namespace UnityHelpers
         /// </summary>
         /// <param name="camera">The camera to apply the calculation to</param>
         /// <param name="worldWidth">The requested world width</param>
+        /// <param name="debug">Show frustum lines in editor</param>
         /// <returns>Camera forward distance</returns>
-        public static float PerspectiveDistanceFromWidth(this Camera camera, float worldWidth)
+        public static float PerspectiveDistanceFromWidth(this Camera camera, float worldWidth, bool debug = false)
         {
-            Vector2 nearDimensions = camera.PerspectiveFrustumAtNear();
-            Vector2 farDimensions = camera.PerspectiveFrustumAtFar();
+            Vector2 nearDimensions = camera.PerspectiveFrustumAtNear(debug);
+            Vector2 farDimensions = camera.PerspectiveFrustumAtFar(debug);
             float slope = ((camera.farClipPlane - camera.nearClipPlane) / (farDimensions.x - nearDimensions.x));
             float intercept = camera.nearClipPlane - slope * nearDimensions.x;
             return slope * worldWidth + intercept + camera.nearClipPlane;
@@ -26,11 +27,12 @@ namespace UnityHelpers
         /// </summary>
         /// <param name="camera">The camera to apply the calculation to</param>
         /// <param name="worldHeight">The requested world height</param>
+        /// <param name="debug">Show frustum lines in editor</param>
         /// <returns>Camera forward distance</returns>
-        public static float PerspectiveDistanceFromHeight(this Camera camera, float worldHeight)
+        public static float PerspectiveDistanceFromHeight(this Camera camera, float worldHeight, bool debug = false)
         {
-            Vector2 nearDimensions = camera.PerspectiveFrustumAtNear();
-            Vector2 farDimensions = camera.PerspectiveFrustumAtFar();
+            Vector2 nearDimensions = camera.PerspectiveFrustumAtNear(debug);
+            Vector2 farDimensions = camera.PerspectiveFrustumAtFar(debug);
             float slope = ((camera.farClipPlane - camera.nearClipPlane) / (farDimensions.y - nearDimensions.y));
             float intercept = camera.nearClipPlane - slope * nearDimensions.y;
             return slope * worldHeight + intercept + camera.nearClipPlane;
@@ -64,16 +66,20 @@ namespace UnityHelpers
         /// at the far clipping plane.
         /// </summary>
         /// <param name="camera">The camera to calculate the dimensions for</param>
+        /// <param name="debug">Show frustum lines in editor</param>
         /// <returns>Perspective plane dimensions</returns>
-        public static Vector2 PerspectiveFrustumAtFar(this Camera camera)
+        public static Vector2 PerspectiveFrustumAtFar(this Camera camera, bool debug = false)
         {
             Vector2 frustumDimensions = camera.PerspectiveFrustum(camera.farClipPlane);
 
-            Vector3 farClipCenter = camera.transform.position + camera.farClipPlane * camera.transform.forward;
-            Vector3 halfHeight = camera.transform.up * frustumDimensions.y / 2f;
-            Vector3 halfWidth = camera.transform.right * frustumDimensions.x / 2f;
-            Debug.DrawLine(farClipCenter + halfHeight - halfWidth, farClipCenter + halfHeight + halfWidth, Color.red, 1);
-            Debug.DrawLine(farClipCenter + halfWidth - halfHeight, farClipCenter + halfWidth + halfHeight, Color.green, 1);
+            if (debug)
+            {
+                Vector3 farClipCenter = camera.transform.position + camera.farClipPlane * camera.transform.forward;
+                Vector3 halfHeight = camera.transform.up * frustumDimensions.y / 2f;
+                Vector3 halfWidth = camera.transform.right * frustumDimensions.x / 2f;
+                Debug.DrawLine(farClipCenter + halfHeight - halfWidth, farClipCenter + halfHeight + halfWidth, Color.red, 1);
+                Debug.DrawLine(farClipCenter + halfWidth - halfHeight, farClipCenter + halfWidth + halfHeight, Color.green, 1);
+            }
 
             return frustumDimensions;
         }
@@ -82,16 +88,20 @@ namespace UnityHelpers
         /// at the near clipping plane.
         /// </summary>
         /// <param name="camera">The camera to calculate the dimensions for</param>
+        /// <param name="debug">Show frustum lines in editor</param>
         /// <returns>Perspective plane dimensions</returns>
-        public static Vector2 PerspectiveFrustumAtNear(this Camera camera)
+        public static Vector2 PerspectiveFrustumAtNear(this Camera camera, bool debug = false)
         {
             Vector2 frustumDimensions = camera.PerspectiveFrustum(camera.nearClipPlane);
 
-            Vector3 nearClipCenter = camera.transform.position + camera.nearClipPlane * camera.transform.forward;
-            Vector3 halfHeight = camera.transform.up * frustumDimensions.y / 2f;
-            Vector3 halfWidth = camera.transform.right * frustumDimensions.x / 2f;
-            Debug.DrawLine(nearClipCenter + halfHeight - halfWidth, nearClipCenter + halfHeight + halfWidth, Color.red, 1);
-            Debug.DrawLine(nearClipCenter + halfWidth - halfHeight, nearClipCenter + halfWidth + halfHeight, Color.green, 1);
+            if (debug)
+            {
+                Vector3 nearClipCenter = camera.transform.position + camera.nearClipPlane * camera.transform.forward;
+                Vector3 halfHeight = camera.transform.up * frustumDimensions.y / 2f;
+                Vector3 halfWidth = camera.transform.right * frustumDimensions.x / 2f;
+                Debug.DrawLine(nearClipCenter + halfHeight - halfWidth, nearClipCenter + halfHeight + halfWidth, Color.red, 1);
+                Debug.DrawLine(nearClipCenter + halfWidth - halfHeight, nearClipCenter + halfWidth + halfHeight, Color.green, 1);
+            }
 
             return frustumDimensions;
         }

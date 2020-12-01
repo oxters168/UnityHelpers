@@ -69,19 +69,19 @@ namespace UnityHelpers
                 skippedFirstFrame = true;
         }
 
-        private void OnDrawGizmosSelected()
-        {
-            Gizmos.matrix = transform.localToWorldMatrix;
+        // private void OnDrawGizmosSelected()
+        // {
+        //     Gizmos.matrix = transform.localToWorldMatrix;
 
-            if (body != null && gizmoSize > 0)
-            {
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawSphere(body.centerOfMass, gizmoSize);
-            }
+        //     if (body != null && gizmoSize > 0)
+        //     {
+        //         Gizmos.color = Color.yellow;
+        //         Gizmos.DrawSphere(body.centerOfMass, gizmoSize);
+        //     }
 
-            Gizmos.color = Color.green;
-            Bounds objectBounds = transform.GetTotalBounds(Space.Self, boundsMask);
-            Gizmos.DrawWireCube(objectBounds.center, objectBounds.size);
-        }
+        //     Gizmos.color = Color.green;
+        //     Bounds objectBounds = transform.GetTotalBounds(Space.Self, boundsMask);
+        //     Gizmos.DrawWireCube(objectBounds.center, objectBounds.size);
+        // }
     }
 }

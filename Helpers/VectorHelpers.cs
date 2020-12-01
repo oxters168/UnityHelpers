@@ -35,6 +35,86 @@ namespace UnityHelpers
         /// <param name="orientedObject">The object in question</param>
         /// <param name="direction">The direction to compare to</param>
         /// <returns>An axis belonging to the object</returns>
+        public static Vector2 GetAxisAlignedTo(this Vector2 direction, Transform orientedObject)
+        {
+            Vector2[] objectAxes = new Vector2[] { orientedObject.right, orientedObject.up, -orientedObject.right, -orientedObject.up };
+            return direction.GetDirectionMostAlignedTo(objectAxes);
+        }
+        /// <summary>
+        /// Get the direction that is most aligned
+        /// with the provided direction
+        /// </summary>
+        /// <param name="direction">The direction in question</param>
+        /// <param name="directions">The directions to be compared to</param>
+        /// <returns>A direction from the given array</returns>
+        public static Vector2 GetDirectionMostAlignedTo(this Vector2 direction, params Vector2[] directions)
+        {
+            Vector2 alignedAxis = Vector2.zero;
+
+            if (directions.Length > 0)
+            {
+                alignedAxis = directions[0];
+                float closestDot = Vector2.Dot(alignedAxis, direction);
+                for (int i = 1; i < directions.Length; i++)
+                {
+                    var currentAxis = directions[i];
+                    float otherDot = Vector2.Dot(currentAxis, direction);
+                    if (otherDot > closestDot)
+                    {
+                        alignedAxis = currentAxis;
+                        closestDot = otherDot;
+                    }
+                }
+            }
+
+            return alignedAxis;
+        }
+        /// <summary>
+        /// Reorder the given array by most aligned to the given direction
+        /// </summary>
+        /// <param name="direction">The direction in question</param>
+        /// <param name="directions">The directions to be compared to</param>
+        public static void OrderDirectionsByAlignment(this Vector2 direction, Vector2[] directions)
+        {
+            if (directions.Length > 0)
+            {
+                //Calculate all the dot products
+                float[] dots = new float[directions.Length];
+                for (int i = 0; i < directions.Length; i++)
+                    dots[i] = Vector2.Dot(directions[i], direction);
+
+                //Get the order of the final array
+                int[] order = new int[dots.Length];
+                for (int i = 0; i < order.Length; i++)
+                    order[i] = i;
+                for (int i = 0; i < order.Length - 1; i++)
+                {
+                    for (int j = i; j < order.Length; j++)
+                    {
+                        float currentDot = dots[order[i]];
+                        float nextDot = dots[order[j]];
+                        if (nextDot > currentDot)
+                        {
+                            int temp = order[j];
+                            order[j] = order[i];
+                            order[i] = temp;
+                        }
+                    }
+                }
+
+                //Reorder array
+                Vector2[] copy = (Vector2[])directions.Clone();
+                for (int i = 0; i < directions.Length; i++)
+                    directions[i] = copy[order[i]];
+            }
+        }
+        /// <summary>
+        /// Get the axis of the given transform that is most aligned
+        /// with the provided direction in world space
+        /// </summary>
+        /// <param name="orientedObject">The object in question</param>
+        /// <param name="direction">The direction to compare to</param>
+        /// <returns>An axis belonging to the object</returns>
         public static Vector3 GetAxisAlignedTo(this Vector3 direction, Transform orientedObject)
         {
             Vector3[] objectAxes = new Vector3[] { orientedObject.forward, orientedObject.right, orientedObject.up, -orientedObject.forward, -orientedObject.right, -orientedObject.up };
@@ -44,8 +124,9 @@ namespace UnityHelpers
         /// Get the direction that is most aligned
         /// with the provided direction
         /// </summary>
-        /// <param name="direction">The direction to compare to</param>
-        /// <returns>A world axis</returns>
+        /// <param name="direction">The direction in question</param>
+        /// <param name="directions">The directions to be compared to</param>
+        /// <returns>A direction from the given array</returns>
         public static Vector3 GetDirectionMostAlignedTo(this Vector3 direction, params Vector3[] directions)
         {
             Vector3 alignedAxis = Vector3.zero;
@@ -67,6 +148,101 @@ namespace UnityHelpers
             }
 
             return alignedAxis;
+        }
+        /// <summary>
+        /// Reorder the given array by most aligned to the given direction
+        /// </summary>
+        /// <param name="direction">The direction in question</param>
+        /// <param name="directions">The directions to be compared to</param>
+        public static void OrderDirectionsByAlignment(this Vector3 direction, Vector3[] directions)
+        {
+            if (directions.Length > 0)
+            {
+                //Calculate all the dot products
+                float[] dots = new float[directions.Length];
+                for (int i = 0; i < directions.Length; i++)
+                    dots[i] = Vector3.Dot(directions[i], direction);
+
+                //Get the order of the final array
+                int[] order = new int[dots.Length];
+                for (int i = 0; i < order.Length; i++)
+                    order[i] = i;
+                for (int i = 0; i < order.Length - 1; i++)
+                {
+                    for (int j = i; j < order.Length; j++)
+                    {
+                        float currentDot = dots[order[i]];
+                        float nextDot = dots[order[j]];
+                        if (nextDot > currentDot)
+                        {
+                            int temp = order[j];
+                            order[j] = order[i];
+                            order[i] = temp;
+                        }
+                    }
+                }
+
+                //Reorder array
+                Vector3[] copy = (Vector3[])directions.Clone();
+                for (int i = 0; i < directions.Length; i++)
+                    directions[i] = copy[order[i]];
+            }
+        }
+
+        /// <summary>
+        /// Retrieves which axes in the vector have non-zero values
+        /// </summary>
+        /// <param name="vector">The vector in question</param>
+        /// <returns>An enum value</returns>
+        public static Axis GetValuedAxes(this Vector3 vector)
+        {
+            return (Mathf.Abs(vector.x) > float.Epsilon ? Axis.x : Axis.none) | (Mathf.Abs(vector.y) > float.Epsilon ? Axis.y : Axis.none) | (Mathf.Abs(vector.z) > float.Epsilon ? Axis.z : Axis.none);
+        }
+        /// <summary>
+        /// Retrieves which axes in the vector have non-zero values
+        /// </summary>
+        /// <param name="vector">The vector in question</param>
+        /// <returns>An enum value</returns>
+        public static Axis GetValuedAxes(this Vector2 vector)
+        {
+            return (Mathf.Abs(vector.x) > float.Epsilon ? Axis.x : Axis.none) | (Mathf.Abs(vector.y) > float.Epsilon ? Axis.y : Axis.none);
+        }
+
+        /// <summary>
+        /// Places 1s in the spots where there are values and 0s in the spots that are 0
+        /// </summary>
+        /// <param name="vector">The original vector</param>
+        /// <returns>A mask</returns>
+        public static Vector3 CreateMask(this Vector3 vector)
+        {
+            return new Vector3(Mathf.Abs(vector.x) > float.Epsilon ? 1 : 0, Mathf.Abs(vector.y) > float.Epsilon ? 1 : 0, Mathf.Abs(vector.z) > float.Epsilon ? 1 : 0);
+        }
+        /// <summary>
+        /// Places 1s in the spots where the values are 0 and 0 in the spots that are not 0
+        /// </summary>
+        /// <param name="vector">The original vector</param>
+        /// <returns>An inverted mask</returns>
+        public static Vector3 CreateInvertedMask(this Vector3 vector)
+        {
+            return new Vector3(Mathf.Abs(vector.x) > float.Epsilon ? 0 : 1, Mathf.Abs(vector.y) > float.Epsilon ? 0 : 1, Mathf.Abs(vector.z) > float.Epsilon ? 0 : 1);
+        }
+        /// <summary>
+        /// Places 1s in the spots where there are values and 0s in the spots that are 0
+        /// </summary>
+        /// <param name="vector">The original vector</param>
+        /// <returns>A mask</returns>
+        public static Vector2 CreateMask(this Vector2 vector)
+        {
+            return new Vector2(Mathf.Abs(vector.x) > float.Epsilon ? 1 : 0, Mathf.Abs(vector.y) > float.Epsilon ? 1 : 0);
+        }
+        /// <summary>
+        /// Places 1s in the spots where the values are 0 and 0 in the spots that are not 0
+        /// </summary>
+        /// <param name="vector">The original vector</param>
+        /// <returns>An inverted mask</returns>
+        public static Vector2 CreateInvertedMask(this Vector2 vector)
+        {
+            return new Vector2(Mathf.Abs(vector.x) > float.Epsilon ? 0 : 1, Mathf.Abs(vector.y) > float.Epsilon ? 0 : 1);
         }
 
         /// <summary>
