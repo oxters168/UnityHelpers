@@ -244,6 +244,24 @@ namespace UnityHelpers
         {
             return new Vector2(Mathf.Abs(vector.x) > float.Epsilon ? 0 : 1, Mathf.Abs(vector.y) > float.Epsilon ? 0 : 1);
         }
+        /// <summary>
+        /// For every value in the vector it places 1 if positive, -1 if negative, and 0 for zero
+        /// </summary>
+        /// <param name="vector">The original vector</param>
+        /// <returns>The sign vector</returns>
+        public static Vector3 Sign(this Vector3 vector)
+        {
+            return new Vector3(Mathf.Abs(vector.x) > float.Epsilon ? Mathf.Sign(vector.x) : 0, Mathf.Abs(vector.y) > float.Epsilon ? Mathf.Sign(vector.y) : 0, Mathf.Abs(vector.z) > float.Epsilon ? Mathf.Sign(vector.z) : 0);
+        }
+        /// <summary>
+        /// For every value in the vector it places 1 if positive, -1 if negative, and 0 for zero
+        /// </summary>
+        /// <param name="vector">The original vector</param>
+        /// <returns>The sign vector</returns>
+        public static Vector2 Sign(this Vector2 vector)
+        {
+            return new Vector2(Mathf.Abs(vector.x) > float.Epsilon ? Mathf.Sign(vector.x) : 0, Mathf.Abs(vector.y) > float.Epsilon ? Mathf.Sign(vector.y) : 0);
+        }
 
         /// <summary>
         /// Source: https://stackoverflow.com/questions/3684269/component-of-a-quaternion-rotation-around-an-axis
