@@ -27,7 +27,7 @@ namespace UnityHelpers
         void Update()
         {
             //Retrieve input
-            dpad = new Vector2(GetAxis("dpadHor"), GetAxis("dpadVer"));
+            dpad = new Vector2(GetAxis("horizontal"), GetAxis("vertical"));
             crossBtn = GetToggle("crossBtn");
         }
         void FixedUpdate()
