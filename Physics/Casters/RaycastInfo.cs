@@ -9,10 +9,12 @@ namespace UnityHelpers
         public LayerMask castMask = ~0;
         public Vector3 position;
         public Vector3 direction;
-        public float distance;
+        public float distance = 1;
         public QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal;
+        public bool raycastHit;
+        public RaycastHit[] hitData;
 
-        public bool Cast(out RaycastHit hitInfo)
+        public bool Cast()
         {
             Vector3 castPosition = position;
             Vector3 castDirection = direction;
@@ -22,7 +24,22 @@ namespace UnityHelpers
                 castDirection = parent.TransformDirection(direction);
             }
 
-            return Physics.Raycast(castPosition, castDirection, out hitInfo, distance, castMask, queryTriggerInteraction);
+            RaycastHit hitInfo;
+            raycastHit = Physics.Raycast(castPosition, castDirection, out hitInfo, distance, castMask, queryTriggerInteraction);
+            if (raycastHit)
+            {
+                hitData = new RaycastHit[1];
+                hitData[0] = hitInfo;
+            }
+            return raycastHit;
+        }
+        public bool Cast(out RaycastHit hitInfo)
+        {
+            hitInfo = default;
+            Cast();
+            if (hitData != null && hitData.Length > 0)
+                hitInfo = hitData[0];
+            return raycastHit;
         }
         public RaycastHit[] CastAll()
         {
@@ -34,7 +51,9 @@ namespace UnityHelpers
                 castDirection = parent.TransformDirection(direction);
             }
 
-            return Physics.RaycastAll(castPosition, castDirection, distance, castMask, queryTriggerInteraction);
+            hitData = Physics.RaycastAll(castPosition, castDirection, distance, castMask, queryTriggerInteraction);
+            raycastHit = hitData != null && hitData.Length > 0;
+            return hitData;
         }
         public Vector3 GetPosition()
         {

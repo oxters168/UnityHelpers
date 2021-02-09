@@ -5,6 +5,88 @@ namespace UnityHelpers
     public static class PhysicsHelpers
     {
         /// <summary>
+        /// Casts rays out from the transform's position in a spherical pattern
+        /// </summary>
+        /// <param name="transform">The object to cast rays from</param>
+        /// <param name="debugRays">Show rays in editor</param>
+        /// <param name="upAngle">The angle between each ray rotated around the up axis</param>
+        /// <param name="rightAngle">The angle between each ray rotated around the right axis</param>
+        /// <param name="distance">The distance to cast each ray</param>
+        /// <param name="layerMask">The mask for each ray</param>
+        /// <param name="space">Sets whether to cast along the world axes or the transform's axes</param>
+        /// <returns>The casted rays and their results</returns>
+        public static RaycastInfo[] CastRays(this Transform transform, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, Space space = Space.World)
+        {
+            Vector3 up = Vector3.up, right = Vector3.right, forward = Vector3.forward;
+            if (space == Space.Self)
+            {
+                up = transform.up;
+                right = transform.right;
+                forward = transform.forward;
+            }
+
+            return CastRays(transform.position, up, right, forward, debugRays, upAngle, rightAngle, distance, layerMask, space);
+        }
+        /// <summary>
+        /// Casts rays out from the given position in a spherical pattern using the world axes
+        /// </summary>
+        /// <param name="position">The position to cast rays from</param>
+        /// <param name="debugRays">Show rays in editor</param>
+        /// <param name="upAngle">The angle between each ray rotated around the up axis</param>
+        /// <param name="rightAngle">The angle between each ray rotated around the right axis</param>
+        /// <param name="distance">The distance to cast each ray</param>
+        /// <param name="layerMask">The mask for each ray</param>
+        /// <param name="space">Sets whether to cast along the world axes or the transform's axes</param>
+        /// <returns>The casted rays and their results</returns>
+        public static RaycastInfo[] CastRays(Vector3 position, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, Space space = Space.World)
+        {
+            return CastRays(position, Vector3.up, Vector3.right, Vector3.forward, debugRays, upAngle, rightAngle, distance, layerMask, space);
+        }
+        /// <summary>
+        /// Casts rays out from the given position in a spherical pattern
+        /// </summary>
+        /// <param name="position">The position to cast rays from</param>
+        /// <param name="up">An axis that the rays will rotate on</param>
+        /// <param name="right">An axis that the rays will rotate on</param>
+        /// <param name="forward">Used as a starting point for the rays</param>
+        /// <param name="debugRays">Show rays in editor</param>
+        /// <param name="upAngle">The angle between each ray rotated around the up axis</param>
+        /// <param name="rightAngle">The angle between each ray rotated around the right axis</param>
+        /// <param name="distance">The distance to cast each ray</param>
+        /// <param name="layerMask">The mask for each ray</param>
+        /// <param name="space">Sets whether to cast along the world axes or the transform's axes</param>
+        /// <returns>The casted rays and their results</returns>
+        public static RaycastInfo[] CastRays(Vector3 position, Vector3 up, Vector3 right, Vector3 forward, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, Space space = Space.World)
+        {
+            Quaternion startRot = Quaternion.LookRotation(forward, up);
+            int upCount = Mathf.CeilToInt(360 / upAngle) - 1;
+            int rightCount = Mathf.CeilToInt(360 / rightAngle) - 1;
+            RaycastInfo[] rays = new RaycastInfo[upCount * rightCount];
+            for (int i = 0; i < upCount; i++)
+            {
+                Quaternion upRotOffset = Quaternion.AngleAxis(upAngle * i, up);
+                for (int j = 0; j < rightCount; j++)
+                {
+                    Quaternion rightRotOffset = Quaternion.AngleAxis(rightAngle * j, right);
+                    Vector3 currentDir = rightRotOffset * (upRotOffset * forward);
+                    // Vector3 currentDir = upRotOffset * (rightRotOffset * forward);
+                    RaycastInfo currentRay = new RaycastInfo();
+                    currentRay.position = position;
+                    currentRay.direction = currentDir;
+                    currentRay.distance = distance;
+                    currentRay.castMask = layerMask;
+                    currentRay.Cast();
+                    rays[i * rightCount + j] = currentRay;
+
+                    if (debugRays)
+                        Debug.DrawRay(currentRay.position, currentRay.direction * distance, (currentRay.raycastHit ? Color.green : Color.red));
+                }
+            }
+
+            return rays;
+        }
+        
+        /// <summary>
         /// <para>Source: https://digitalopus.ca/site/pd-controllers/ </para>
         /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation. Works with Acceleration ForceMode.</para>
         /// </summary>
@@ -125,7 +207,7 @@ namespace UnityHelpers
             Vector3 nakedForce = (desiredPosition - rigidbody.position) / (timestep * timestep);
             nakedForce *= rigidbody.mass;
 
-            Vector3 deltaForce = nakedForce - (rigidbody.velocity / timestep * rigidbody.mass);
+            Vector3 deltaForce = nakedForce - ((rigidbody.velocity / timestep) * rigidbody.mass);
 
             if (deltaForce.sqrMagnitude > maxForce * maxForce)
                 deltaForce = deltaForce.normalized * maxForce;
