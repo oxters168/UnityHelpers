@@ -39,6 +39,7 @@ namespace UnityHelpers
         public float floatingForceAcc = 8600;
         [Tooltip("The fastest the pod can move to bring itself to floating position (in newtons per fixed update)")]
         public float floatingForceMaxSpeed = 8600000;
+        public AnimationCurve floatingForceLerpCurve = AnimationCurve.Linear(0, 0, 1, 1);
         [Tooltip("How much distance beyond the minimum ground height before anti-gravity wears off")]
         public float antigravityFalloffDistance = 20;
         public AnimationCurve antigravityFalloffCurve = AnimationCurve.Linear(0, 0, 1, 1);
@@ -86,7 +87,7 @@ namespace UnityHelpers
         [Space(10)]
         public Vector3 prevFloatingForce = Vector3.zero;
         public Vector3 floatingForce, antigravityForce;
-        public float floatingForceSpeed;
+        // public float floatingForceSpeed;
         public float currentRotSpeed;
 
         void FixedUpdate()
@@ -201,24 +202,28 @@ namespace UnityHelpers
         private void ApplyFloatation()
         {
             Vector3 expectedFloatingForce = CalculateFloatingForce();
-            Vector3 deltaFloatingForce = expectedFloatingForce - prevFloatingForce;
+            Vector3 floatDirection = expectedFloatingForce.normalized;
+            Vector3 deltaFloatingForce = expectedFloatingForce - floatDirection * Vector3.Dot(prevFloatingForce, floatDirection);
             Vector3 currentFloatingForce = prevFloatingForce;
             var deltaForceMag = deltaFloatingForce.magnitude;
+
+            float lerper = Mathf.Clamp01(deltaForceMag / floatingForceAcc);
+            float coefficientOfFloatingForce = floatingForceLerpCurve.Evaluate(lerper);
+            currentFloatingForce = coefficientOfFloatingForce * expectedFloatingForce;
+
             //If there is a measurable change in force
             if (deltaForceMag > float.Epsilon)
             {
-                floatingForceSpeed = Mathf.Clamp(floatingForceSpeed + floatingForceAcc, 0, floatingForceMaxSpeed);
-                //If force is increasing in magnitude
-                // if ((currentFloatingForce > float.Epsilon && Mathf.Sign(deltaFloatingForce) > 0 || currentFloatingForce < float.Epsilon && Mathf.Sign(deltaFloatingForce) < 0))
-                    currentFloatingForce += deltaFloatingForce.normalized * Mathf.Min(deltaForceMag, floatingForceSpeed);
-                // else
-                //     currentFloatingForce = expectedFloatingForce;
-            }
-            else
-                floatingForceSpeed = 0;
-                
-            currentFloatingForce = expectedFloatingForce;
+                // get a 0-1 value by dividing the expected delta by max speed
+                // use that 0-1 value in some lerping function then multiply back
+                // into expected floating force or something like that
 
+                // floatingForceSpeed = Mathf.Clamp(floatingForceSpeed + floatingForceAcc, 0, floatingForceMaxSpeed);
+                // currentFloatingForce += floatDirection * Mathf.Min(deltaForceMag, floatingForceSpeed);
+            }
+            // else
+            //     floatingForceSpeed = 0;
+                
             if (Mathf.Abs(fly) > float.Epsilon)
                 currentFloatingForce = Vector3.zero;
 
@@ -244,11 +249,24 @@ namespace UnityHelpers
             antigravityForce = PodBody.CalculateAntiGravityForce() * antigravityMultiplier;
 
             floatingForce = Vector3.zero;
-            if (groundDistance < float.MaxValue)
+            if (groundDistance < float.MaxValue) //If the ground is within range
             {
+                float currentVerticalSpeed = Vector3.Dot(up, PodBody.velocity);
+                float decelerationTime = Mathf.Abs(currentVerticalSpeed) / floatingForceAcc;
+                float decelarationDistance = Mathf.Abs(currentVerticalSpeed * decelerationTime); //If we don't decelarate, how far will we go?
                 groundedPosition = hitInfo.point + up * minGroundDistance;
-                floatingForce = PodBody.CalculateRequiredForceForPosition(groundedPosition);
-                floatingForce = up * Vector3.Dot(floatingForce, up);
+                float posDiff = Vector3.Distance(PodBody.position, groundedPosition); //How much distance is left before we reach the floating point?
+                float floatForceDirection = Mathf.Sign(Vector3.Dot(up, groundedPosition - PodBody.position));
+                if (Mathf.Sign(currentVerticalSpeed) == floatForceDirection && decelarationDistance > posDiff) //If we will overshoot based on our acceleration
+                {
+                    float appliedDecelaration = Mathf.Min(Mathf.Abs(currentVerticalSpeed) / Time.fixedDeltaTime, floatingForceAcc);
+                    floatingForce = -Mathf.Sign(currentVerticalSpeed) * PodBody.mass * appliedDecelaration * up;
+                }
+                else
+                {
+                    float nextAcc = Mathf.Min(floatingForceAcc, Mathf.Abs(currentVerticalSpeed) - floatingForceMaxSpeed);
+                    floatingForce = floatForceDirection * PodBody.mass * floatingForceAcc * up;
+                }
             }
 
             return antigravityForce + floatingForce;
