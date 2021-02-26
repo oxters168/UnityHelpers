@@ -7,6 +7,9 @@ namespace UnityHelpers
     public class PodPhysics : MonoBehaviour
     {
         private Rigidbody _podBody;
+        /// <summary>
+        /// The default values were adjusted for a vehicle with a mass of 1395
+        /// </summary>
         private Rigidbody PodBody { get { if (_podBody == null) _podBody = GetComponentInChildren<Rigidbody>(); return _podBody; } }
 
         public Vector2 strafeStick;
@@ -15,37 +18,36 @@ namespace UnityHelpers
         public float fly;
 
         [Space(10), Tooltip("The speed of the speed (in m/s^2)")]
-        public float acceleration = 0.2f;
+        public float acceleration = 0.4f;
         [Tooltip("The fastest speed the vehicle can achieve (in m/s)")]
-        public float maxSpeed = 20;
+        public float maxSpeed = 40;
 
         [Tooltip("The speed of the fly speed (in m/s^2)")]
-        public float flyAcceleration = 1;
+        public float flyAcceleration = 2;
         [Tooltip("The fastest the vehicle can go up")]
-        public float maxFlySpeed = 10;
+        public float maxFlySpeed = 20;
 
         [Tooltip("The speed of the rotational speed (in deg/s^2)")]
-        public float rotAcceleration = 4;
+        public float rotAcceleration = 8;
         [Tooltip("The fastest the vehicle can rotate (in deg/s)")]
-        public float maxRotSpeed = 100;
+        public float maxRotSpeed = 200;
 
         [Space(10), Tooltip("The max force applied to stop the vehicle (in newtons")]
-        public float maxBrakeForce = 16000;
+        public float maxBrakeForce = 20000;
 
         [Space(10), Tooltip("The minimum distance the pod keeps itself floating above the ground (in meters)")]
         public float minGroundDistance = 1;
 
-        [Space(10), Tooltip("How fast the force that floats the pod builds up (in newtons per fixed update squared)")]
-        public float floatingForceAcc = 8600;
-        [Tooltip("The fastest the pod can move to bring itself to floating position (in newtons per fixed update)")]
-        public float floatingForceMaxSpeed = 8600000;
-        public AnimationCurve floatingForceLerpCurve = AnimationCurve.Linear(0, 0, 1, 1);
+        [Space(10), Tooltip("The constant applied to the proportional part of the floatation pd controller")]
+        public float Kp = 20000;
+        [Tooltip("The constant applied to the derivative part of the floatation pd controller")]
+        public float Kd = 800000;
         [Tooltip("How much distance beyond the minimum ground height before anti-gravity wears off")]
         public float antigravityFalloffDistance = 20;
         public AnimationCurve antigravityFalloffCurve = AnimationCurve.Linear(0, 0, 1, 1);
 
         [Space(10), Tooltip("The maximum torque the pod can apply to fix its orientation (in newton meters)")]
-        public float maxCorrectionTorque = float.MaxValue;
+        public float maxCorrectionTorque = 60000;
 
         [Space(10), Tooltip("The layer(s) to be raycasted when looking for the ground")]
         public LayerMask groundMask = ~0;
@@ -83,12 +85,10 @@ namespace UnityHelpers
         /// The position the pod would be if left motionless
         /// </summary>
         private Vector3 groundedPosition;
-
-        [Space(10)]
-        public Vector3 prevFloatingForce = Vector3.zero;
-        public Vector3 floatingForce, antigravityForce;
-        // public float floatingForceSpeed;
-        public float currentRotSpeed;
+        /// <summary>
+        /// Used in the pd controller of the floatation
+        /// </summary>
+        private Vector3 prevErr;
 
         void FixedUpdate()
         {
@@ -193,7 +193,7 @@ namespace UnityHelpers
             bool isAttemptingToRotate = Mathf.Abs(rotate) > float.Epsilon;
             if (isAttemptingToRotate)
             {
-                currentRotSpeed = (Vector3.Dot(PodBody.angularVelocity, up) * 180f) / Mathf.PI;
+                float currentRotSpeed = (Vector3.Dot(PodBody.angularVelocity, up) * 180f) / Mathf.PI;
                 if ((currentRotSpeed > -maxRotSpeed || rotate > 0) && (currentRotSpeed < maxRotSpeed || rotate < 0))
                     PodBody.AddTorque(up * PodBody.mass * rotAcceleration * Mathf.Clamp(rotate, -1, 1), ForceMode.Force);
             }
@@ -202,33 +202,11 @@ namespace UnityHelpers
         private void ApplyFloatation()
         {
             Vector3 expectedFloatingForce = CalculateFloatingForce();
-            Vector3 floatDirection = expectedFloatingForce.normalized;
-            Vector3 deltaFloatingForce = expectedFloatingForce - floatDirection * Vector3.Dot(prevFloatingForce, floatDirection);
-            Vector3 currentFloatingForce = prevFloatingForce;
-            var deltaForceMag = deltaFloatingForce.magnitude;
-
-            float lerper = Mathf.Clamp01(deltaForceMag / floatingForceAcc);
-            float coefficientOfFloatingForce = floatingForceLerpCurve.Evaluate(lerper);
-            currentFloatingForce = coefficientOfFloatingForce * expectedFloatingForce;
-
-            //If there is a measurable change in force
-            if (deltaForceMag > float.Epsilon)
-            {
-                // get a 0-1 value by dividing the expected delta by max speed
-                // use that 0-1 value in some lerping function then multiply back
-                // into expected floating force or something like that
-
-                // floatingForceSpeed = Mathf.Clamp(floatingForceSpeed + floatingForceAcc, 0, floatingForceMaxSpeed);
-                // currentFloatingForce += floatDirection * Mathf.Min(deltaForceMag, floatingForceSpeed);
-            }
-            // else
-            //     floatingForceSpeed = 0;
                 
             if (Mathf.Abs(fly) > float.Epsilon)
-                currentFloatingForce = Vector3.zero;
+                expectedFloatingForce = Vector3.zero;
 
-            PodBody.AddForce(currentFloatingForce, ForceMode.Force);
-            prevFloatingForce = currentFloatingForce;
+            PodBody.AddForce(expectedFloatingForce, ForceMode.Force);
         }
         private Vector3 CalculateFloatingForce()
         {
@@ -246,27 +224,19 @@ namespace UnityHelpers
             float antigravityMultiplier = 1;
             if (groundOffset < -float.Epsilon)
                 antigravityMultiplier = antigravityFalloffCurve.Evaluate(Mathf.Max(antigravityFalloffDistance - Mathf.Abs(groundOffset), 0) / antigravityFalloffDistance);
-            antigravityForce = PodBody.CalculateAntiGravityForce() * antigravityMultiplier;
+            Vector3 antigravityForce = PodBody.CalculateAntiGravityForce() * antigravityMultiplier;
 
-            floatingForce = Vector3.zero;
+            Vector3 floatingForce = Vector3.zero;
             if (groundDistance < float.MaxValue) //If the ground is within range
             {
-                float currentVerticalSpeed = Vector3.Dot(up, PodBody.velocity);
-                float decelerationTime = Mathf.Abs(currentVerticalSpeed) / floatingForceAcc;
-                float decelarationDistance = Mathf.Abs(currentVerticalSpeed * decelerationTime); //If we don't decelarate, how far will we go?
+                //Thanks to @bmabsout for a much better and more stable floatation method
+                //based on pid but just the p and the d
                 groundedPosition = hitInfo.point + up * minGroundDistance;
-                float posDiff = Vector3.Distance(PodBody.position, groundedPosition); //How much distance is left before we reach the floating point?
-                float floatForceDirection = Mathf.Sign(Vector3.Dot(up, groundedPosition - PodBody.position));
-                if (Mathf.Sign(currentVerticalSpeed) == floatForceDirection && decelarationDistance > posDiff) //If we will overshoot based on our acceleration
-                {
-                    float appliedDecelaration = Mathf.Min(Mathf.Abs(currentVerticalSpeed) / Time.fixedDeltaTime, floatingForceAcc);
-                    floatingForce = -Mathf.Sign(currentVerticalSpeed) * PodBody.mass * appliedDecelaration * up;
-                }
-                else
-                {
-                    float nextAcc = Mathf.Min(floatingForceAcc, Mathf.Abs(currentVerticalSpeed) - floatingForceMaxSpeed);
-                    floatingForce = floatForceDirection * PodBody.mass * floatingForceAcc * up;
-                }
+                Vector3 err = up * Vector3.Dot(up, groundedPosition - PodBody.position);
+                Vector3 proportional = Kp * err;
+                Vector3 derivative = Kd * (err - prevErr);
+                floatingForce = proportional + derivative;
+                prevErr = err;
             }
 
             return antigravityForce + floatingForce;
