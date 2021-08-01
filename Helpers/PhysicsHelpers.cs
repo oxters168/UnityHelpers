@@ -14,8 +14,10 @@ namespace UnityHelpers
         /// <param name="distance">The distance to cast each ray</param>
         /// <param name="layerMask">The mask for each ray</param>
         /// <param name="space">Sets whether to cast along the world axes or the transform's axes</param>
+        /// <param name="upCoverage">The total coverage of rays along the up axis</param>
+        /// <param name="rightCoverage">The total coverage of rays along the right axis</param>
         /// <returns>The casted rays and their results</returns>
-        public static RaycastInfo[] CastRays(this Transform transform, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, Space space = Space.World)
+        public static RaycastInfo[] CastRays(this Transform transform, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, Space space = Space.World, float upCoverage = 360, float rightCoverage = 360)
         {
             Vector3 up = Vector3.up, right = Vector3.right, forward = Vector3.forward;
             if (space == Space.Self)
@@ -25,7 +27,7 @@ namespace UnityHelpers
                 forward = transform.forward;
             }
 
-            return CastRays(transform.position, up, right, forward, debugRays, upAngle, rightAngle, distance, layerMask, space);
+            return CastRays(transform.position, up, right, forward, debugRays, upAngle, rightAngle, distance, layerMask, upCoverage, rightCoverage);
         }
         /// <summary>
         /// Casts rays out from the given position in a spherical pattern using the world axes
@@ -36,11 +38,12 @@ namespace UnityHelpers
         /// <param name="rightAngle">The angle between each ray rotated around the right axis</param>
         /// <param name="distance">The distance to cast each ray</param>
         /// <param name="layerMask">The mask for each ray</param>
-        /// <param name="space">Sets whether to cast along the world axes or the transform's axes</param>
+        /// <param name="upCoverage">The total coverage of rays along the up axis</param>
+        /// <param name="rightCoverage">The total coverage of rays along the right axis</param>
         /// <returns>The casted rays and their results</returns>
-        public static RaycastInfo[] CastRays(Vector3 position, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, Space space = Space.World)
+        public static RaycastInfo[] CastRays(Vector3 position, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, float upCoverage = 360, float rightCoverage = 360)
         {
-            return CastRays(position, Vector3.up, Vector3.right, Vector3.forward, debugRays, upAngle, rightAngle, distance, layerMask, space);
+            return CastRays(position, Vector3.up, Vector3.right, Vector3.forward, debugRays, upAngle, rightAngle, distance, layerMask, upCoverage, rightCoverage);
         }
         /// <summary>
         /// Casts rays out from the given position in a spherical pattern
@@ -54,29 +57,28 @@ namespace UnityHelpers
         /// <param name="rightAngle">The angle between each ray rotated around the right axis</param>
         /// <param name="distance">The distance to cast each ray</param>
         /// <param name="layerMask">The mask for each ray</param>
-        /// <param name="space">Sets whether to cast along the world axes or the transform's axes</param>
+        /// <param name="upCoverage">The total coverage of rays along the up axis</param>
+        /// <param name="rightCoverage">The total coverage of rays along the right axis</param>
         /// <returns>The casted rays and their results</returns>
-        public static RaycastInfo[] CastRays(Vector3 position, Vector3 up, Vector3 right, Vector3 forward, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, Space space = Space.World)
+        public static RaycastInfo[] CastRays(Vector3 position, Vector3 up, Vector3 right, Vector3 forward, bool debugRays = false, float upAngle = 15, float rightAngle = 15, float distance = 10, int layerMask = ~0, float upCoverage = 360, float rightCoverage = 360)
         {
-            Quaternion startRot = Quaternion.LookRotation(forward, up);
-            int upCount = Mathf.CeilToInt(360 / upAngle) - 1;
-            int rightCount = Mathf.CeilToInt(360 / rightAngle) - 1;
-            RaycastInfo[] rays = new RaycastInfo[upCount * rightCount];
-            for (int i = 0; i < upCount; i++)
+            int upHalfCount = (Mathf.CeilToInt(upCoverage / upAngle) - 1) / 2;
+            int rightHalfCount = (Mathf.CeilToInt(rightCoverage / rightAngle) - 1) / 2;
+
+            RaycastInfo[] rays = new RaycastInfo[upHalfCount * rightHalfCount * 4];
+            for (int i = -upHalfCount; i < upHalfCount; i++)
             {
-                Quaternion upRotOffset = Quaternion.AngleAxis(upAngle * i, up);
-                for (int j = 0; j < rightCount; j++)
+                for (int j = -rightHalfCount; j < rightHalfCount; j++)
                 {
-                    Quaternion rightRotOffset = Quaternion.AngleAxis(rightAngle * j, right);
-                    Vector3 currentDir = rightRotOffset * (upRotOffset * forward);
-                    // Vector3 currentDir = upRotOffset * (rightRotOffset * forward);
+                    Vector3 currentDir = Quaternion.Euler(rightAngle * j, upAngle * i, 0) * forward;
+                    
                     RaycastInfo currentRay = new RaycastInfo();
                     currentRay.position = position;
                     currentRay.direction = currentDir;
                     currentRay.distance = distance;
                     currentRay.castMask = layerMask;
                     currentRay.Cast();
-                    rays[i * rightCount + j] = currentRay;
+                    rays[(i + upHalfCount) * rightHalfCount * 2 + (j + rightHalfCount)] = currentRay;
 
                     if (debugRays)
                         Debug.DrawRay(currentRay.position, currentRay.direction * distance, (currentRay.raycastHit ? Color.green : Color.red));

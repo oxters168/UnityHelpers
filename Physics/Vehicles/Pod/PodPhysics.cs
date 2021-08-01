@@ -127,7 +127,7 @@ namespace UnityHelpers
 
         private void CalculateOrientationFromSurroundings()
         {
-            var rayResults = PhysicsHelpers.CastRays(vehicleBounds.center, showOrientationCasters, 15, 15, 10, groundMask, Space.World);
+            var rayResults = PhysicsHelpers.CastRays(vehicleBounds.center, showOrientationCasters, 15, 15, 10, groundMask);
             var rayHits = rayResults.Where(rayResult => rayResult.raycastHit);
 
             var nextUp = Vector3.up;
