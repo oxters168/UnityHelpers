@@ -153,6 +153,42 @@ namespace UnityHelpers
             return deltaT;
         }
         /// <summary>
+        /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
+        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation. Works with Force ForceMode.</para>
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody that the torque will be applied to</param>
+        /// <param name="desiredAngle">The rotation that you'd like the rigidbody to have in degrees (0, 360] counter-clockwise</param>
+        /// <param name="proportionalTerm">A coefficient applied to the desired force. Giving a value higher than 0.01 can cause trouble.</param>
+        /// <param name="derivativeTerm">A coefficient applied to the current force. Giving a value higher than 0.01 can cause trouble.</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="maxTorque">The max torque the result can have.</param>
+        /// <returns>The torque value to be applied to the rigidbody.</returns>
+        public static float CalculateRequiredTorqueForRotation(this Rigidbody2D rigidbody, float desiredAngle, float proportionalTerm = 0.01f, float derivativeTerm = 0.01f, float timestep = 0.02f, float maxTorque = float.MaxValue)
+        {
+            float currentAngle = rigidbody.rotation % 360;
+            float expectedAngle = Mathf.Abs(desiredAngle) % 360;
+            if (currentAngle < 0)
+                currentAngle += 360;
+
+            //Set up the rot diff to always be below 180 so that it is always the shortest route
+            float rotDiff = expectedAngle - currentAngle;
+            if (Mathf.Abs(rotDiff) > 180 && currentAngle > expectedAngle)
+                rotDiff = expectedAngle - (currentAngle - 360);
+            else if (Mathf.Abs(rotDiff) > 180 && expectedAngle > currentAngle)
+                rotDiff = (expectedAngle - 360) - currentAngle;
+
+            float desiredAngularAcceleration = rotDiff / (timestep * timestep);
+            
+            float proportionalTorque = proportionalTerm * rigidbody.inertia * desiredAngularAcceleration;
+            float derivativeTorque = -derivativeTerm * rigidbody.inertia * (rigidbody.angularVelocity / timestep);
+
+            var torque = proportionalTorque + derivativeTorque;
+            if (Mathf.Abs(torque) > maxTorque)
+                torque = Mathf.Sign(torque) * maxTorque;
+
+            return torque;
+        }
+        /// <summary>
         /// Calculates the force that needs to be applied to an object with the given mass
         /// to counteract gravity's effect on it.
         /// </summary>
@@ -169,6 +205,16 @@ namespace UnityHelpers
         /// <param name="rigidbody">The rigidbody that the force will be applied to</param>
         /// <returns>The force value to be applied</returns>
         public static Vector3 CalculateAntiGravityForce(this Rigidbody rigidbody)
+        {
+                return CalculateAntiGravityForce(rigidbody.mass);
+        }
+        /// <summary>
+        /// Calculates the force that needs to be applied to a rigidbody to counteract
+        /// gravity's effect on it.
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody that the force will be applied to</param>
+        /// <returns>The force value to be applied</returns>
+        public static Vector2 CalculateAntiGravityForce(this Rigidbody2D rigidbody)
         {
                 return CalculateAntiGravityForce(rigidbody.mass);
         }
