@@ -263,6 +263,27 @@ namespace UnityHelpers
             return deltaForce;
         }
         /// <summary>
+        /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the Force ForceMode.
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody that the force will be applied to.</param>
+        /// <param name="desiredPosition">The position that you'd like the rigidbody to have.</param>
+        /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="maxForce">The max force the result can have.</param>
+        /// <returns>The force value to be applied to the rigidbody.</returns>
+        public static Vector2 CalculateRequiredForceForPosition(this Rigidbody2D rigidbody, Vector2 desiredPosition, float timestep = 0.02f, float maxForce = float.MaxValue)
+        {
+            Vector2 nakedForce = (desiredPosition - rigidbody.position) / (timestep * timestep);
+            nakedForce *= rigidbody.mass;
+
+            Vector2 deltaForce = nakedForce - ((rigidbody.velocity / timestep) * rigidbody.mass);
+
+            if (deltaForce.sqrMagnitude > maxForce * maxForce)
+                deltaForce = deltaForce.normalized * maxForce;
+
+            return deltaForce;
+        }
+
+        /// <summary>
         /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired speed. Works with the Force ForceMode.
         /// </summary>
         /// <param name="rigidbody">The rigidbody that the force will be applied to.</param>
