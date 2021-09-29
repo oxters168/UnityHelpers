@@ -248,14 +248,19 @@ namespace UnityHelpers
         /// <param name="rigidbody">The rigidbody that the force will be applied to.</param>
         /// <param name="desiredPosition">The position that you'd like the rigidbody to have.</param>
         /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
         /// <param name="maxForce">The max force the result can have.</param>
         /// <returns>The force value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateRequiredForceForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, float maxForce = float.MaxValue)
+        public static Vector3 CalculateRequiredForceForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
         {
             Vector3 nakedForce = (desiredPosition - rigidbody.position) / (timestep * timestep);
             nakedForce *= rigidbody.mass;
 
-            Vector3 deltaForce = nakedForce - ((rigidbody.velocity / timestep) * rigidbody.mass);
+            Vector3 gravityForce = Vector3.zero;
+            if (accountForGravity)
+                gravityForce = rigidbody.CalculateAntiGravityForce();
+
+            Vector3 deltaForce = nakedForce - (((rigidbody.velocity / timestep) * rigidbody.mass) + gravityForce);
 
             if (deltaForce.sqrMagnitude > maxForce * maxForce)
                 deltaForce = deltaForce.normalized * maxForce;

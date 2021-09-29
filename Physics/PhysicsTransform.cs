@@ -263,7 +263,7 @@ namespace UnityHelpers
             if (clampStrength)
                 strength = Mathf.Clamp01(strength);
 
-            return AffectedBody.CalculateRequiredForceForPosition(strivedPosition, Time.fixedDeltaTime, maxForce) * strength;
+            return AffectedBody.CalculateRequiredForceForPosition(strivedPosition, Time.fixedDeltaTime, AffectedBody.useGravity, maxForce) * strength;
         }
         public void ApplyPositionalLock(LockAxes lockedWorldDirections, LockAxes lockedLocalDirections)
         {
