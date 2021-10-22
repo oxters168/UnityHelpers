@@ -10,13 +10,27 @@ namespace UnityHelpers
         /// </summary>
         [Tooltip("When true will use MovePosition and MoveRotation in Rigidbody. When false will set transform position and rotation.")]
         public bool physicsBased;
+        [Tooltip("When true will use AddForce and AddTorque in Rigidbody. Requires physicsBased toggle to be on.")]
+        public bool withForces;
+        public float maxForce = float.MaxValue;
+        public float maxTorque = float.MaxValue;
         private Rigidbody AffectedBody { get { if (_affectedBody == null) _affectedBody = GetComponentInParent<Rigidbody>(); return _affectedBody; } }
         private Rigidbody _affectedBody;
 
+        [Space(10)]
         public bool mimicLocalPosition;
         public bool mimicX = true, mimicY = true, mimicZ = true;
         public bool mimicRotation;
         public bool mimicLocalRotation;
+
+        [Space(10), Tooltip("Should the x, y, and z values of the position be rounded?")]
+        public bool roundPositionValue;
+        [Tooltip("How many decimal places to round to")]
+        public uint positionValueSignificance = 2;
+        [Tooltip("Should the x, y, z, and w values of the rotation be rounded?")]
+        public bool roundRotationValue;
+        [Tooltip("How many decimal places to round to")]
+        public uint rotationValueSignificance = 2;
 
         [Space(10)]
         public Transform lookAt;
@@ -64,10 +78,15 @@ namespace UnityHelpers
                     if (Mathf.Abs(positionalGrid.z) > float.Epsilon)
                         nextPosition = new Vector3(nextPosition.x, nextPosition.y, Mathf.RoundToInt(nextPosition.z / Mathf.Abs(positionalGrid.z)) * positionalGrid.z);
 
+                    if (roundPositionValue)
+                        nextPosition = nextPosition.SetDecimalPlaces(positionValueSignificance);
+
                     if (!physicsBased)
                         transform.position = nextPosition;
-                    else if (AffectedBody != null)
+                    else if (AffectedBody != null && !withForces)
                         AffectedBody.MovePosition(nextPosition);
+                    else if (AffectedBody != null && withForces)
+                        AffectedBody.AddForce(AffectedBody.CalculateRequiredForceForPosition(nextPosition, Time.fixedDeltaTime, AffectedBody.useGravity, maxForce), ForceMode.Force);
                 }
 
                 if (lookAt != null || mimicRotation || mimicLocalRotation)
@@ -83,10 +102,15 @@ namespace UnityHelpers
                     if (lookAt == null && mimicLocalRotation)
                         nextRotation = LocalRotationToWorld(nextRotation);
 
+                    if (roundRotationValue)
+                        nextRotation = nextRotation.SetDecimalPlaces(rotationValueSignificance);
+
                     if (!physicsBased)
                         transform.rotation = nextRotation;
-                    else
+                    else if (AffectedBody != null && !withForces)
                         AffectedBody.MoveRotation(nextRotation);
+                    else if (AffectedBody != null && withForces)
+                        AffectedBody.AddTorque(AffectedBody.CalculateRequiredTorqueForRotation(nextRotation, Time.fixedDeltaTime, maxTorque), ForceMode.Force);
                 }
             }
             else if (!errored)
