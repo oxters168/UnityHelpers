@@ -12,7 +12,6 @@ namespace UnityHelpers
         public string emptyMessage = "Nothing to show";
 
         private static Dictionary<string, (float, float, object)> debugValues = new Dictionary<string, (float, float, object)>();
-        private static bool refreshed;
 
         #if (TextMeshPro)
         public TMPro.TextMeshProUGUI output;
@@ -30,28 +29,19 @@ namespace UnityHelpers
 
         private void Update()
         {
-            if (!refreshed)
+            List<string> toBeRemoved = new List<string>();
+            foreach (var debugValue in debugValues)
             {
-                refreshed = true;
-
-                List<string> toBeRemoved = new List<string>();
-                foreach (var debugValue in debugValues)
-                {
-                    if (Time.time - debugValue.Value.Item2 > debugValue.Value.Item1)
-                        toBeRemoved.Add(debugValue.Key);
-                }
-                foreach (var key in toBeRemoved)
-                    debugValues.Remove(key);
+                if ((Time.time - debugValue.Value.Item2) > debugValue.Value.Item1)
+                    toBeRemoved.Add(debugValue.Key);
             }
+            foreach (var key in toBeRemoved)
+                debugValues.Remove(key);
 
             var builtOutput = GetOutput();
             if (string.IsNullOrEmpty(builtOutput))
                 builtOutput = emptyMessage;
             output.text = builtOutput;
-        }
-        private void LateUpdate()
-        {
-            refreshed = false;
         }
         
         public string GetOutput()
