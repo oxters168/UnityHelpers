@@ -5,6 +5,35 @@ namespace UnityHelpers
     public static class RectHelpers
     {
         /// <summary>
+        /// Converts Unity's Rect to a generic rect type
+        /// </summary>
+        /// <param name="rect">The rect to be converted</param>
+        /// <returns>A generic rect with type float</returns>
+        public static GRect<float> ToGRect(this Rect rect)
+        {
+            GRect<float> fromRect = default;
+            fromRect.xMin = rect.xMin;
+            fromRect.yMin = rect.yMin;
+            fromRect.xMax = rect.xMax;
+            fromRect.yMax = rect.yMax;
+            return fromRect;
+        }
+        /// <summary>
+        /// Converts Unity's RectInt to a generic rect type
+        /// </summary>
+        /// <param name="rect">The rect to be converted</param>
+        /// <returns>A generic rect with type int</returns>
+        public static GRect<int> ToGRect(this RectInt rect)
+        {
+            GRect<int> fromRectInt = default;
+            fromRectInt.xMin = rect.xMin;
+            fromRectInt.yMin = rect.yMin;
+            fromRectInt.xMax = rect.xMax;
+            fromRectInt.yMax = rect.yMax;
+            return fromRectInt;
+        }
+
+        /// <summary>
         /// Scales the rect while maintaining it's center position
         /// </summary>
         /// <param name="rect">Original rect</param>
