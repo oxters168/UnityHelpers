@@ -8,6 +8,18 @@ namespace UnityHelpers
     /// </summary>
     public struct GRect<T>
     {
+        private Number<T> _x { get { return _xMin; } set { var tmp = _width; _xMin = value; _width = tmp; } }
+        /// <summary>
+        /// The position along the "x-axis"
+        /// </summary>
+        public T x { get { return _x; } set { _x = x; } }
+        private Number<T> _y { get { return _yMin; } set { var tmp = _height; _yMin = value; _height = tmp; } }
+        /// <summary>
+        /// The position along the "y-axis"
+        /// </summary>
+        /// <value></value>
+        public T y { get { return _y; } set { _y = y; } }
+
         private Number<T> _xMin;
         /// <summary>
         /// The minimum value along the "x-axis"
@@ -152,46 +164,5 @@ namespace UnityHelpers
         // public static implicit operator GRect<T>(RectInt rectInt) => GRect<T>.MinMaxRect((T)(dynamic)rectInt.xMin, (T)(dynamic)rectInt.xMax, (T)(dynamic)rectInt.yMin, (T)(dynamic)rectInt.yMax);
         // public static implicit operator Rect(GRect<T> rect) => new Rect((float)(dynamic)rect._xMin, (float)(dynamic)rect._yMin, (float)(dynamic)rect._width, (float)(dynamic)rect._height);
         // public static implicit operator RectInt(GRect<T> rect) => new RectInt((int)(dynamic)rect._xMin, (int)(dynamic)rect._yMin, (int)(dynamic)(rect._width), (int)(dynamic)(rect._height));
-    }
-
-    /// <summary>
-    /// A wrapper struct for any type to ease mathematics with generics
-    /// </summary>
-    internal struct Number<T>
-    {
-        private T stored;
-
-        public Number(T value)
-        {
-            stored = value;
-        }
-        public override string ToString()
-        {
-            return stored.ToString();
-        }
-
-        private Number<T> DynamicAdd(Number<T> other)
-        {
-            return new Number<T>((dynamic)stored + other.stored);
-        }
-        private Number<T> DynamicSubtract(Number<T> other)
-        {
-            return new Number<T>((dynamic)stored - other.stored);
-        }
-        private Number<T> DynamicMultiply(Number<T> other)
-        {
-            return new Number<T>((dynamic)stored * other.stored);
-        }
-        private Number<T> DynamicDivide(Number<T> other)
-        {
-            return new Number<T>((dynamic)stored / other.stored);
-        }
-
-        public static implicit operator T(Number<T> wrapped) => wrapped.stored;
-        public static implicit operator Number<T>(T value) => new Number<T>(value);
-        public static Number<T> operator +(Number<T> first, Number<T> second) => first.DynamicAdd(second);
-        public static Number<T> operator -(Number<T> first, Number<T> second) => first.DynamicSubtract(second);
-        public static Number<T> operator *(Number<T> first, Number<T> second) => first.DynamicMultiply(second);
-        public static Number<T> operator /(Number<T> first, Number<T> second) => first.DynamicDivide(second);
     }
 }
