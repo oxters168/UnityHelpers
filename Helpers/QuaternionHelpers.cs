@@ -7,6 +7,42 @@ namespace UnityHelpers
     public static class QuaternionHelpers
     {
         /// <summary>
+        /// Gets the quaternion rotation of just the world x-axis
+        /// Credit to Spikee_wave from https://forum.unity.com/threads/quaternion-to-remove-pitch.822768/
+        /// </summary>
+        /// <param name="quaternion">The original orientation</param>
+        /// <returns>The world x-axis orientation</returns>
+        public static Quaternion GetXAxisRotation(this Quaternion quaternion)
+        {
+            float a = Mathf.Sqrt((quaternion.w * quaternion.w) + (quaternion.x * quaternion.x));
+            return new Quaternion(x: quaternion.x, y: 0, z: 0, w: quaternion.w / a);
+    
+        }
+        /// <summary>
+        /// Gets the quaternion rotation of just the world y-axis
+        /// Credit to Spikee_wave from https://forum.unity.com/threads/quaternion-to-remove-pitch.822768/
+        /// </summary>
+        /// <param name="quaternion">The original orientation</param>
+        /// <returns>The world y-axis orientation</returns>
+        public static Quaternion GetYAxisRotation(this Quaternion quaternion)
+        {
+            float a = Mathf.Sqrt((quaternion.w * quaternion.w) + (quaternion.y * quaternion.y));
+            return new Quaternion (x: 0, y: quaternion.y, z: 0, w: quaternion.w / a);
+    
+        }
+        /// <summary>
+        /// Gets the quaternion rotation of just the world z-axis
+        /// Credit to Spikee_wave from https://forum.unity.com/threads/quaternion-to-remove-pitch.822768/
+        /// </summary>
+        /// <param name="quaternion">The original orientation</param>
+        /// <returns>The world z-axis orientation</returns>
+        public static Quaternion GetZAxisRotation(this Quaternion quaternion)
+        {
+            float a = Mathf.Sqrt((quaternion.w * quaternion.w) + (quaternion.z * quaternion.z));
+            return new Quaternion(x: 0, y: 0, z: quaternion.z, w: quaternion.w / a);
+        }
+
+        /// <summary>
         /// Corrects the raw input gyro attitude value to be compatible with Unity.
         /// Source: https://gamedev.stackexchange.com/questions/174107/unity-gyroscope-orientation-attitude-wrong
         /// </summary>
