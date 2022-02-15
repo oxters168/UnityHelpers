@@ -182,4 +182,11 @@ namespace UnityHelpers
             return new Cons<N0, A>(a, new Nothing<A>());
         }
     }
+
+    public class Vec2<T> : Cons<N1, T>
+    {
+        public Vec2(T x, T y): base(x, ZV.v(x))
+        {
+        }
+    }
 }
