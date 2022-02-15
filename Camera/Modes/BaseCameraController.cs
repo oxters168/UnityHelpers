@@ -11,12 +11,16 @@ namespace UnityHelpers
 
         [Range(0, 1)]
         public float strafeDeadzone = 0;
+        public float strafeSensitivity = 1;
         [Range(0, 1)]
         public float pushDeadzone = 0;
+        public float pushSensitivity = 1;
         [Range(0, 1)]
         public float lookVerticalDeadzone = 0;
+        public float lookVerticalSensitivity = 1;
         [Range(0, 1)]
         public float lookHorizontalDeadzone = 0;
+        public float lookHorizontalSensitivity = 1;
 
         private void Update()
         {
@@ -27,19 +31,19 @@ namespace UnityHelpers
 
         public void SetStrafe(float amount)
         {
-            strafe = ApplyDeadzone(Mathf.Clamp(amount, -1, 1), strafeDeadzone);
+            strafe = ApplyDeadzone(Mathf.Clamp(amount, -1, 1), strafeDeadzone) * strafeSensitivity;
         }
         public void SetPush(float amount)
         {
-            push = ApplyDeadzone(Mathf.Clamp(amount, -1, 1), pushDeadzone);
+            push = ApplyDeadzone(Mathf.Clamp(amount, -1, 1), pushDeadzone) * pushSensitivity;
         }
         public void SetLookVertical(float amount)
         {
-            lookVertical = ApplyDeadzone(Mathf.Clamp(amount, -1, 1), lookVerticalDeadzone);
+            lookVertical = ApplyDeadzone(Mathf.Clamp(amount, -1, 1), lookVerticalDeadzone) * lookVerticalSensitivity;
         }
         public void SetLookHorizontal(float amount)
         {
-            lookHorizontal = ApplyDeadzone(Mathf.Clamp(amount, -1, 1), lookHorizontalDeadzone);
+            lookHorizontal = ApplyDeadzone(Mathf.Clamp(amount, -1, 1), lookHorizontalDeadzone) * lookHorizontalSensitivity;
         }
 
         private static float ApplyDeadzone(float original, float deadzone)
