@@ -75,6 +75,14 @@ namespace UnityHelpers
             }
         }
 
+        public T[] GetActiveObjects()
+        {
+            return unavailableObjects.Select(index => objectPool[index]).ToArray();
+        }
+        public T[] GetInactiveObjects()
+        {
+            return availableObjects.Select(index => objectPool[index]).ToArray();
+        }
         public G Get<G>(Action<G> action = null) where G : Component
         {
             G componentOnObject = null;
