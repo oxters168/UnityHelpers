@@ -5,6 +5,39 @@ namespace UnityHelpers
 {
     public static class CameraHelpers
     {
+        private static RenderTexture screenshotRenderTexture;
+
+        /// <summary>
+        /// Takes a snapshot of the current frame and stores it in a texture2D
+        /// </summary>
+        /// <param name="camera">Camera to take a screenshot from</param>
+        /// <param name="width">Width of the resulting texture</param>
+        /// <param name="height">Height of the resulting texture</param>
+        /// <param name="depth">Color depth of the resulting texture</param>
+        /// <returns>A screenshot</returns>
+        public static Texture2D TakeScreenshot(this Camera camera, int width = 2048, int height = 2048, int depth = 32)
+        {
+            RenderTexture tempRenderTexture = camera.targetTexture; //In case user has a render texture set, remember it
+            if (screenshotRenderTexture != null && (screenshotRenderTexture.width != width || screenshotRenderTexture.height != height || screenshotRenderTexture.depth != depth))
+            {
+                GameObject.Destroy(screenshotRenderTexture);
+                screenshotRenderTexture = null;
+            }
+            if (screenshotRenderTexture == null)
+            {
+                screenshotRenderTexture = new RenderTexture(width, height, depth);
+            }
+            camera.targetTexture = screenshotRenderTexture;
+            camera.Render();
+
+            Texture2D saveTexture = new Texture2D(screenshotRenderTexture.width, screenshotRenderTexture.height);
+            RenderTexture.active = screenshotRenderTexture;
+            Rect renderRect = new Rect(0, 0, screenshotRenderTexture.width, screenshotRenderTexture.height);
+            saveTexture.ReadPixels(renderRect, 0, 0); //function reads from the active render texture
+
+            camera.targetTexture = tempRenderTexture; //Return user's render texture if any
+            return saveTexture;
+        }
         //// <summary>
         /// Returns the forward distance needed to place the camera to fit a
         /// specific world width on screen in relation to the camera's perspective.
