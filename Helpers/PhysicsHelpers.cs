@@ -229,18 +229,31 @@ namespace UnityHelpers
         /// <returns>The velocity value to  be applied to the rigidbody.</returns>
         public static Vector3 CalculateRequiredVelocityForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, bool accountForGravity = false, float maxSpeed = float.MaxValue)
         {
-            Vector3 nakedVelocity = (desiredPosition - rigidbody.position) / timestep;
+            Vector3 nakedVelocity = desiredPosition - rigidbody.position;
 
             Vector3 gravityVelocity = Vector3.zero;
             if (accountForGravity)
-                gravityVelocity = CalculateAntiGravityForce(rigidbody.mass);
+                gravityVelocity = Physics.gravity * timestep * timestep; //Needs testing
 
-            Vector3 deltaVelocity = nakedVelocity - (rigidbody.velocity + gravityVelocity);
+            Vector3 deltaVelocity = nakedVelocity - gravityVelocity;
 
             if (deltaVelocity.sqrMagnitude > maxSpeed * maxSpeed)
                 deltaVelocity = deltaVelocity.normalized * maxSpeed;
 
             return deltaVelocity;
+        }
+        //Needs more work
+        private static Vector3 CalculateRequiredVelocityForRotation(this Rigidbody rigidbody, Quaternion desiredRotation, float timestep = 0.02f, float maxSpeed = float.MaxValue)
+        {
+            Vector3 axis;
+            float angle;
+            Quaternion rotDiff = desiredRotation * Quaternion.Inverse(rigidbody.transform.rotation);
+            rotDiff = rotDiff.Shorten();
+            rotDiff.ToAngleAxis(out angle, out axis);
+            axis.Normalize();
+
+            angle *= Mathf.Deg2Rad;
+            return (axis * angle) / (1);
         }
         /// <summary>
         /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the Force ForceMode.
