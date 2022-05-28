@@ -1,8 +1,17 @@
-# UnityHelpers
-Extensions and classes to ease development in Unity
+# About
+This library is a collection of helpers and various essentials that can be plugged in to any project.
 
-Check the wiki for some help. It doesn't have all the help, just some.
+Check the wiki for some help on how to use. It doesn't have all the help, just some.
 Also, all helper methods are commented so the wiki doesn't explain each one.
 
-Important!
-When using this repository in your project, make sure to include any submodules. At the moment this repository has geometry3Sharp as a submodule. MIConvexHull was supposed to be a submodule, but it had some extra stuff I didn't want.
+# Installation
+### Package Manager
+- Open `Window > Package Manager` in Unity
+- Press the plus button and choose `Add package from git URL...`
+- Paste in the URL of this repo and then press the add button
+### Clone
+Somewhere in your project's assets folder call `git clone` with this repo URL using bash, batch, or some git gui
+### Download
+Download the zip from this page using the green `Code` button and extract it into your project's assets folder
+
+Note: In your project `Api Compatibility Level` must be set to `.NET 4.x`. This can be set in `Edit > Project Settings... > Player > Other Settings`.
