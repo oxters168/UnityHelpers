@@ -14,4 +14,5 @@ Somewhere in your project's assets folder call `git clone` with this repo URL us
 ### Download
 Download the zip from this page using the green `Code` button and extract it into your project's assets folder
 
-Note: In your project `Api Compatibility Level` must be set to `.NET 4.x`. This can be set in `Edit > Project Settings... > Player > Other Settings`.
+***
+__Note__: In your project `Api Compatibility Level` must be set to `.NET 4.x`, this can be found in `Edit > Project Settings... > Player > Other Settings`
