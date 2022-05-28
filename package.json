@@ -1,0 +1,12 @@
+{
+    "name": "com.OxGames.UnityHelpers",
+    "version": "1.0.0",
+    "displayName": "Unity Helpers",
+    "description": "A library of helpers and other cool stuff",
+    "unity": "2018.1",
+    "author": {
+      "name": "Oxters",
+      "email": "oxters168@gmail.com",
+      "url": "https://oxgames.co"
+    }
+  }
