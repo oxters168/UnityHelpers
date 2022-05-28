@@ -609,7 +609,7 @@ namespace UnityHelpers
         /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
         /// <returns>The output mesh data of the convex hull</returns>
-        public static MeshData GenerateConvexHull(this Vector3[] vertices, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        public static MeshData GenerateConvexHull(this Vector3[] vertices, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = 1e-10)
         {
             MeshData convexMesh = new MeshData();
 
@@ -642,7 +642,7 @@ namespace UnityHelpers
         /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
         /// <returns>The output mesh data of the convex hull</returns>
-        public static MeshData GenerateConvexHull(this Mesh original, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        public static MeshData GenerateConvexHull(this Mesh original, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = 1e-10)
         {
             return original.vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
         }
@@ -652,7 +652,7 @@ namespace UnityHelpers
         /// <param name="vertices">The original vertices of a mesh</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
         /// <returns>The output mesh data of the convex hull</returns>
-        public static MeshData GenerateConvexHull(this Vector3[] vertices, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        public static MeshData GenerateConvexHull(this Vector3[] vertices, double PlaneDistanceTolerance = 1e-10)
         {
             ConvexHullCreationResultOutcome resultOutcome;
             return vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
@@ -663,7 +663,7 @@ namespace UnityHelpers
         /// <param name="original">The original mesh</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
         /// <returns>The output mesh data of the convex hull</returns>
-        public static MeshData GenerateConvexHull(this Mesh original, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        public static MeshData GenerateConvexHull(this Mesh original, double PlaneDistanceTolerance = 1e-10)
         {
             ConvexHullCreationResultOutcome resultOutcome;
             return original.vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
@@ -675,7 +675,7 @@ namespace UnityHelpers
         /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
         /// <returns>A mesh that represents the convex hull of the original mesh</returns>
-        public static Mesh ToConvexHull(this Mesh original, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        public static Mesh ToConvexHull(this Mesh original, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = 1e-10)
         {
             Mesh convexMesh = new Mesh();
             var meshData = original.vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
@@ -693,7 +693,7 @@ namespace UnityHelpers
         /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
         /// <returns>A mesh that represents the convex hull of the original mesh</returns>
-        public static Mesh ToConvexHull(this Mesh original, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        public static Mesh ToConvexHull(this Mesh original, double PlaneDistanceTolerance = 1e-10)
         {
             Mesh convexMesh = new Mesh();
             ConvexHullCreationResultOutcome resultOutcome;
@@ -712,7 +712,7 @@ namespace UnityHelpers
         /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
         /// <returns>A mesh that represents the convex hull of the original mesh</returns>
-        public static Mesh ToConvexHull(this Vector3[] vertices, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        public static Mesh ToConvexHull(this Vector3[] vertices, out ConvexHullCreationResultOutcome resultOutcome, double PlaneDistanceTolerance = 1e-10)
         {
             Mesh convexMesh = new Mesh();
             var meshData = vertices.GenerateConvexHull(out resultOutcome, PlaneDistanceTolerance);
@@ -730,7 +730,7 @@ namespace UnityHelpers
         /// <param name="resultOutcome">The outcome of the process (successfull or unsuccessful)</param>
         /// <param name="PlaneDistanceTolerance">The plane distance tolerance</param>
         /// <returns>A mesh that represents the convex hull of the original mesh</returns>
-        public static Mesh ToConvexHull(this Vector3[] vertices, double PlaneDistanceTolerance = Constants.DefaultPlaneDistanceTolerance)
+        public static Mesh ToConvexHull(this Vector3[] vertices, double PlaneDistanceTolerance = 1e-10)
         {
             Mesh convexMesh = new Mesh();
             ConvexHullCreationResultOutcome resultOutcome;
