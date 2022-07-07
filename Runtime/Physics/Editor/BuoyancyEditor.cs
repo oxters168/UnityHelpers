@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+using UnityEditor;
 
 namespace UnityHelpers
 {
@@ -11,3 +12,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif
