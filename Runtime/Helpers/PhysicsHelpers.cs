@@ -123,6 +123,30 @@ namespace UnityHelpers
         }
         /// <summary>
         /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
+        /// <para>Calculates the angular acceleration required to achieve the desired rotation. Works with Acceleration ForceMode.</para>
+        /// </summary>
+        /// <param name="desiredRotation">The rotation that you'd like the rigidbody to have</param>
+        /// <param name="rotation">The rotation the rigidbody currently has</param>
+        /// <param name="angularVelocity">The angular velocity the rigidbody currently has</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="maxAcceleration">The max acceleration the result can have.</param>
+        /// <returns>The angular acceleration value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateRequiredAngularAccelerationForRotation(Quaternion desiredRotation, Quaternion rotation, Vector3 angularVelocity, float timestep = 0.02f, float maxAcceleration = float.MaxValue)
+        {
+            Vector3 axis;
+            float angle;
+            Quaternion rotDiff = desiredRotation * Quaternion.Inverse(rotation);
+            rotDiff = rotDiff.Shorten();
+            rotDiff.ToAngleAxis(out angle, out axis);
+            axis.Normalize();
+
+            angle *= Mathf.Deg2Rad;
+            Vector3 desiredAngularAcceleration = (axis * angle) / (timestep * timestep);
+
+            return (desiredAngularAcceleration - (angularVelocity / timestep)).MaxMag(maxAcceleration);
+        }
+        /// <summary>
+        /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
         /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation. Works with Force ForceMode.</para>
         /// </summary>
         /// <param name="rigidbody">The rigidbody that the torque will be applied to</param>
@@ -132,9 +156,25 @@ namespace UnityHelpers
         /// <returns>The torque value to be applied to the rigidbody.</returns>
         public static Vector3 CalculateRequiredTorqueForRotation(this Rigidbody rigidbody, Quaternion desiredRotation, float timestep = 0.02f, float maxTorque = float.MaxValue)
         {
+            return CalculateRequiredTorqueForRotation(desiredRotation, rigidbody.rotation, rigidbody.angularVelocity, rigidbody.inertiaTensor, rigidbody.inertiaTensorRotation, timestep, maxTorque);
+        }
+        /// <summary>
+        /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
+        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation. Works with Force ForceMode.</para>
+        /// </summary>
+        /// <param name="desiredRotation">The rotation that you'd like the rigidbody to have</param>
+        /// <param name="rotation">The rotation the rigidbody currently has</param>
+        /// <param name="angularVelocity">The angular velocity the rigidbody currently has</param>
+        /// <param name="inertiaTensor">The inertia tensor the rigidbody currently has</param>
+        /// <param name="inertiaTensorRotation">The rotation inertia tensor the rigidbody currently has</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="maxTorque">The max torque the result can have.</param>
+        /// <returns>The torque value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateRequiredTorqueForRotation(Quaternion desiredRotation, Quaternion rotation, Vector3 angularVelocity, Vector3 inertiaTensor, Quaternion inertiaTensorRotation, float timestep = 0.02f, float maxTorque = float.MaxValue)
+        {
             Vector3 axis;
             float angle;
-            Quaternion rotDiff = desiredRotation * Quaternion.Inverse(rigidbody.transform.rotation);
+            Quaternion rotDiff = desiredRotation * Quaternion.Inverse(rotation);
             rotDiff = rotDiff.Shorten();
             rotDiff.ToAngleAxis(out angle, out axis);
             axis.Normalize();
@@ -142,15 +182,47 @@ namespace UnityHelpers
             angle *= Mathf.Deg2Rad;
             Vector3 desiredAngularAcceleration = (axis * angle) / (timestep * timestep);
             
-            Quaternion q = rigidbody.rotation * rigidbody.inertiaTensorRotation;
-            Vector3 T = q * Vector3.Scale(rigidbody.inertiaTensor, (Quaternion.Inverse(q) * desiredAngularAcceleration));
-            Vector3 prevT = q * Vector3.Scale(rigidbody.inertiaTensor, (Quaternion.Inverse(q) * (rigidbody.angularVelocity / timestep)));
+            return CalculateTorqueFromAngularAcceleration(desiredAngularAcceleration, rotation, angularVelocity, inertiaTensor, inertiaTensorRotation, timestep, maxTorque);
+        }
+        /// <summary>
+        /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
+        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the angular acceleration. Works with Force ForceMode.</para>
+        /// </summary>
+        /// <param name="desiredAngularAcceleration">The angular acceleration to be converted</param>
+        /// <param name="rotation">The rotation the rigidbody currently has</param>
+        /// <param name="angularVelocity">The angular velocity the rigidbody currently has</param>
+        /// <param name="inertiaTensor">The inertia tensor the rigidbody currently has</param>
+        /// <param name="inertiaTensorRotation">The rotation inertia tensor the rigidbody currently has</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="maxTorque">The max torque the result can have.</param>
+        /// <returns>The torque value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateTorqueFromAngularAcceleration(Vector3 desiredAngularAcceleration, Quaternion rotation, Vector3 angularVelocity, Vector3 inertiaTensor, Quaternion inertiaTensorRotation, float timestep = 0.02f, float maxTorque = float.MaxValue)
+        {
+            Quaternion q = rotation * inertiaTensorRotation;
+            Vector3 T = q * Vector3.Scale(inertiaTensor, Quaternion.Inverse(q) * desiredAngularAcceleration);
+            Vector3 prevT = q * Vector3.Scale(inertiaTensor, (Quaternion.Inverse(q) * (angularVelocity / timestep)));
 
             var deltaT = T - prevT;
-            if (deltaT.sqrMagnitude > maxTorque * maxTorque)
-                deltaT = deltaT.normalized * maxTorque;
 
-            return deltaT;
+            return deltaT.MaxMag(maxTorque);
+        }
+        /// <summary>
+        /// <para>Source: https://answers.unity.com/questions/821833/calculating-the-rotational-acceleration-from-torqu.html</para>
+        /// <para>Calculates the torque that would be as a result of the given acceleration</para>
+        /// </summary>
+        /// <param name="relativeTorque">The torque to be converted</param>
+        /// <param name="inertiaTensor">The inertia tensor of the rigidbody</param>
+        /// <param name="inertiaTensorRotation">The rotation inertia tensor of the rigidbody</param>
+        /// <returns>The angular acceleration equivalent of the given torque</returns>
+        public static Vector3 CalculateAngularAccelerationFromTorque(Vector3 relativeTorque, Vector3 inertiaTensor, Quaternion inertiaTensorRotation)
+        {
+            inertiaTensor = inertiaTensorRotation * inertiaTensor;
+
+            float x = (relativeTorque.x / inertiaTensor.x);
+            float y = (relativeTorque.y / inertiaTensor.y);
+            float z = (relativeTorque.z / inertiaTensor.z);
+
+            return new Vector3(x, y, z);
         }
         /// <summary>
         /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
@@ -237,10 +309,7 @@ namespace UnityHelpers
 
             Vector3 deltaVelocity = nakedVelocity - gravityVelocity;
 
-            if (deltaVelocity.sqrMagnitude > maxSpeed * maxSpeed)
-                deltaVelocity = deltaVelocity.normalized * maxSpeed;
-
-            return deltaVelocity;
+            return deltaVelocity.MaxMag(maxSpeed);
         }
         //Needs more work
         private static Vector3 CalculateRequiredVelocityForRotation(this Rigidbody rigidbody, Quaternion desiredRotation, float timestep = 0.02f, float maxSpeed = float.MaxValue)
@@ -266,19 +335,31 @@ namespace UnityHelpers
         /// <returns>The force value to be applied to the rigidbody.</returns>
         public static Vector3 CalculateRequiredForceForPosition(this Rigidbody rigidbody, Vector3 desiredPosition, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
         {
-            Vector3 nakedForce = (desiredPosition - rigidbody.position) / (timestep * timestep);
-            nakedForce *= rigidbody.mass;
+            return CalculateRequiredForceForPosition(desiredPosition, rigidbody.position, rigidbody.velocity, rigidbody.mass, timestep, accountForGravity, maxForce);
+        }
+        /// <summary>
+        /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the Force ForceMode.
+        /// </summary>
+        /// <param name="desiredPosition">The position that you'd like the rigidbody to have.</param>
+        /// <param name="currentPosition">The current position of the rigidbody that the force will be applied to.</param>
+        /// <param name="currentVelocity">The current velocity of the rigidbody that the force will be applied to.</param>
+        /// <param name="mass">The mass of the rigidbody that the force will be applied to.</param>
+        /// <param name="timestep">The delta time between frames.</param>
+        /// <param name="accountForGravity">Oppose gravity force?</param>
+        /// <param name="maxForce">The max force the result can have.</param>
+        /// <returns>The force value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateRequiredForceForPosition(Vector3 desiredPosition, Vector3 currentPosition, Vector3 currentVelocity, float mass, float timestep = 0.02f, bool accountForGravity = false, float maxForce = float.MaxValue)
+        {
+            Vector3 nakedForce = (desiredPosition - currentPosition) / (timestep * timestep);
+            nakedForce *= mass;
 
             Vector3 gravityForce = Vector3.zero;
             if (accountForGravity)
-                gravityForce = rigidbody.CalculateAntiGravityForce();
+                gravityForce = CalculateAntiGravityForce(mass);
 
-            Vector3 deltaForce = nakedForce - (((rigidbody.velocity / timestep) * rigidbody.mass) + gravityForce);
+            Vector3 deltaForce = nakedForce - (((currentVelocity / timestep) * mass) + gravityForce);
 
-            if (deltaForce.sqrMagnitude > maxForce * maxForce)
-                deltaForce = deltaForce.normalized * maxForce;
-
-            return deltaForce;
+            return deltaForce.MaxMag(maxForce);
         }
         /// <summary>
         /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired position. Works with the Force ForceMode.
@@ -295,10 +376,7 @@ namespace UnityHelpers
 
             Vector2 deltaForce = nakedForce - ((rigidbody.velocity / timestep) * rigidbody.mass);
 
-            if (deltaForce.sqrMagnitude > maxForce * maxForce)
-                deltaForce = deltaForce.normalized * maxForce;
-
-            return deltaForce;
+            return deltaForce.MaxMag(maxForce);
         }
 
         /// <summary>
@@ -337,10 +415,7 @@ namespace UnityHelpers
 
             Vector3 deltaForce = nakedForce - (currentForce + gravityForce);
 
-            if (deltaForce.sqrMagnitude > maxForce * maxForce)
-                deltaForce = deltaForce.normalized * maxForce;
-
-            return deltaForce;
+            return deltaForce.MaxMag(maxForce);
         }
         /// <summary>
         /// Calculates the force vector required to be applied to a rigidbody through AddForce to achieve the desired speed. Works with the Force ForceMode.
@@ -378,10 +453,7 @@ namespace UnityHelpers
 
             Vector2 deltaForce = nakedForce - (currentForce + gravityForce);
 
-            if (deltaForce.sqrMagnitude > maxForce * maxForce)
-                deltaForce = deltaForce.normalized * maxForce;
-
-            return deltaForce;
+            return deltaForce.MaxMag(maxForce);
         }
 
         /// <summary>

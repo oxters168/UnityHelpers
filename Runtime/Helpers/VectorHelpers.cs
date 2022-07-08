@@ -287,6 +287,63 @@ namespace UnityHelpers
         }
 
         /// <summary>
+        /// If the input vector's magnitude exceeds the given value, then returns
+        /// a vector in the same direction with the max magnitude, or else returns
+        /// the same vector
+        /// </summary>
+        /// <param name="vec">The original vector</param>
+        /// <param name="maxMagnitude">The maximum value of the magnitude</param>
+        /// <returns>A vector with a magnitude that does not exceed the given max</returns>
+        public static Vector3 MaxMag(this Vector3 vec, float maxMagnitude)
+        {
+            if (vec.sqrMagnitude > maxMagnitude * maxMagnitude)
+                vec = vec.normalized * maxMagnitude;
+            return vec;
+        }
+        /// <summary>
+        /// If the input vector's magnitude goes below the given value, then returns
+        /// a vector in the same direction with the min magnitude, or else returns
+        /// the same vector
+        /// </summary>
+        /// <param name="vec">The original vector</param>
+        /// <param name="minMagnitude">The minimum value of the magnitude</param>
+        /// <returns>A vector with a magnitude that does not go below the given min</returns>
+        public static Vector3 MinMag(this Vector3 vec, float minMagnitude)
+        {
+            if (vec.sqrMagnitude < minMagnitude * minMagnitude)
+                vec = vec.normalized * minMagnitude;
+            return vec;
+        }
+        /// <summary>
+        /// If the input vector's magnitude exceeds the given value, then returns
+        /// a vector in the same direction with the max magnitude, or else returns
+        /// the same vector
+        /// </summary>
+        /// <param name="vec">The original vector</param>
+        /// <param name="maxMagnitude">The maximum value of the magnitude</param>
+        /// <returns>A vector with a magnitude that does not exceed the given max</returns>
+        public static Vector2 MaxMag(this Vector2 vec, float maxMagnitude)
+        {
+            if (vec.sqrMagnitude > maxMagnitude * maxMagnitude)
+                vec = vec.normalized * maxMagnitude;
+            return vec;
+        }
+        /// <summary>
+        /// If the input vector's magnitude goes below the given value, then returns
+        /// a vector in the same direction with the min magnitude, or else returns
+        /// the same vector
+        /// </summary>
+        /// <param name="vec">The original vector</param>
+        /// <param name="minMagnitude">The minimum value of the magnitude</param>
+        /// <returns>A vector with a magnitude that does not go below the given min</returns>
+        public static Vector2 MinMag(this Vector2 vec, float minMagnitude)
+        {
+            if (vec.sqrMagnitude < minMagnitude * minMagnitude)
+                vec = vec.normalized * minMagnitude;
+            return vec;
+        }
+
+        /// <summary>
         /// Compares each value in the vectors using Mathf.Approximately
         /// </summary>
         /// <param name="first">The first vector</param>
@@ -306,7 +363,7 @@ namespace UnityHelpers
         {
             return Mathf.Approximately(first.x, second.x) && Mathf.Approximately(first.y, second.y) && Mathf.Approximately(first.z, second.z);
         }
-        
+
         /// <summary>
         /// Compares two vectors value for value
         /// </summary>

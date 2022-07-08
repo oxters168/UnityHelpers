@@ -66,6 +66,17 @@ namespace UnityHelpers
         }
 
         /// <summary>
+        /// Compares each value in the quaternions using Mathf.Approximately
+        /// </summary>
+        /// <param name="first">The first orientation</param>
+        /// <param name="second">The second orientation</param>
+        /// <returns>True if all values are approximately the same, false otherwise</returns>
+        public static bool Approximately(this Quaternion first, Quaternion second)
+        {
+            return Mathf.Approximately(first.x, second.x) && Mathf.Approximately(first.y, second.y) && Mathf.Approximately(first.z, second.z) && Mathf.Approximately(first.w, second.w);
+        }
+
+        /// <summary>
         /// Compares two quaternions' rotations
         /// </summary>
         /// <param name="first">The first quaternion</param>
