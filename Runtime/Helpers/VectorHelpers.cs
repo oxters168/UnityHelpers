@@ -287,6 +287,27 @@ namespace UnityHelpers
         }
 
         /// <summary>
+        /// Compares each value in the vectors using Mathf.Approximately
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <returns>True if all values are approximately the same, false otherwise</returns>
+        public static bool Approximately(this Vector2 first, Vector2 second)
+        {
+            return Mathf.Approximately(first.x, second.x) && Mathf.Approximately(first.y, second.y);
+        }
+        /// <summary>
+        /// Compares each value in the vectors using Mathf.Approximately
+        /// </summary>
+        /// <param name="first">The first vector</param>
+        /// <param name="second">The second vector</param>
+        /// <returns>True if all values are approximately the same, false otherwise</returns>
+        public static bool Approximately(this Vector3 first, Vector3 second)
+        {
+            return Mathf.Approximately(first.x, second.x) && Mathf.Approximately(first.y, second.y) && Mathf.Approximately(first.z, second.z);
+        }
+        
+        /// <summary>
         /// Compares two vectors value for value
         /// </summary>
         /// <param name="first">The first vector</param>
