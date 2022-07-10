@@ -42,19 +42,23 @@ namespace UnityHelpers
             prevParentPos = psuedoParent.position;
             prevParRot = psuedoParent.rotation;
         }
-        // void Update()
-        // {
-        //     //Not sure how to properly decrease velocity and angular velocity
-        // }
+        void Update()
+        {
+            //Not sure how to properly decrease velocity and angular velocity
+            // remainingVelocity = ApplyDrag(remainingVelocity, PhysicsBody.drag, Time.deltaTime);
+            // remainingAngularVelocity = ApplyDrag(remainingAngularVelocity, PhysicsBody.drag, Time.deltaTime);
+        }
         void FixedUpdate()
         {
             var translationForce = Vector3.zero;
             var rotationForce = Vector3.zero;
             // var forwardForce = GetForceInDir(psuedoParent.forward);
 
+            // var id = Quat_d.identity;
             //Calculate change in rotation
             var deltaRot = psuedoParent.rotation * Quaternion.Inverse(prevParRot);
-            var finalRot = deltaRot * transform.rotation;
+            // var finalRot = deltaRot * transform.rotation;
+            var finalRot = psuedoParent.rotation;
             //Calculate effect of rotation on position
             var relativePos = transform.position - psuedoParent.position;
             var gammaPos = deltaRot * relativePos + psuedoParent.position;
@@ -62,20 +66,25 @@ namespace UnityHelpers
             var deltaPos = psuedoParent.position - prevParentPos;
             var finalPos = gammaPos + deltaPos;
 
+
             //I don't like the if statments, but I want to be sure that adhering to the parent will only happen when the parent moves or rotates 
             if ((!prevParentPos.EqualTo(psuedoParent.position, tolerance) || (!prevParRot.SameOrientationAs(psuedoParent.rotation) && !transform.position.EqualTo(psuedoParent.position, tolerance))) && !finalPos.EqualTo(prevPos, tolerance))
             {
                 Debug.Log("Applying parent translation");
+                Debug.Log("ParentPos: " + prevParentPos + " + " + deltaPos + " = " + psuedoParent.position + "\n"
+                + "ChildPos: (" + transform.position + " => " + gammaPos + ") + " + deltaPos + " = " + finalPos);
                 //By taking in the actual velocity and angular velocity of the rigidbody, we are essentially cancelling out any other forces
                 //When changing instead to Vector3.zero, does not work when there is fast movement to the transform
                 //Need to find a fix
-                translationForce += PhysicsHelpers.CalculateRequiredForceForPosition(finalPos, prevPos, PhysicsBody.velocity, PhysicsBody.mass, Time.fixedDeltaTime);
+                translationForce += PhysicsHelpers.CalculateRequiredForceForPosition(finalPos, prevPos, remainingVelocity, PhysicsBody.mass, Time.fixedDeltaTime).FixNaN();
             }
             if (!prevParRot.SameOrientationAs(psuedoParent.rotation) && !finalRot.SameOrientationAs(prevRot))
             {
                 Debug.Log("Applying parent rotation");
+                Debug.Log("ParentRot: " + prevParRot.eulerAngles + " + " + deltaRot.eulerAngles + " = " + psuedoParent.rotation.eulerAngles + "\n"
+                + "ChildRot: " + transform.rotation.eulerAngles + " + " + deltaRot.eulerAngles + " = " + finalRot.eulerAngles);
                 // rotationForce += PhysicsHelpers.CalculateRequiredTorqueForRotation(finalRot, prevRot, PhysicsBody.angularVelocity, PhysicsBody.inertiaTensor, PhysicsBody.inertiaTensorRotation, Time.fixedDeltaTime);
-                rotationForce += PhysicsHelpers.CalculateRequiredAngularAccelerationForRotation(finalRot, prevRot, PhysicsBody.angularVelocity, Time.fixedDeltaTime);
+                rotationForce += PhysicsHelpers.CalculateRequiredAngularAccelerationForRotation(finalRot, prevRot, remainingAngularVelocity, Time.fixedDeltaTime).FixNaN();
             }
 
             // PhysicsBody.AddForce(-forwardForce);
@@ -100,26 +109,45 @@ namespace UnityHelpers
                 PhysicsBody.AddTorque(-prevRotForce, ForceMode.Acceleration);
             }
 
+            remainingVelocity = (translationForce / PhysicsBody.mass) * Time.fixedDeltaTime;
+            remainingAngularVelocity = (rotationForce / PhysicsBody.mass) * Time.fixedDeltaTime;
+
+            // var extraForces = GetForceInDir(psuedoParent.forward);
+            // if (!extraForces.Approximately(Vector3.zero))
+            // {
+            //     Debug.Log("Forward force: " + extraForces.magnitude + " N");
+            //     PhysicsBody.AddForce(-extraForces);
+            // }
+
+
             prevVelocity = PhysicsBody.velocity;
             prevPos = transform.position;
             prevRot = transform.rotation;
             prevParentPos = psuedoParent.position;
+            prevParRot = psuedoParent.rotation;
             prevInertiaTensor = PhysicsBody.inertiaTensor;
             prevInertiaTensorRot = PhysicsBody.inertiaTensorRotation;
-            prevParRot = psuedoParent.rotation;
             prevTransForce = translationForce;
             prevRotForce = rotationForce;
+
+            // remainingAngularVelocity = PhysicsHelpers.CalculateAngularAccelerationFromTorque(prevRotForce, prevInertiaTensor, prevInertiaTensorRot) * Time.fixedDeltaTime;
         }
-        // void LateUpdate()
-        // {
-        //     remainingVelocity += prevTransForce * Time.fixedDeltaTime;
-        //     remainingAngularVelocity += PhysicsHelpers.CalculateAngularAccelerationFromTorque(prevRotForce, prevInertiaTensor, prevInertiaTensorRot) * Time.fixedDeltaTime;
-        // }
+        void LateUpdate()
+        {
+            
+        }
 
         public Vector3 GetForceInDir(Vector3 dir)
         {
-            var acc = PhysicsBody.velocity - prevVelocity;
-            return dir * acc.magnitude * Vector3.Dot(acc, dir) * PhysicsBody.mass;
+            // var acc = (PhysicsBody.velocity / Time.fixedDeltaTime);
+            var acc = (PhysicsBody.velocity - remainingVelocity) / Time.fixedDeltaTime;
+            // var acc = (PhysicsBody.velocity - remainingVelocity) - (prevVelocity - ((prevTransForce / PhysicsBody.mass) * Time.fixedDeltaTime)); 
+            return dir * acc.magnitude * VectorHelpers.PercentDirection(acc, dir) * PhysicsBody.mass;
+        }
+
+        public Vector3 ApplyDrag(Vector3 velocity, float drag, float timestep = 0.02f)
+        {
+            return velocity * Mathf.Clamp01(1.0f - drag * timestep);
         }
     }
 }
