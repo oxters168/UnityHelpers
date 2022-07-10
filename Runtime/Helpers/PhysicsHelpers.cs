@@ -180,15 +180,28 @@ namespace UnityHelpers
             axis.Normalize();
 
             angle *= Mathf.Deg2Rad;
-            Vector3 desiredAngularAcceleration = (axis * angle) / (timestep * timestep);
+            Vector3 desiredAngularVelocity = (axis * angle) / timestep;
             
-            return CalculateTorqueFromAngularAcceleration(desiredAngularAcceleration, rotation, angularVelocity, inertiaTensor, inertiaTensorRotation, timestep, maxTorque);
+            return CalculateTorqueForAngularVelocity(desiredAngularVelocity, rotation, angularVelocity, inertiaTensor, inertiaTensorRotation, timestep, maxTorque);
         }
         /// <summary>
         /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
-        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the angular acceleration. Works with Force ForceMode.</para>
+        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the angular velocity. Works with Force ForceMode.</para>
         /// </summary>
-        /// <param name="desiredAngularAcceleration">The angular acceleration to be converted</param>
+        /// <param name="rigidbody">The rigidbody the torque needs to be calculated for</param>
+        /// <param name="desiredAngularVelocity">The angular velocity to be achieved</param>
+        /// <param name="timestep">Time to achieve change in position.</param>
+        /// <param name="maxTorque">The max torque the result can have.</param>
+        /// <returns>The torque value to be applied to the rigidbody.</returns>
+        public static Vector3 CalculateTorqueForAngularVelocity(this Rigidbody rigidbody, Vector3 desiredAngularVelocity, float timestep = 0.02f, float maxTorque = float.MaxValue)
+        {
+            return CalculateTorqueForAngularVelocity(desiredAngularVelocity, rigidbody.rotation, rigidbody.angularVelocity, rigidbody.inertiaTensor, rigidbody.inertiaTensorRotation, timestep, maxTorque);
+        }
+        /// <summary>
+        /// <para>Source: https://answers.unity.com/questions/48836/determining-the-torque-needed-to-rotate-an-object.html</para>
+        /// <para>Calculates the torque required to be applied to a rigidbody to achieve the angular velocity. Works with Force ForceMode.</para>
+        /// </summary>
+        /// <param name="desiredAngularVelocity">The angular velocity to be achieved</param>
         /// <param name="rotation">The rotation the rigidbody currently has</param>
         /// <param name="angularVelocity">The angular velocity the rigidbody currently has</param>
         /// <param name="inertiaTensor">The inertia tensor the rigidbody currently has</param>
@@ -196,10 +209,10 @@ namespace UnityHelpers
         /// <param name="timestep">Time to achieve change in position.</param>
         /// <param name="maxTorque">The max torque the result can have.</param>
         /// <returns>The torque value to be applied to the rigidbody.</returns>
-        public static Vector3 CalculateTorqueFromAngularAcceleration(Vector3 desiredAngularAcceleration, Quaternion rotation, Vector3 angularVelocity, Vector3 inertiaTensor, Quaternion inertiaTensorRotation, float timestep = 0.02f, float maxTorque = float.MaxValue)
+        public static Vector3 CalculateTorqueForAngularVelocity(Vector3 desiredAngularVelocity, Quaternion rotation, Vector3 angularVelocity, Vector3 inertiaTensor, Quaternion inertiaTensorRotation, float timestep = 0.02f, float maxTorque = float.MaxValue)
         {
             Quaternion q = rotation * inertiaTensorRotation;
-            Vector3 T = q * Vector3.Scale(inertiaTensor, Quaternion.Inverse(q) * desiredAngularAcceleration);
+            Vector3 T = q * Vector3.Scale(inertiaTensor, Quaternion.Inverse(q) * (desiredAngularVelocity / timestep));
             Vector3 prevT = q * Vector3.Scale(inertiaTensor, (Quaternion.Inverse(q) * (angularVelocity / timestep)));
 
             var deltaT = T - prevT;
@@ -214,7 +227,7 @@ namespace UnityHelpers
         /// <param name="inertiaTensor">The inertia tensor of the rigidbody</param>
         /// <param name="inertiaTensorRotation">The rotation inertia tensor of the rigidbody</param>
         /// <returns>The angular acceleration equivalent of the given torque</returns>
-        public static Vector3 CalculateAngularAccelerationFromTorque(Vector3 relativeTorque, Vector3 inertiaTensor, Quaternion inertiaTensorRotation)
+        public static Vector3 CalculateAngularAccelerationForTorque(Vector3 relativeTorque, Vector3 inertiaTensor, Quaternion inertiaTensorRotation)
         {
             inertiaTensor = inertiaTensorRotation * inertiaTensor;
 
