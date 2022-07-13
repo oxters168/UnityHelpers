@@ -10,6 +10,60 @@ namespace UnityHelpers
         private static Matrix4x4 OrthoY = Matrix4x4.Rotate(Quaternion.Euler(0, 90, 0));
 
         /// <summary>
+        /// Turns the input Vector2 into a Vector2Int where each component has Mathf.CeilToInt applied to it
+        /// </summary>
+        /// <param name="vec">The input vector</param>
+        /// <returns>The converted vector</returns>
+        public static Vector2Int CeilToInt(this Vector2 vec)
+        {
+            return new Vector2Int(Mathf.CeilToInt(vec.x), Mathf.CeilToInt(vec.y));
+        }
+        /// <summary>
+        /// Turns the input Vector2 into a Vector2Int where each component has Mathf.FloorToInt applied to it
+        /// </summary>
+        /// <param name="vec">The input vector</param>
+        /// <returns>The converted vector</returns>
+        public static Vector2Int FloorToInt(this Vector2 vec)
+        {
+            return new Vector2Int(Mathf.FloorToInt(vec.x), Mathf.FloorToInt(vec.y));
+        }
+        /// <summary>
+        /// Turns the input Vector2 into a Vector2Int where each component has Mathf.RoundToInt applied to it
+        /// </summary>
+        /// <param name="vec">The input vector</param>
+        /// <returns>The converted vector</returns>
+        public static Vector2Int RoundToInt(this Vector2 vec)
+        {
+            return new Vector2Int(Mathf.RoundToInt(vec.x), Mathf.RoundToInt(vec.y));
+        }
+        /// <summary>
+        /// Turns the input Vector3 into a Vector3Int where each component has Mathf.CeilToInt applied to it
+        /// </summary>
+        /// <param name="vec">The input vector</param>
+        /// <returns>The converted vector</returns>
+        public static Vector3Int CeilToInt(this Vector3 vec)
+        {
+            return new Vector3Int(Mathf.CeilToInt(vec.x), Mathf.CeilToInt(vec.y), Mathf.CeilToInt(vec.z));
+        }
+        /// <summary>
+        /// Turns the input Vector3 into a Vector3Int where each component has Mathf.FloorToInt applied to it
+        /// </summary>
+        /// <param name="vec">The input vector</param>
+        /// <returns>The converted vector</returns>
+        public static Vector3Int FloorToInt(this Vector3 vec)
+        {
+            return new Vector3Int(Mathf.FloorToInt(vec.x), Mathf.FloorToInt(vec.y), Mathf.FloorToInt(vec.z));
+        }
+        /// <summary>
+        /// Turns the input Vector3 into a Vector3Int where each component has Mathf.RoundToInt applied to it
+        /// </summary>
+        /// <param name="vec">The input vector</param>
+        /// <returns>The converted vector</returns>
+        public static Vector3Int RoundToInt(this Vector3 vec)
+        {
+            return new Vector3Int(Mathf.RoundToInt(vec.x), Mathf.RoundToInt(vec.y), Mathf.RoundToInt(vec.z));
+        }
+        /// <summary>
         /// Checks if all values are equal to zero
         /// </summary>
         /// <param name="vec">The vector in question</param>
