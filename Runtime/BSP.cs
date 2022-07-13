@@ -6,7 +6,7 @@ namespace UnityHelpers
     /// <summary>
     /// Written by @bmabsout
     /// </summary>
-    class BSP
+    public class BSP
     {
         Rect rect;
         (BSP, BSP)? subrects;
