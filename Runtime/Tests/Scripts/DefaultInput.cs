@@ -1,10 +1,15 @@
 ﻿using UnityEngine;
+#if UNITY_EDITOR
+using UnityHelpers.Editor;
+#endif
 
 namespace UnityHelpers.Tests
 {
     public class DefaultInput : MonoBehaviour
     {
+        #if UNITY_EDITOR
         [RequireInterface(typeof(IValueManager))]
+        #endif
         public MonoBehaviour inputObject;
         private IValueManager _inputObject;
 

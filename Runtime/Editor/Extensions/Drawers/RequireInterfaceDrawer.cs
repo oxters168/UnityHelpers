@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+﻿#if UNITY_EDITOR
+using UnityEngine;
 using UnityEditor;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     /// <summary>
     /// Drawer for the RequireInterface attribute.
@@ -66,3 +67,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif

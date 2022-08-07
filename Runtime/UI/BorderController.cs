@@ -3,6 +3,9 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityHelpers.Editor;
+#endif
 
 namespace UnityHelpers
 {
@@ -22,7 +25,9 @@ namespace UnityHelpers
         [SerializeField]
         private Image[] borderImages;
 
+        #if UNITY_EDITOR
         [EnumFlags]
+        #endif
         public BorderEdge shownEdges = BorderEdge.left | BorderEdge.right | BorderEdge.top | BorderEdge.bottom | BorderEdge.topLeft | BorderEdge.topRight | BorderEdge.bottomLeft | BorderEdge.bottomRight;
         private BorderEdge _prevShownEdges;
 

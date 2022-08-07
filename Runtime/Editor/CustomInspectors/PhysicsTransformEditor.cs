@@ -1,10 +1,10 @@
 ﻿#if UNITY_EDITOR
 using UnityEditor;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
-    [CustomEditor(typeof(Buoyancy)), CanEditMultipleObjects]
-    public class BuoyancyEditor : Editor
+    [CustomEditor(typeof(PhysicsTransform)), CanEditMultipleObjects]
+    public class PhysicsTransformEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

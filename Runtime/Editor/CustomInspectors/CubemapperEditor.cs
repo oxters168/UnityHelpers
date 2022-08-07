@@ -1,11 +1,12 @@
-﻿using UnityEngine;
+﻿#if UNITY_EDITOR
+using UnityEngine;
 using UnityEditor;
 using System.IO;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     [CustomEditor(typeof(Cubemapper))]
-    public class CubemapperEditor : Editor
+    public class CubemapperEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
@@ -24,3 +25,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif

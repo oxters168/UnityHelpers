@@ -1,9 +1,10 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+using UnityEditor;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     [CustomEditor(typeof(SeaVesselPhysics)), CanEditMultipleObjects]
-    public class SeaVesselPhysicsEditor : Editor
+    public class SeaVesselPhysicsEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
@@ -11,3 +12,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif

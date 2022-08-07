@@ -1,4 +1,7 @@
 ﻿using UnityEngine;
+#if UNITY_EDITOR
+using UnityHelpers.Editor;
+#endif
 
 namespace UnityHelpers
 {
@@ -11,7 +14,9 @@ namespace UnityHelpers
         public float trajectoryTime = 1f;
         [Space(10)]
         public bool setVelocity;
+        #if UNITY_EDITOR
         [DraggablePoint(true)]
+        #endif
         public Vector3 velocity;
 
         void FixedUpdate()

@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿#if UNITY_EDITOR
+using UnityEngine;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     /// <summary>
     /// Attribute that require implementation of the provided interface.
@@ -23,3 +24,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif

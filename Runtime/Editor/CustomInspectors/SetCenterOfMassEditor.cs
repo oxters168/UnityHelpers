@@ -2,10 +2,10 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     [CustomEditor(typeof(SetCenterOfMass)), CanEditMultipleObjects]
-    public class SetCenterOfMassEditor : Editor
+    public class SetCenterOfMassEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

@@ -1,7 +1,8 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+using UnityEditor;
 using UnityEngine;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     [CustomPropertyDrawer(typeof(EnumFlagsAttribute))]
     public class EnumFlagsAttributeDrawer : PropertyDrawer
@@ -12,3 +13,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif

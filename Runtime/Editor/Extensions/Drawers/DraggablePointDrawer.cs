@@ -1,14 +1,12 @@
-﻿//https://medium.com/@ProGM/show-a-draggable-point-into-the-scene-linked-to-a-vector3-field-using-the-handle-api-in-unity-bffc1a98271d
+﻿#if UNITY_EDITOR
+//https://medium.com/@ProGM/show-a-draggable-point-into-the-scene-linked-to-a-vector3-field-using-the-handle-api-in-unity-bffc1a98271d
 using UnityEngine;
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
-    #if UNITY_EDITOR
     [CustomEditor(typeof(MonoBehaviour), true)]
-    public class DraggablePointDrawer : Editor
+    public class DraggablePointDrawer : UnityEditor.Editor
     {
         readonly GUIStyle style = new GUIStyle(); void OnEnable()
         {
@@ -48,5 +46,5 @@ namespace UnityHelpers
             }
         }
     }
-    #endif
 }
+#endif

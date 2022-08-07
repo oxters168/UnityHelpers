@@ -1,7 +1,8 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     [CustomPropertyDrawer(typeof(ValueWrapper))]
     public class ValueWrapperDrawer : PropertyDrawer
@@ -53,3 +54,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif

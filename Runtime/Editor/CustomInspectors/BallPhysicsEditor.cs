@@ -1,9 +1,10 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+using UnityEditor;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     [CustomEditor(typeof(BallPhysics)), CanEditMultipleObjects]
-    public class BallPhysicsEditor : Editor
+    public class BallPhysicsEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
@@ -11,3 +12,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif

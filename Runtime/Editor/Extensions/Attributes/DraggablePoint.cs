@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿#if UNITY_EDITOR
+using UnityEngine;
 
-namespace UnityHelpers
+namespace UnityHelpers.Editor
 {
     /// <summary>
     /// Use this attribute to make the point viewable and movable in the editor
@@ -14,3 +15,4 @@ namespace UnityHelpers
         }
     }
 }
+#endif
