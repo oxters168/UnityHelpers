@@ -679,7 +679,18 @@ namespace UnityHelpers
             return new Vector2(vector.y, vector.z);
         }
         /// <summary>
-        /// Flattens the given vector to a plane
+        /// Flattens the given vector to a plane (ProjectOnPlane in Vector3 does pretty much the same)
+        /// </summary>
+        /// <param name="vector">Original vector</param>
+        /// <param name="originalUp">The normal of the original vector</param>
+        /// <param name="planeNormal">Normal of plane</param>
+        /// <returns>Flattened vector</returns>
+        public static Vector3 Planar(this Vector3 vector, Vector3 originalUp, Vector3 planeNormal)
+        {
+            return Quaternion.FromToRotation(originalUp, planeNormal) * vector;
+        }
+        /// <summary>
+        /// Flattens the given vector to a plane (ProjectOnPlane in Vector3 does pretty much the same)
         /// </summary>
         /// <param name="vector">Original vector</param>
         /// <param name="planeNormal">Normal of plane</param>
