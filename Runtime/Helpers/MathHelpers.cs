@@ -65,5 +65,17 @@ namespace UnityHelpers
             float bRounded = SetDecimalPlaces(b, 5);
             return Mathf.Abs(aRounded - bRounded) > Mathf.Epsilon ? Mathf.RoundToInt(Mathf.Sign(aRounded - bRounded)) : 0;
         }
+
+        /// <summary>
+        /// Returns the equivalent of the angle but within the range of 0-360
+        /// </summary>
+        /// <param name="value">Original value</param>
+        /// <returns>A value between 0 and 360</returns>
+        public static float ThreeSixtyFi(float value)
+        {
+            while (value < 0)
+                value += 360;
+            return value % 360;
+        }
     }
 }

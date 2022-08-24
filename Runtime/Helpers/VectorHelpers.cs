@@ -616,7 +616,7 @@ namespace UnityHelpers
         public static float GetShortestSignedAngle(this Vector3 from, Vector3 to, Vector3 planeNormal)
         {
             Quaternion currentOrientation = Quaternion.LookRotation(from, planeNormal);
-            Quaternion requestedOrientation = Quaternion.LookRotation(from, planeNormal);
+            Quaternion requestedOrientation = Quaternion.LookRotation(to, planeNormal);
             Quaternion orientationDiff = requestedOrientation * Quaternion.Inverse(currentOrientation);
             orientationDiff = orientationDiff.Shorten();
             float angleDiff;
@@ -625,7 +625,7 @@ namespace UnityHelpers
             return angleDiff * Mathf.Sign(Vector3.Dot(axis, planeNormal));
         }
         /// <summary>
-        /// Gets the angle in degrees between from and to in the clockwise direction
+        /// Gets the angle in degrees between from and to in the clockwise direction (0/360=same, 180=opposite, 90/270=perpendicular)
         /// </summary>
         /// <param name="from">The start direction</param>
         /// <param name="to">The end direction</param>
@@ -638,7 +638,7 @@ namespace UnityHelpers
             return angleOffset;
         }
         /// <summary>
-        /// Gets the angle in degrees between from and to in the clockwise direction
+        /// Gets the angle in degrees between from and to in the clockwise direction (0/360=same, 180=opposite, 90/270=perpendicular)
         /// </summary>
         /// <param name="from">The start direction</param>
         /// <param name="to">The end direction</param>
