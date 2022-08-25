@@ -89,6 +89,85 @@ namespace UnityHelpers
         }
         
         /// <summary>
+        /// Gets the current angular velocity on the given axis in radians/s
+        /// </summary>
+        /// <param name="rigidbody">The rigidbody in question</param>
+        /// <param name="axis">The axis to find the angular velocity on</param>
+        /// <param name="normal">An axis that is perpendicular to the previous</param>
+        /// <returns>The angular velocity in radians per second</returns>
+        public static float GetAxisAngularVelocity(this Rigidbody rigidbody, Vector3 axis, Vector3 normal)
+        {
+            float rotDir = Mathf.Sign(Vector3.Dot(rigidbody.angularVelocity, axis));
+            float currentAngVel = rotDir * Vector3.ProjectOnPlane(rigidbody.angularVelocity, normal).magnitude;
+            return currentAngVel;
+        }
+
+        /// <summary>
+        /// Rotates the rigidbody to a specified angle along an axis
+        /// </summary>
+        /// <param name="rigidbody">The object to rotate</param>
+        /// <param name="axis">The axis the object will be rotating on</param>
+        /// <param name="normal">An axis perpendicular to the rotation axis and the direction that represents the angle at 0</param>
+        /// <param name="angle">The clockwise angle to rotate to in degrees (0 = forward, 90 = right, 180 = back, 270 = left)</param>
+        /// <param name="acceleration">The angular acceleration the object is capable of (in radians/s^2)</param>
+        /// <param name="maxSpeed">The max angular speed the object is capable of (in radians/s)</param>
+        /// <param name="deceleration">The angular deceleration the object is capable of (in radians/s^2)</param>
+        public static void RotateTo(this Rigidbody rigidbody, Vector3 axis, Vector3 normal, float angle, float acceleration, float maxSpeed, float deceleration)
+        {
+            var currentAngVel = rigidbody.GetAxisAngularVelocity(axis, normal);
+            var rotDir = Mathf.Sign(currentAngVel);
+            var currentAngle = VectorHelpers.GetClockwiseAngle(normal, rigidbody.transform.forward, axis);
+            if (Mathf.Abs(angle - currentAngle) > 180) //To avoid going the wrong way to reach an angle
+                currentAngle += Mathf.Sign(angle - currentAngle) * 360;
+            var angleTravelLeft = Mathf.Abs(angle - currentAngle);
+            var dirToGo = Mathf.Sign(angle - currentAngle);
+
+            //How much time would it take us to decelerate based on our current velocity
+            float decelerationTime = Mathf.Abs(currentAngVel / deceleration);
+            //How much time would it take us to reach our desired angle based on our current velocity
+            float reachTime = Mathf.Abs((angleTravelLeft * Mathf.Deg2Rad) / currentAngVel);
+            
+            if (decelerationTime >= reachTime) //If the amount of time to decelerate is longer than the amount of time it would take our momentum to reach (if we're overshooting), then start decelerating
+            {
+                var expectedDec = (Mathf.Abs(currentAngVel) / Time.fixedDeltaTime);
+                var rotAccValue = -rotDir * Mathf.Min(deceleration, expectedDec);
+                rigidbody.AddTorque(rotAccValue * axis, ForceMode.Acceleration);
+            }
+            else
+            {
+                var expectedAcc = (angleTravelLeft / (Time.fixedDeltaTime * Time.fixedDeltaTime)) * Mathf.Deg2Rad;
+                var rotAccValue = (dirToGo * (Mathf.Sign(dirToGo) != rotDir ? deceleration : Mathf.Min(acceleration, expectedAcc))); //If we're currently rotating in the opposite direction of what we want, use the deceleration value instead of acceleration
+                if (Mathf.Abs(currentAngVel + (rotAccValue * Time.fixedDeltaTime)) >= maxSpeed)
+                    rotAccValue = dirToGo * (maxSpeed - Mathf.Abs(currentAngVel));
+                
+                rigidbody.AddTorque(rotAccValue * axis, ForceMode.Acceleration);
+            }
+        }
+        /// <summary>
+        /// Rotates the rigidbody in a direction along an axis
+        /// </summary>
+        /// <param name="rigidbody">The object to rotate</param>
+        /// <param name="axis">The axis to rotate along</param>
+        /// <param name="normal">An axis perpendicular to the rotation axis</param>
+        /// <param name="input">A value between -1 and 1 that represents whether to go left or right</param>
+        /// <param name="acceleration">The speed with which the object can reach the max speed</param>
+        /// <param name="maxSpeed">The max speed the object can rotate in</param>
+        /// <param name="deceleration">The speed with which the object can stop rotating</param>
+        public static void Rotate(this Rigidbody rigidbody, Vector3 axis, Vector3 normal, float input, float acceleration, float maxSpeed, float deceleration)
+        {
+            var currentAngVel = rigidbody.GetAxisAngularVelocity(axis, normal);
+            var rotDir = Mathf.Sign(currentAngVel);
+            float rotAccValue = (input * (Mathf.Sign(input) != rotDir ? deceleration : acceleration)); //If we're currently rotating in the opposite direction of what we want, use the deceleration value instead of acceleration
+            bool inputRot = Mathf.Abs(input) > float.Epsilon;
+            if (inputRot && Mathf.Abs(currentAngVel + (rotAccValue * Time.fixedDeltaTime)) >= maxSpeed)
+                rotAccValue = Mathf.Sign(rotAccValue) * (maxSpeed - Mathf.Abs(currentAngVel));
+            else if (!inputRot && Mathf.Abs(currentAngVel) >= (deceleration * Time.fixedDeltaTime))
+                rotAccValue = -rotDir * deceleration;
+            else if (!inputRot && Mathf.Abs(currentAngVel) > Mathf.Epsilon)
+                rotAccValue = -(currentAngVel / Time.fixedDeltaTime);
+            rigidbody.AddTorque(axis * rotAccValue, ForceMode.Acceleration);
+        }
+        /// <summary>
         /// <para>Source: https://digitalopus.ca/site/pd-controllers/ </para>
         /// <para>Calculates the torque required to be applied to a rigidbody to achieve the desired rotation. Works with Acceleration ForceMode.</para>
         /// </summary>
