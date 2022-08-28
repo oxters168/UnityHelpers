@@ -99,8 +99,9 @@ namespace UnityHelpers
 
         private static Rigidbody SetupTurret(Transform turret, Rigidbody connectedBody)
         {
-            // turretBody = turret.GetComponent<Rigidbody>();
-            var turretBody = turret.gameObject.AddComponent<Rigidbody>();
+            var turretBody = turret.GetComponent<Rigidbody>();
+            if (turretBody == null)
+                turretBody = turret.gameObject.AddComponent<Rigidbody>();
             turretBody.drag = 0.05f;
             turretBody.useGravity = false;
             // turretBody.centerOfMass = Vector3.zero;
