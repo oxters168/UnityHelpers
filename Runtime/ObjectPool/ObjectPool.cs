@@ -24,6 +24,9 @@ namespace UnityHelpers
 
         public bool reuseObjectsInUse, dynamicSize;
 
+        private Func<T, T> instantiator = (prefab) => { return UnityEngine.Object.Instantiate(prefab); };
+        private Action<T> destroyer = (obj) => { UnityEngine.Object.Destroy(obj); };
+
         /// <summary>
         /// Object pool constructor
         /// </summary>
@@ -56,7 +59,7 @@ namespace UnityHelpers
                     if (availableObjects.Count > 0)
                         currentObjectIndex = availableObjects.First();
 
-                    UnityEngine.Object.Destroy(objectPool[currentObjectIndex]);
+                    destroyer(objectPool[currentObjectIndex]);
                     objectPool.Remove(currentObjectIndex);
 
                     availableObjects.Remove(currentObjectIndex);
@@ -66,7 +69,7 @@ namespace UnityHelpers
                 {
                     currentObjectIndex = objectIndex++;
 
-                    objectPool.Add(currentObjectIndex, UnityEngine.Object.Instantiate(objectPrefab));
+                    objectPool.Add(currentObjectIndex, instantiator(objectPrefab));
                     objectPool[currentObjectIndex].transform.SetParent(poolParent, worldPositionStays);
                     objectPool[currentObjectIndex].gameObject.SetActive(false);
 
@@ -75,6 +78,18 @@ namespace UnityHelpers
             }
         }
 
+        public void SetInstantiator(Func<T, T> instantiator)
+        {
+            if (instantiator == null)
+                throw new ArgumentNullException();
+            this.instantiator = instantiator;
+        }
+        public void SetDestroyer(Action<T> destroyer)
+        {
+            if (destroyer == null)
+                throw new ArgumentNullException();
+            this.destroyer = destroyer;
+        }
         public T[] GetActiveObjects()
         {
             return unavailableObjects.Select(index => objectPool[index]).ToArray();
