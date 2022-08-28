@@ -50,7 +50,8 @@ namespace UnityHelpers
         public LayerMask groundMask = ~0;
         public int grndRays = 8;
         public float grndDist = 0.2f;
-        public Vector3 treadRayShift = new Vector3(-0.5f, 0.1f, -0.6f);
+        public Vector3 gravityRaysShift = Vector3.up * 0.01f;
+        public Vector2 gravityRaysStretch = Vector2.one;
 
         #if UNITY_EDITOR
         [Debug]
@@ -74,7 +75,7 @@ namespace UnityHelpers
         void FixedUpdate()
         {
             output = "gas: " + gas + "\nsteer: " + steer + "\nlook: " + look;
-            output += "\n\n" + ApplyAntiG(TankBody, grndRays, grndDist, treadRayShift, groundMask);
+            output += "\n\n" + ApplyAntiG(TankBody, grndRays, grndDist, gravityRaysShift, gravityRaysStretch, groundMask);
             output += "\n\n" + ApplyFriction(TankBody, fricDec);
             output += "\n\n" + Drive(TankBody, gas, acc, maxSpeed, dec, maxRotSpeed * 360 * Mathf.Deg2Rad);
 
@@ -179,27 +180,28 @@ namespace UnityHelpers
 
             return output;
         }
-        private static string ApplyAntiG(Rigidbody rigidbody, int grndRays, float grndDist, Vector3 treadRayShift, LayerMask groundMask)
+        private static string ApplyAntiG(Rigidbody rigidbody, int grndRays, float grndDist, Vector3 raysShift, Vector2 raysStretch, LayerMask groundMask)
         {
             string output = string.Empty;
 
-            var bounds = rigidbody.transform.GetBounds(Space.World, true);
-            var center = bounds.center;
-            bounds = rigidbody.transform.GetBounds(Space.Self, true);
-            Vector3 botCenter = center + -rigidbody.transform.up * (bounds.extents.y + treadRayShift.y) + rigidbody.transform.forward * (bounds.extents.z + treadRayShift.z);
+            // var bounds = rigidbody.transform.GetTotalBounds(Space.World, true);
+            // var center = bounds.center;
+            var bounds = rigidbody.transform.GetBounds(Space.Self, true);
+            // Vector3 botCenter = center + -rigidbody.transform.up * bounds.extents.y + rigidbody.transform.up * raysShift.y + rigidbody.transform.forward * (bounds.extents.z + raysShift.z);
+            Vector3 botCenter = rigidbody.transform.position + rigidbody.transform.up * raysShift.y + rigidbody.transform.forward * (bounds.extents.z + raysShift.z);
             int indLines = grndRays / 2;
             for (int i = 0; i < grndRays; i++)
             {
-                var front = botCenter + ((i < indLines ? -1 : 1) * rigidbody.transform.right * (bounds.extents.x + treadRayShift.x));
-                var currentPoint = front - (rigidbody.transform.forward * (bounds.size.z / indLines) * (i % indLines));
+                var front = botCenter + ((i < indLines ? -1 : 1) * rigidbody.transform.right * (bounds.extents.x * raysStretch.x) + rigidbody.transform.right * raysShift.x);
+                var currentPoint = front - (rigidbody.transform.forward * ((bounds.size.z * raysStretch.y) / indLines) * (i % indLines));
                 RaycastHit hitInfo;
                 bool isGrounded = Physics.Raycast(currentPoint, -rigidbody.transform.up, out hitInfo, grndDist, groundMask);
                 var percentGrounded = isGrounded ? 1 - (hitInfo.distance / grndDist) : 0;
                 output += "\n" + i + ": " + percentGrounded;
                 Debug.DrawRay(currentPoint, -rigidbody.transform.up * grndDist, Color.Lerp(Color.red, Color.green, percentGrounded));
-                // TankBody.AddForceAtPosition((-Physics.gravity / grndRays) * percentGrounded, currentPoint, ForceMode.Acceleration);
-                if (isGrounded)
-                    rigidbody.AddForceAtPosition((-Physics.gravity / grndRays), currentPoint, ForceMode.Acceleration);
+                rigidbody.AddForceAtPosition((-Physics.gravity / grndRays) * percentGrounded, currentPoint, ForceMode.Acceleration);
+                // if (isGrounded)
+                //     rigidbody.AddForceAtPosition((-Physics.gravity / grndRays), currentPoint, ForceMode.Acceleration);
             }
             // var botLeft = botCenter + -transform.right * bounds.extents.x;
             // var botRight = botCenter + transform.right * bounds.extents.x;
