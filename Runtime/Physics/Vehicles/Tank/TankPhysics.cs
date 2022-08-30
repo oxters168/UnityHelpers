@@ -14,6 +14,9 @@ namespace UnityHelpers
 
         public Transform turret;
 
+        [Tooltip("If set to true then you are responsible for calling PhysicsStep in FixedUpdate or wherever")]
+        public bool callPhysicsStepManually;
+
         public float gas { get { return _gas; } set { _gas = Mathf.Clamp(value, -1, 1); } }
         private float _gas;
         public float steer { get { return _steer; } set { _steer = Mathf.Clamp(value, -1, 1); } }
@@ -74,26 +77,31 @@ namespace UnityHelpers
 
         void FixedUpdate()
         {
+            if (!callPhysicsStepManually)
+                PhysicsStep(Time.fixedDeltaTime);
+        }
+        public void PhysicsStep(float deltaTime)
+        {
             output = "gas: " + gas + "\nsteer: " + steer + "\nlook: " + look;
             output += "\n\n" + ApplyAntiG(TankBody, grndRays, grndDist, gravityRaysShift, gravityRaysStretch, groundMask);
-            output += "\n\n" + ApplyFriction(TankBody, fricDec);
-            output += "\n\n" + Drive(TankBody, gas, acc, maxSpeed, dec, maxRotSpeed * 360 * Mathf.Deg2Rad);
+            output += "\n\n" + ApplyFriction(TankBody, fricDec, deltaTime);
+            output += "\n\n" + Drive(TankBody, gas, acc, maxSpeed, dec, maxRotSpeed * 360 * Mathf.Deg2Rad, deltaTime);
 
             if (directionalSteer && Mathf.Abs(gas) > float.Epsilon)
             {
-                TankBody.RotateTo(TankBody.transform.up, forwardSteerDir, MathHelpers.ThreeSixtyFi(steer * 360), rotAcc * 360 * Mathf.Deg2Rad, maxRotSpeed * 360 * Mathf.Deg2Rad, rotDec * 360 * Mathf.Deg2Rad);
+                TankBody.RotateTo(TankBody.transform.up, forwardSteerDir, MathHelpers.ThreeSixtyFi(steer * 360), rotAcc * 360 * Mathf.Deg2Rad, maxRotSpeed * 360 * Mathf.Deg2Rad, rotDec * 360 * Mathf.Deg2Rad, deltaTime);
             }
             else
-                TankBody.Rotate(TankBody.transform.up, TankBody.transform.right, steer, rotAcc * 360 * Mathf.Deg2Rad, maxRotSpeed * 360 * Mathf.Deg2Rad, rotDec * 360 * Mathf.Deg2Rad);
+                TankBody.Rotate(TankBody.transform.up, TankBody.transform.right, steer, rotAcc * 360 * Mathf.Deg2Rad, maxRotSpeed * 360 * Mathf.Deg2Rad, rotDec * 360 * Mathf.Deg2Rad, deltaTime);
             
             if (turretBody != null)
             {
                 if (directionalLook)
                 {
-                    turretBody.RotateTo(turretBody.transform.up, forwardLookDir, MathHelpers.ThreeSixtyFi(look * 360), rotAcc * 360 * Mathf.Deg2Rad, maxRotSpeed * 360 * Mathf.Deg2Rad, rotDec * 360 * Mathf.Deg2Rad);
+                    turretBody.RotateTo(turretBody.transform.up, forwardLookDir, MathHelpers.ThreeSixtyFi(look * 360), rotAcc * 360 * Mathf.Deg2Rad, maxRotSpeed * 360 * Mathf.Deg2Rad, rotDec * 360 * Mathf.Deg2Rad, deltaTime);
                 }
                 else
-                    turretBody.Rotate(turretBody.transform.up, turretBody.transform.right, look, rotAcc * 360 * Mathf.Deg2Rad, maxRotSpeed * 360 * Mathf.Deg2Rad, rotDec * 360 * Mathf.Deg2Rad);
+                    turretBody.Rotate(turretBody.transform.up, turretBody.transform.right, look, rotAcc * 360 * Mathf.Deg2Rad, maxRotSpeed * 360 * Mathf.Deg2Rad, rotDec * 360 * Mathf.Deg2Rad, deltaTime);
             }
         }
 
@@ -134,7 +142,7 @@ namespace UnityHelpers
             turretBody.angularVelocity = Vector3.zero;
         }
 
-        private static string Drive(Rigidbody rigidbody, float input, float acc, float maxSpeed, float dec, float maxRotSpeed)
+        private static string Drive(Rigidbody rigidbody, float input, float acc, float maxSpeed, float dec, float maxRotSpeed, float deltaTime)
         {
             string output = string.Empty;
 
@@ -150,18 +158,18 @@ namespace UnityHelpers
             float accValue = input * (Mathf.Sign(input) != velDir ? acc + acc : acc);
             output += "Vel=" + currentVel; //debug
             bool inputVel = Mathf.Abs(input) > float.Epsilon;
-            if (inputVel && Mathf.Abs(currentVel + (accValue * Time.fixedDeltaTime)) >= maxSpeed)
+            if (inputVel && Mathf.Abs(currentVel + (accValue * deltaTime)) >= maxSpeed)
                 accValue = Mathf.Sign(accValue) * (maxSpeed - Mathf.Abs(currentVel));
-            else if (!inputVel && Mathf.Abs(currentVel) >= (dec * Time.fixedDeltaTime))
+            else if (!inputVel && Mathf.Abs(currentVel) >= (dec * deltaTime))
                 accValue = -velDir * dec;
             else if (!inputVel && Mathf.Abs(currentVel) > Mathf.Epsilon)
-                accValue = -(currentVel / Time.fixedDeltaTime);
+                accValue = -(currentVel / deltaTime);
             output += " + " + accValue; //debug
             rigidbody.AddForce((rigidbody.transform.forward * accValue), ForceMode.Acceleration);
             // turretBody.AddForce((transform.forward * accValue), ForceMode.Acceleration);
             return output;
         }
-        private static string ApplyFriction(Rigidbody rigidbody, float fricDec)
+        private static string ApplyFriction(Rigidbody rigidbody, float fricDec, float deltaTime)
         {
             string output = string.Empty;
 
@@ -175,7 +183,7 @@ namespace UnityHelpers
             if (leftoverSpeed >= fricDec)
                 friction = -(leftoverVel).normalized * fricDec;
             else if (leftoverSpeed >= float.Epsilon)
-                friction = -(leftoverVel).normalized * (leftoverSpeed / Time.fixedDeltaTime);
+                friction = -(leftoverVel).normalized * (leftoverSpeed / deltaTime);
 
             rigidbody.AddForce(friction, ForceMode.Acceleration);
 

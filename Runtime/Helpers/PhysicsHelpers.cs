@@ -112,7 +112,8 @@ namespace UnityHelpers
         /// <param name="acceleration">The angular acceleration the object is capable of (in radians/s^2)</param>
         /// <param name="maxSpeed">The max angular speed the object is capable of (in radians/s)</param>
         /// <param name="deceleration">The angular deceleration the object is capable of (in radians/s^2)</param>
-        public static void RotateTo(this Rigidbody rigidbody, Vector3 axis, Vector3 normal, float angle, float acceleration, float maxSpeed, float deceleration)
+        /// <param name="deltaTime">The time between calling this function</param>
+        public static void RotateTo(this Rigidbody rigidbody, Vector3 axis, Vector3 normal, float angle, float acceleration, float maxSpeed, float deceleration, float deltaTime)
         {
             var currentAngVel = rigidbody.GetAxisAngularVelocity(axis, normal);
             var rotDir = Mathf.Sign(currentAngVel);
@@ -129,15 +130,15 @@ namespace UnityHelpers
             
             if (decelerationTime >= reachTime) //If the amount of time to decelerate is longer than the amount of time it would take our momentum to reach (if we're overshooting), then start decelerating
             {
-                var expectedDec = (Mathf.Abs(currentAngVel) / Time.fixedDeltaTime);
+                var expectedDec = (Mathf.Abs(currentAngVel) / deltaTime);
                 var rotAccValue = -rotDir * Mathf.Min(deceleration, expectedDec);
                 rigidbody.AddTorque(rotAccValue * axis, ForceMode.Acceleration);
             }
             else
             {
-                var expectedAcc = (angleTravelLeft / (Time.fixedDeltaTime * Time.fixedDeltaTime)) * Mathf.Deg2Rad;
+                var expectedAcc = (angleTravelLeft / (deltaTime * deltaTime)) * Mathf.Deg2Rad;
                 var rotAccValue = (dirToGo * (Mathf.Sign(dirToGo) != rotDir ? deceleration : Mathf.Min(acceleration, expectedAcc))); //If we're currently rotating in the opposite direction of what we want, use the deceleration value instead of acceleration
-                if (Mathf.Abs(currentAngVel + (rotAccValue * Time.fixedDeltaTime)) >= maxSpeed)
+                if (Mathf.Abs(currentAngVel + (rotAccValue * deltaTime)) >= maxSpeed)
                     rotAccValue = dirToGo * (maxSpeed - Mathf.Abs(currentAngVel));
                 
                 rigidbody.AddTorque(rotAccValue * axis, ForceMode.Acceleration);
@@ -153,18 +154,18 @@ namespace UnityHelpers
         /// <param name="acceleration">The speed with which the object can reach the max speed</param>
         /// <param name="maxSpeed">The max speed the object can rotate in</param>
         /// <param name="deceleration">The speed with which the object can stop rotating</param>
-        public static void Rotate(this Rigidbody rigidbody, Vector3 axis, Vector3 normal, float input, float acceleration, float maxSpeed, float deceleration)
+        public static void Rotate(this Rigidbody rigidbody, Vector3 axis, Vector3 normal, float input, float acceleration, float maxSpeed, float deceleration, float deltaTime)
         {
             var currentAngVel = rigidbody.GetAxisAngularVelocity(axis, normal);
             var rotDir = Mathf.Sign(currentAngVel);
             float rotAccValue = (input * (Mathf.Sign(input) != rotDir ? deceleration : acceleration)); //If we're currently rotating in the opposite direction of what we want, use the deceleration value instead of acceleration
             bool inputRot = Mathf.Abs(input) > float.Epsilon;
-            if (inputRot && Mathf.Abs(currentAngVel + (rotAccValue * Time.fixedDeltaTime)) >= maxSpeed)
+            if (inputRot && Mathf.Abs(currentAngVel + (rotAccValue * deltaTime)) >= maxSpeed)
                 rotAccValue = Mathf.Sign(rotAccValue) * (maxSpeed - Mathf.Abs(currentAngVel));
-            else if (!inputRot && Mathf.Abs(currentAngVel) >= (deceleration * Time.fixedDeltaTime))
+            else if (!inputRot && Mathf.Abs(currentAngVel) >= (deceleration * deltaTime))
                 rotAccValue = -rotDir * deceleration;
             else if (!inputRot && Mathf.Abs(currentAngVel) > Mathf.Epsilon)
-                rotAccValue = -(currentAngVel / Time.fixedDeltaTime);
+                rotAccValue = -(currentAngVel / deltaTime);
             rigidbody.AddTorque(axis * rotAccValue, ForceMode.Acceleration);
         }
         /// <summary>
