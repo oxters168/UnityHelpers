@@ -10,7 +10,7 @@ namespace UnityHelpers
     {
         public Rigidbody TankBody { get { if (_tankBody == null) _tankBody = GetComponentInChildren<Rigidbody>(); return _tankBody; } }
         private Rigidbody _tankBody;
-        private Rigidbody turretBody;
+        public Rigidbody turretBody { get; private set; }
 
         public Transform turret;
 
