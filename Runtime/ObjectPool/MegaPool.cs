@@ -44,6 +44,10 @@ namespace UnityHelpers
         {
             FindOrCreatePool(prefabPool).SetInstantiator(instantiator);
         }
+        public static void SetParent(PrefabPool prefabPool, Transform parent)
+        {
+            FindOrCreatePool(prefabPool).SetParent(parent);
+        }
         public static void SetDestroyer(PrefabPool prefabPool, Action<Component> destroyer)
         {
             FindOrCreatePool(prefabPool).SetDestroyer(destroyer);
